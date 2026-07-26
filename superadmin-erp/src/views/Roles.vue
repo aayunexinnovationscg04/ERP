@@ -41,6 +41,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { Check } from 'lucide-vue-next'
 import { getRoles, setRoles } from '../api'
+import { toast } from '../toast'
 
 const modules = ref([]); const matrix = ref({})
 const loading = ref(true)
@@ -66,8 +67,12 @@ async function load() {
 }
 async function save() {
   saving.value = true; saved.value = false
-  try { await setRoles(matrix.value); saved.value = true; setTimeout(() => (saved.value = false), 2500) }
-  finally { saving.value = false }
+  try {
+    await setRoles(matrix.value); saved.value = true; setTimeout(() => (saved.value = false), 2500)
+    toast.success('Roles saved')
+  } catch (e) {
+    toast.error('Could not save roles')
+  } finally { saving.value = false }
 }
 onMounted(load)
 </script>

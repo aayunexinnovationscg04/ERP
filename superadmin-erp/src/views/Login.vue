@@ -37,6 +37,7 @@ import { useRouter } from 'vue-router'
 import { ShieldCheck, Check } from 'lucide-vue-next'
 import { login } from '../api'
 import { setAuth } from '../auth'
+import { toast } from '../toast'
 
 const username = ref(''); const password = ref(''); const busy = ref(false); const error = ref('')
 const router = useRouter()
@@ -44,13 +45,18 @@ async function submit() {
   busy.value = true; error.value = ''
   try {
     const data = await login(username.value, password.value)
-    if (data.user?.role !== 'superadmin') { error.value = 'Not a super-admin account.'; return }
+    if (data.user?.role !== 'superadmin') {
+      error.value = 'Not a super-admin account.'
+      toast.error('Not a super-admin account')
+      return
+    }
     setAuth({ access: data.access, refresh: data.refresh, user: data.user })
     router.push('/users')
   } catch (e) {
     error.value = e.response?.status === 429
       ? 'Too many attempts. Please wait a minute and try again.'
       : (e.response?.status === 401 ? 'Invalid username or password.' : 'Login failed.')
+    toast.error(error.value)
   } finally { busy.value = false }
 }
 </script>

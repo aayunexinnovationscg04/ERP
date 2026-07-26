@@ -38,6 +38,7 @@
 import { onMounted, ref } from 'vue'
 import { getAlerts, ackAlert } from '../api'
 import { ago } from '../util'
+import { toast } from '../toast'
 
 const alerts = ref([])
 const filter = ref('open')
@@ -50,7 +51,13 @@ async function load() {
   finally { loading.value = false }
 }
 function setFilter(f) { filter.value = f; load() }
-async function ack(a) { await ackAlert(a.id); load() }
+async function ack(a) {
+  try {
+    await ackAlert(a.id)
+    toast.success('Alert acknowledged')
+    load()
+  } catch (e) { toast.error('Could not acknowledge alert') }
+}
 
 onMounted(load)
 </script>

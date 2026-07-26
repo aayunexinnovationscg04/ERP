@@ -37,6 +37,7 @@
 import { onMounted, ref } from 'vue'
 import { Check, X } from 'lucide-vue-next'
 import { getUserPerms, setUserPerms, getModules } from '../api'
+import { toast } from '../toast'
 
 const props = defineProps({ id: [String, Number] })
 const modules = ref([])
@@ -70,8 +71,12 @@ async function save() {
     const s = state.value[m.key]
     overrides[m.key] = s === 'default' ? null : s === 'allow'
   })
-  try { await setUserPerms(props.id, overrides); await load(); saved.value = true; setTimeout(() => (saved.value = false), 2500) }
-  finally { saving.value = false }
+  try {
+    await setUserPerms(props.id, overrides); await load(); saved.value = true; setTimeout(() => (saved.value = false), 2500)
+    toast.success('Permissions saved')
+  } catch (e) {
+    toast.error('Could not save permissions')
+  } finally { saving.value = false }
 }
 onMounted(load)
 </script>

@@ -61,6 +61,7 @@
 import { onMounted, ref } from 'vue'
 import { Plus, ChevronRight } from 'lucide-vue-next'
 import { getUsers, createUser, updateUser, getCompanies } from '../api'
+import { toast } from '../toast'
 
 const users = ref([]); const companies = ref([])
 const loading = ref(true)
@@ -79,10 +80,20 @@ async function create() {
     nu.value = { username: '', password: '', role: 'owner', company: null, phone: '' }
     showCreate.value = false
     await load()
-  } catch (e) { msg.value = 'Error: ' + JSON.stringify(e.response?.data || e.message) }
+    toast.success('User created')
+  } catch (e) {
+    msg.value = 'Error: ' + JSON.stringify(e.response?.data || e.message)
+    toast.error('Could not create user')
+  }
 }
 async function patch(u, body) {
-  await updateUser(u.id, body); await load()
+  try {
+    await updateUser(u.id, body); await load()
+    toast.success('User updated')
+  } catch (e) {
+    await load()
+    toast.error('Could not update user')
+  }
 }
 onMounted(load)
 </script>

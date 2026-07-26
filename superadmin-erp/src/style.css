@@ -92,6 +92,8 @@ input[type=checkbox]:disabled { cursor: default; opacity: .55; }
   border-radius: var(--radius); box-shadow: var(--shadow-sm);
   transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
+/* subtle hover lift on stat / kpi tiles (restrained, monochrome) */
+.card.stat:hover, .card.kpi:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
 
 /* ---- desktop layout ---- */
 .app { display: grid; grid-template-columns: 232px 1fr; height: 100%; }
@@ -111,12 +113,18 @@ input[type=checkbox]:disabled { cursor: default; opacity: .55; }
 }
 .nav a .ic { flex: none; }
 .nav a:hover { background: var(--surface-2); color: var(--text); }
+.nav a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); }
 .nav a.router-link-active {
   background: var(--accent-grad); color: var(--brand-ink);
   box-shadow: var(--shadow-sm);
 }
 .main { overflow: auto; padding: 24px 28px; animation: fade var(--dur) var(--ease); }
 @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* router page transition (Emil-Kowalski-style: short, one curve, subtle) */
+.page-enter-active,.page-leave-active{transition:opacity .2s var(--ease),transform .2s var(--ease)}
+.page-enter-from{opacity:0;transform:translateY(6px)}
+.page-leave-to{opacity:0;transform:translateY(-4px)}
 
 .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; }
 .topbar h1 { font-size: 21px; margin: 0; letter-spacing: -.02em; }

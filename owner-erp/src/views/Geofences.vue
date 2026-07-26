@@ -105,6 +105,7 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import L from 'leaflet'
 import { Plus, X, Save, MapPin, Trash2, Eye, EyeOff } from 'lucide-vue-next'
 import { getGeofences, createGeofence, updateGeofence, deleteGeofence } from '../api'
+import { toast } from '../toast'
 
 const PURPOSE = {
   allowed:       { label: 'Allowed',       color: '#16a34a', soft: 'rgba(22,163,74,.14)' },
@@ -205,8 +206,10 @@ async function save() {
     })
     toggleCreate()
     await load()
+    toast.success('Zone saved')
   } catch (e) {
     saveErr.value = e.response?.data?.detail || 'Could not save zone.'
+    toast.error('Could not save zone')
   } finally {
     saving.value = false
   }
@@ -218,7 +221,8 @@ async function toggleActive(z) {
     await updateGeofence(z.id, { active: next })
     z.active = next
     drawZones()
-  } catch (e) { /* ignore */ }
+    toast.success('Zone updated')
+  } catch (e) { toast.error('Could not update zone') }
 }
 
 async function remove(z) {
@@ -228,7 +232,8 @@ async function remove(z) {
     zones.value = zones.value.filter((x) => x.id !== z.id)
     delete boundsById[z.id]
     drawZones()
-  } catch (e) { /* ignore */ }
+    toast.success('Zone deleted')
+  } catch (e) { toast.error('Could not delete zone') }
 }
 
 async function load() {

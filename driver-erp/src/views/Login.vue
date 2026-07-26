@@ -37,6 +37,7 @@ import { useRouter } from 'vue-router'
 import { Fuel, Check } from 'lucide-vue-next'
 import { login, getMe } from '../api'
 import { setAuth } from '../auth'
+import { toast } from '../toast'
 
 const router = useRouter()
 const username = ref('')
@@ -56,6 +57,7 @@ async function submit() {
     error.value = e.response?.status === 429
       ? 'Too many attempts. Please wait a minute and try again.'
       : (e.response?.data?.detail || 'Invalid username or password.')
+    toast.error(error.value)
   } finally {
     loading.value = false
   }

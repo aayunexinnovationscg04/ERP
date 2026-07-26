@@ -1,4 +1,5 @@
 <template>
+  <Toaster />
   <div v-if="isLogin"><router-view /></div>
   <div v-else class="app">
     <div class="mobilebar">
@@ -21,7 +22,11 @@
       </div>
       <button style="margin-top:12px" @click="logout">Log out</button>
     </aside>
-    <main class="main"><router-view /></main>
+    <main class="main">
+      <router-view v-slot="{ Component }">
+        <transition name="page" mode="out-in"><component :is="Component" /></transition>
+      </router-view>
+    </main>
   </div>
 </template>
 
@@ -30,6 +35,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Menu, Fuel, LayoutDashboard, Truck, Bell, MapPin } from 'lucide-vue-next'
 import { auth, clearAuth } from './auth'
+import Toaster from './components/Toaster.vue'
 
 const route = useRoute()
 const router = useRouter()

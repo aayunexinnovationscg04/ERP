@@ -75,6 +75,7 @@ import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { Gauge, Droplet, Lock, LockOpen, Send } from 'lucide-vue-next'
 import { getVehicle, getVehicleTrack, getVehicleTrips, sendCommand } from '../api'
 import { fmt, ago } from '../util'
+import { toast } from '../toast'
 import FleetMap from '../components/FleetMap.vue'
 
 const props = defineProps({ id: [String, Number] })
@@ -105,8 +106,8 @@ async function load() {
 async function cmd(payload) {
   if (!v.value?.device) return
   sending.value = true; cmdMsg.value = ''
-  try { await sendCommand(v.value.device.id, payload); cmdMsg.value = `Queued "${payload}"` }
-  catch { cmdMsg.value = 'Failed' }
+  try { await sendCommand(v.value.device.id, payload); cmdMsg.value = `Queued "${payload}"`; toast.success('Command queued') }
+  catch { cmdMsg.value = 'Failed'; toast.error('Could not send command') }
   finally { sending.value = false }
 }
 
