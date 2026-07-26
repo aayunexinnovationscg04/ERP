@@ -1,0 +1,18 @@
+[Unit]
+Description=Fuel Guard X - receiver->ERP telemetry bridge (import new device data)
+After=postgresql.service fuelguardx.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/erp/backend
+ExecStart=/root/erp/backend/.venv/bin/python manage.py sync_receiver --company aayunex-transport
+Nice=10
+
+# light sandboxing (shares the gunicorn unit's rationale; code lives under /root)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectKernelTunables=true
+RestrictSUIDSGID=true
