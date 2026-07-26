@@ -2,8 +2,13 @@
   <h1>Alerts</h1>
   <div class="muted" style="margin-bottom:14px">Safety &amp; security notices for your truck</div>
 
-  <div v-if="loading" class="empty">Loading…</div>
-  <div v-else-if="!alerts.length" class="card empty">✅ No alerts. All clear.</div>
+  <div v-if="loading">
+    <div v-for="n in 4" :key="n" class="skel sk-item"></div>
+  </div>
+  <div v-else-if="!alerts.length" class="card empty">
+    <CircleCheck :size="30" :stroke-width="1.75" style="color:var(--green)" />
+    <div style="margin-top:8px">No alerts. All clear.</div>
+  </div>
 
   <div v-else>
     <div v-for="a in alerts" :key="a.id" class="card item">
@@ -22,6 +27,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { CircleCheck } from 'lucide-vue-next'
 import { getMyAlerts } from '../api'
 
 const loading = ref(true)

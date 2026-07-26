@@ -2,13 +2,13 @@
   <div class="login2">
     <!-- LEFT: which portal this is -->
     <section class="brandside">
-      <div class="bs-logo">⛽ Fuel Guard X</div>
+      <div class="bs-logo"><Fuel :size="20" /> Fuel Guard X</div>
       <div class="bs-portal">Driver Portal</div>
       <p class="bs-tag">Your assigned truck, live location, trips and safety alerts — right in your pocket.</p>
       <ul class="bs-list">
-        <li>Live truck location &amp; today's route</li>
-        <li>Trip history at a glance</li>
-        <li>Safety &amp; security alerts</li>
+        <li><Check :size="16" /> Live truck location &amp; today's route</li>
+        <li><Check :size="16" /> Trip history at a glance</li>
+        <li><Check :size="16" /> Safety &amp; security alerts</li>
       </ul>
     </section>
 
@@ -34,6 +34,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Fuel, Check } from 'lucide-vue-next'
 import { login, getMe } from '../api'
 import { setAuth } from '../auth'
 
@@ -75,8 +76,8 @@ async function submit() {
 .bs-portal { font-size: 36px; font-weight: 800; letter-spacing: -.02em; line-height: 1.08; }
 .bs-tag { font-size: 15px; opacity: .92; max-width: 34ch; line-height: 1.55; margin: 0; }
 .bs-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 11px; }
-.bs-list li { display: flex; gap: 10px; align-items: center; font-size: 14px; opacity: .96; }
-.bs-list li::before { content: "✓"; font-weight: 800; }
+.bs-list li { display: flex; gap: 9px; align-items: center; font-size: 14px; opacity: .96; }
+.bs-list li svg { flex: none; opacity: .9; }
 
 .formside { display: grid; place-items: center; padding: 32px 24px; background: var(--bg); }
 .formcard { width: 100%; max-width: 380px; }

@@ -2,7 +2,9 @@
   <h1>My Trips</h1>
   <div class="muted" style="margin-bottom:14px">Recent journeys for your truck</div>
 
-  <div v-if="loading" class="empty">Loading…</div>
+  <div v-if="loading">
+    <div v-for="n in 5" :key="n" class="skel sk-item"></div>
+  </div>
   <div v-else-if="!trips.length" class="card empty">No trips recorded yet.</div>
 
   <div v-else>

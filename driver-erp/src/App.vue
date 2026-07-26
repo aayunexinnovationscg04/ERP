@@ -3,8 +3,8 @@
   <div v-else class="app">
     <!-- mobile top bar with hamburger (hidden on desktop) -->
     <header class="mobilebar">
-      <button class="hamburger" aria-label="Open menu" @click="menuOpen = true">☰</button>
-      <div class="brand">⛽ <span>Fuel Guard X</span></div>
+      <button class="hamburger" aria-label="Open menu" @click="menuOpen = true"><Menu :size="22" /></button>
+      <div class="brand"><Fuel :size="18" /> <span>Fuel Guard X</span></div>
       <div class="spacer"></div>
     </header>
 
@@ -13,11 +13,11 @@
 
     <!-- side navbar (desktop) / slide-in drawer (mobile) -->
     <aside class="sidebar" :class="{ open: menuOpen }">
-      <div class="brand side-brand">⛽ <span>Fuel Guard X</span></div>
+      <div class="brand side-brand"><Fuel :size="20" /> <span>Fuel Guard X</span></div>
       <nav class="nav" @click="menuOpen = false">
-        <router-link to="/"><span class="ic">🚚</span> My Truck</router-link>
-        <router-link to="/trips"><span class="ic">🛣️</span> Trips</router-link>
-        <router-link to="/alerts"><span class="ic">🔔</span> Alerts</router-link>
+        <router-link to="/"><Truck :size="18" class="ic" /> My Truck</router-link>
+        <router-link to="/trips"><Route :size="18" class="ic" /> Trips</router-link>
+        <router-link to="/alerts"><Bell :size="18" class="ic" /> Alerts</router-link>
       </nav>
       <div class="spacer" style="flex:1"></div>
       <div class="muted" style="font-size:12px">{{ auth.user?.username }} · driver</div>
@@ -31,6 +31,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Menu, Fuel, Truck, Route, Bell } from 'lucide-vue-next'
 import { auth, clearAuth } from './auth'
 
 const route = useRoute()

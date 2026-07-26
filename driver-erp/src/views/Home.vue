@@ -1,8 +1,16 @@
 <template>
-  <div v-if="loading" class="empty">Loading your truck…</div>
+  <div v-if="loading">
+    <div class="skel sk-hero"></div>
+    <div class="chips">
+      <div class="skel sk-chip"></div><div class="skel sk-chip"></div>
+      <div class="skel sk-chip"></div><div class="skel sk-chip"></div>
+    </div>
+    <div class="section-title"><div class="skel skel-line sm" style="margin:0"></div></div>
+    <div class="skel sk-map"></div>
+  </div>
 
   <div v-else-if="!assigned" class="card empty">
-    <div style="font-size:40px">🚚</div>
+    <Truck :size="42" :stroke-width="1.5" style="color:var(--muted)" />
     <h2 style="margin:10px 0 6px">No truck assigned yet</h2>
     <p class="muted">Your dispatcher hasn't linked a vehicle to your account.<br />Once they do, it shows up here.</p>
   </div>
@@ -27,15 +35,15 @@
       </div>
 
       <div class="chips">
-        <div class="chip"><div class="l">Speed</div><div class="v">{{ fmt(latest?.speed_kmph) }} <small class="muted">km/h</small></div></div>
-        <div class="chip"><div class="l">Distance today</div><div class="v">{{ summary.distance_today_km ?? 0 }} <small class="muted">km</small></div></div>
-        <div class="chip"><div class="l">Fuel cap</div><div class="v">{{ latest?.lock_active ? '🔒 Locked' : '🔓 Open' }}</div></div>
-        <div class="chip"><div class="l">GPS</div><div class="v">{{ latest?.has_gps_fix ? ('★ ' + (latest?.satellites ?? 0)) : 'No fix' }}</div></div>
+        <div class="chip"><div class="l">Speed</div><div class="v ico"><Gauge :size="18" /> {{ fmt(latest?.speed_kmph) }} <small class="muted">km/h</small></div></div>
+        <div class="chip"><div class="l">Distance today</div><div class="v ico"><Milestone :size="18" /> {{ summary.distance_today_km ?? 0 }} <small class="muted">km</small></div></div>
+        <div class="chip"><div class="l">Fuel cap</div><div class="v ico"><component :is="latest?.lock_active ? Lock : LockOpen" :size="18" /> {{ latest?.lock_active ? 'Locked' : 'Open' }}</div></div>
+        <div class="chip"><div class="l">GPS</div><div class="v ico"><Satellite :size="18" /> {{ latest?.has_gps_fix ? ((latest?.satellites ?? 0) + ' sats') : 'No fix' }}</div></div>
       </div>
     </div>
 
     <div v-if="summary.open_alerts" class="card item" style="border-color:var(--crit)">
-      <div><div class="t">🔔 {{ summary.open_alerts }} open alert{{ summary.open_alerts > 1 ? 's' : '' }}</div>
+      <div><div class="t ico"><Bell :size="16" /> {{ summary.open_alerts }} open alert{{ summary.open_alerts > 1 ? 's' : '' }}</div>
         <div class="d">Tap the Alerts tab to review</div></div>
       <router-link to="/alerts" class="badge critical" style="align-self:center">View</router-link>
     </div>
@@ -51,6 +59,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { Truck, Gauge, Milestone, Lock, LockOpen, Satellite, Bell } from 'lucide-vue-next'
 import FleetMap from '../components/FleetMap.vue'
 import { getSummary, getMyTrack } from '../api'
 
