@@ -1,0 +1,33 @@
+# Aayunex — Caddy config (source-of-truth copy of /etc/caddy/Caddyfile)
+#
+# TWO jobs now:
+#   1. Legacy receiver-dashboard for the ESP32 device  (unchanged)
+#   2. HTTPS front for the Fuel Guard X ERP subdomains -> nginx apps
+#
+# Do NOT add a redirect to the device's plain-HTTP block: the SIM800L will not
+# follow a 3xx and telemetry would silently stop.
+
+# ---- Legacy device dashboard (unchanged) ----
+http://dashboard.aayunexinnovations.com {
+	reverse_proxy 127.0.0.1:8080
+}
+https://dashboard.aayunexinnovations.com {
+	reverse_proxy 127.0.0.1:8080
+}
+http://31.42.125.144, http://:80 {
+	reverse_proxy 127.0.0.1:8080
+}
+
+# ---- Fuel Guard X ERP (automatic Let's Encrypt HTTPS) ----
+# Caddy auto-issues + renews certs and redirects HTTP->HTTPS for these hosts.
+# Each proxies to the nginx app that serves the SPA + Django API.
+dealer.aayunexinnovations.com {
+	reverse_proxy 127.0.0.1:8090
+}
+admin.aayunexinnovations.com {
+	reverse_proxy 127.0.0.1:8091
+}
+# Driver / pilot app not built yet — placeholder until nginx :8092 exists.
+pilot.aayunexinnovations.com {
+	respond "Fuel Guard X — Pilot app coming soon" 200
+}
