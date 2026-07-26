@@ -41,13 +41,17 @@ DATA MODELS (tables) created + migrated:
 [x] alerts: Alert (overspeed/geofence/fuel/tamper/offline)
 [x] Django Admin screens for every model (this IS the Super-Admin tool for now)
 
-[ ] Telemetry ingest endpoint  POST /api/telemetry  (firmware-compatible)   <-- NEXT
-[ ] Command queue delivery in ingest reply
-[ ] Derivation engine (trips, overspeed, geofence, tamper, offline alerts)
-[ ] Device-offline sweep (management command)
-[ ] Backfill script: import receiver-dashboard events.jsonl into Telemetry
-[ ] REST API: auth, dashboard summary, vehicles, telemetry, trips, devices, geofences, alerts
-[ ] RBAC permission classes (owner / driver / superadmin scoping)
+[x] Telemetry ingest endpoint  POST /api/telemetry  (firmware-compatible, token-auth, permissive)
+[x] Command queue delivery in ingest reply (exactly-once; tested round-trip)
+[x] Derivation engine (trips, overspeed rising-edge, geofence enter/exit, tamper, offline)
+[x] Device-offline sweep (mark_offline command + systemd timer every 2 min)
+[x] Backfill script: imported real 82 events.jsonl rows -> Telemetry (+derivation)
+[x] REST API: auth(login/refresh/me), dashboard summary, vehicles(+telemetry/trips),
+    trips, devices(+command), geofences(CRUD), alerts(+acknowledge)
+[x] RBAC permission classes + company scoping (owner/superadmin; driver in P2)
+[x] JWT auth (login returns access+refresh+user; role/company embedded in token)
+[x] Unit tests: 7 passing (haversine, geofence, overspeed, trip, tamper, offline)
+[x] Verified end-to-end via nginx:8090 (login->dashboard->vehicles->alerts->ingest->command)
 
 
 ================================================================================
@@ -55,16 +59,16 @@ DATA MODELS (tables) created + migrated:
 ================================================================================
 BACKEND / DATA (models exist; endpoints + logic pending)
 Fleet Management
-    [~] Total / Active / Idle trucks        (Vehicle model + status; needs API + live calc)
-    [~] Truck health / online-offline        (Device.online; needs offline sweep)
-    [~] Vehicle information                   (Vehicle model done; needs API/forms)
+    [x] Total / Active / Idle trucks        (dashboard summary API live)
+    [x] Truck health / online-offline        (Device.online + offline sweep timer)
+    [x] Vehicle information                   (Vehicle API; owner-scoped)
     [ ] Vehicle documents
-    [~] Assigned drivers                      (Driver model + assignment field done)
+    [x] Assigned drivers                      (Driver model + assignment; shown in vehicle API)
 Live Vehicle Monitoring
-    [~] Live truck location                   (Telemetry lat/long; needs ingest + API)
-    [~] Route tracking / route history        (Telemetry stored; needs API + map)
-    [ ] GPS geofencing                        (Geofence model done; needs point-in-zone check)
-    [~] Trip status                           (Trip model done; needs derivation)
+    [x] Live truck location                   (ingest -> Telemetry; latest in vehicle API)
+    [x] Route tracking / route history        (GET /api/vehicles/{id}/telemetry, fixed points)
+    [x] GPS geofencing                        (point-in-zone derivation + enter/exit events)
+    [x] Trip status                           (derivation opens/closes trips; trips API)
 Fuel Monitoring
     [!] Current fuel level                    (blocked: flow sensor reads 0; no tank sensor)
     [!] Fuel refill logs / fill detection     (blocked: needs real sensor data)
@@ -81,10 +85,10 @@ Trip Management
     [ ] Route planning / ETA monitoring       (Phase 3 - needs maps routing API)
     [ ] Delivery timeline monitoring          (Phase 3)
 Alerts & Security
-    [~] Overspeed alerts                      (Alert model done; derivation pending)
-    [~] Geo security alerts                   (Alert + Geofence models done)
-    [~] Tamper alerts                         (lock_active tracked; derivation pending)
-    [!] Fuel theft / low fuel alerts          (blocked on sensor)
+    [x] Overspeed alerts                      (derivation, rising-edge debounced; API + acknowledge)
+    [x] Geo security alerts                   (geofence breach on restricted-enter/allowed-exit)
+    [x] Tamper alerts                         (lock True->False = cap opened; tested on real data)
+    [!] Fuel theft / low fuel alerts          (coded; inert until sensor reports non-zero)
 ERP & Billing
     [ ] Order booking / challan / invoice / customer billing / expense tracking  (Phase 3)
 AI Analytics
@@ -129,14 +133,14 @@ FRONTEND (owner-erp Vue app) - not started yet
 ================================================================================
 SHARED BACKEND INFRASTRUCTURE  (from the platform doc)
 ================================================================================
-    [x] Central Backend API (Django + DRF)
+    [x] Central Backend API (Django + DRF, live on nginx:8090)
     [x] PostgreSQL Database
-    [~] Authentication System (JWT configured; login endpoint pending)
-    [~] Role Based Access Control (roles on User; permission classes pending)
-    [~] GPS Tracking Engine (telemetry model; ingest + derivation pending)
-    [~] Alert System (Alert model; derivation pending)
-    [!] Fuel Analytics Engine (blocked on sensor)
-    [~] IoT Device Integration (ingest contract designed; endpoint pending)
+    [x] Authentication System (JWT login/refresh/me working)
+    [x] Role Based Access Control (permission classes + company scoping)
+    [x] GPS Tracking Engine (ingest -> Telemetry -> derivation; route history API)
+    [x] Alert System (derivation raises 8 alert types; list + acknowledge API)
+    [!] Fuel Analytics Engine (coded; inert until sensor reports non-zero)
+    [x] IoT Device Integration (POST /api/telemetry live, firmware-compatible, tested)
     [ ] Docker Infrastructure (deployment - later)
     [ ] NGINX / reverse proxy (deployment - later)
 

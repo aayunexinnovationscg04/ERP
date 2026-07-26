@@ -1,0 +1,9 @@
+[Unit]
+Description=Fuel Guard X - mark silent devices offline
+After=fuelguardx.service postgresql.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/erp/backend
+ExecStart=/root/erp/backend/.venv/bin/python manage.py mark_offline
