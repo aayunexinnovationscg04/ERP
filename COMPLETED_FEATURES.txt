@@ -18,6 +18,11 @@ Full plan lives in docs/PHASE1_SPEC.md. This file tracks WHAT IS ACTUALLY DONE.
 [x] Python virtualenv + Django stack installed (requirements.txt pinned)
 [x] .env config (secret key, DB URL, ingest token, CORS) - gitignored, .env.example committed
 [x] Phase 1 spec written and versioned (docs/PHASE1_SPEC.md)
+[x] nginx installed + serving the ERP on port 8090 (does NOT collide with Caddy on 80/443)
+[x] gunicorn systemd service (fuelguardx.service) running Django on 127.0.0.1:8000, enabled at boot
+[x] Static served by nginx from /var/www/fuelguardx/static (www-data readable)
+[x] Deploy configs versioned in deploy/ (nginx conf, systemd unit, README)
+[ ] TLS/HTTPS for the ERP (plain HTTP on 8090 for now; add certbot or move to 443 later)
 
 
 ================================================================================
