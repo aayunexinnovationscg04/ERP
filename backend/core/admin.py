@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from .models import Company, CompanySettings, User
+from .models import (Company, CompanySettings, RolePermission, User,
+                     UserModuleOverride)
 
 
 @admin.register(Company)
@@ -24,3 +25,15 @@ class UserAdmin(DjangoUserAdmin):
 @admin.register(CompanySettings)
 class CompanySettingsAdmin(admin.ModelAdmin):
     list_display = ("company", "overspeed_limit_kmph", "offline_after_seconds", "theft_drop_litres")
+
+
+@admin.register(RolePermission)
+class RolePermissionAdmin(admin.ModelAdmin):
+    list_display = ("role", "module", "allowed")
+    list_filter = ("role", "allowed")
+
+
+@admin.register(UserModuleOverride)
+class UserModuleOverrideAdmin(admin.ModelAdmin):
+    list_display = ("user", "module", "allowed")
+    list_filter = ("allowed",)

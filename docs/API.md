@@ -26,6 +26,21 @@ All ERP endpoints require `Authorization: Bearer <access token>` unless noted.
 | GET | `/api/alerts/?status&type&vehicle` | alerts, filterable |
 | POST | `/api/alerts/{id}/acknowledge/` | acknowledge an alert |
 
+## Super Admin (role `superadmin` only)
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/admin/modules` | all tabs/modules (key, label, group) |
+| GET/POST | `/api/admin/companies/` | company CRUD |
+| GET/POST | `/api/admin/users/` | list / create users (username, password, role, company, phone) |
+| PATCH | `/api/admin/users/{id}/` | update role / company / is_active / password |
+| GET | `/api/admin/users/{id}/permissions/` | effective + role defaults + overrides |
+| PUT | `/api/admin/users/{id}/permissions/` | `{overrides:{module: true/false/null}}` (null clears) |
+| GET | `/api/admin/roles` | role × module access matrix |
+| PUT | `/api/admin/roles` | `{role:{module: bool}}` — set global role defaults |
+
+`GET /api/auth/me` returns `modules: [...]` — the caller's **effective** accessible tabs
+(per-user override > role default > false; super-admin = all).
+
 ## Device ingest (firmware, token-auth — NOT JWT)
 | Method | Path | Auth | Notes |
 |---|---|---|---|

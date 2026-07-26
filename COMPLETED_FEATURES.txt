@@ -119,15 +119,21 @@ FRONTEND (owner-erp Vue app) - not started yet
 ================================================================================
 4. SUPER ADMIN ERP   (Phase 2 - Django Admin covers most of this today)
 ================================================================================
-    [x] Company management (via Django Admin)
-    [x] User management + roles (via Django Admin)
-    [x] Device management / device records (via Django Admin)
+    [x] Company management (Django Admin + /api/admin/companies CRUD)
+    [x] User management: create users, assign role + company (/api/admin/users CRUD)
+    [x] ROLE MANAGEMENT: configurable module/tab access per role, GLOBAL
+        (/api/admin/roles GET/PUT) - matrix of role x module
+    [x] Per-MEMBER overrides: grant/deny individual tabs per user, wins over role
+        (/api/admin/users/{id}/permissions GET/PUT; null clears override)
+    [x] Effective modules exposed in /api/auth/me (frontends show/hide tabs)
+    [x] 18 modules defined across Owner/Driver/Admin groups; defaults seeded
+    [x] Device management / device records (Django Admin + /api/devices)
     [~] Global fleet monitoring (data exists; dedicated dashboard Phase 2)
     [ ] Platform monitoring (API/server/DB health, error/audit logs)
     [ ] Fraud monitoring / fuel-theft analytics / global reports
     [ ] Blocked/rejected ingest view
-    NOTE: superadmin-erp/ Vue folder scaffolded (empty placeholder); Django Admin is
-          the working super-admin tool in the meantime.
+    [~] superadmin-erp Vue app (RBAC backend done + Django Admin works now;
+        dedicated Vue UI being built)
 
 
 ================================================================================

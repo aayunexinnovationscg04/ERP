@@ -65,3 +65,39 @@ class CompanySettings(models.Model):
 
     def __str__(self):
         return f"settings: {self.company}"
+
+
+class RolePermission(models.Model):
+    """Global (platform-wide) default: does `role` get access to `module`?
+
+    Managed by Super Admin via Role Management. One row per (role, module).
+    Super Admin is always all-access and is not represented here.
+    """
+
+    role = models.CharField(max_length=20, choices=User.Role.choices)
+    module = models.CharField(max_length=40)
+    allowed = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["role", "module"], name="uniq_role_module")
+        ]
+
+    def __str__(self):
+        return f"{self.role}:{self.module}={self.allowed}"
+
+
+class UserModuleOverride(models.Model):
+    """Per-member override of a module's access, winning over the role default."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="module_overrides")
+    module = models.CharField(max_length=40)
+    allowed = models.BooleanField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "module"], name="uniq_user_module")
+        ]
+
+    def __str__(self):
+        return f"{self.user_id}:{self.module}={self.allowed}"

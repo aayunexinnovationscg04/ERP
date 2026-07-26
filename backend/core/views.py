@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from .access import effective_modules
 from .serializers import LoginSerializer, UserSerializer
 
 
@@ -14,4 +15,6 @@ class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response(UserSerializer(request.user).data)
+        data = UserSerializer(request.user).data
+        data["modules"] = effective_modules(request.user)   # tabs this user may access
+        return Response(data)
