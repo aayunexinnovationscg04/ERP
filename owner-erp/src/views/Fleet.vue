@@ -4,7 +4,11 @@
     <span class="muted">{{ vehicles.length }} vehicle(s)</span>
   </div>
 
-  <div class="card" style="padding:6px 0">
+  <div v-if="loading" style="padding:2px 0">
+    <div class="skel sk-row" v-for="n in 6" :key="n"></div>
+  </div>
+
+  <div v-else class="card" style="padding:6px 0">
     <table>
       <thead>
         <tr><th></th><th>Vehicle</th><th>Status</th><th>Speed</th><th>Fuel (L)</th><th>Device</th><th>Last seen</th></tr>
@@ -31,8 +35,13 @@ import { getVehicles } from '../api'
 import { freshness, ago, fmt } from '../util'
 
 const vehicles = ref([])
+const loading = ref(true)
 let timer
-async function load() { vehicles.value = await getVehicles() }
+async function load() {
+  try { vehicles.value = await getVehicles() }
+  catch (e) { /* keep last good data */ }
+  finally { loading.value = false }
+}
 onMounted(() => { load(); timer = setInterval(load, 15000) })
 onBeforeUnmount(() => clearInterval(timer))
 </script>

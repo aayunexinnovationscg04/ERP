@@ -36,3 +36,4 @@ export const getUserPerms = (id) => api.get(`/admin/users/${id}/permissions/`).t
 export const setUserPerms = (id, overrides) => api.put(`/admin/users/${id}/permissions/`, { overrides }).then((r) => r.data)
 export const getRoles = () => api.get('/admin/roles').then((r) => r.data)
 export const setRoles = (matrix) => api.put('/admin/roles', matrix).then((r) => r.data)
+export const getHealth = () => api.get('/admin/health').then((r) => r.data)

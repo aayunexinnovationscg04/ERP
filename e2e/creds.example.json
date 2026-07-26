@@ -1,0 +1,5 @@
+{
+  "dealer": { "user": "owner1",  "pass": "REPLACE_ME" },
+  "admin":  { "user": "admin",   "pass": "REPLACE_ME" },
+  "pilot":  { "user": "driver1", "pass": "REPLACE_ME" }
+}

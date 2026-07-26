@@ -51,3 +51,13 @@ export const getAlerts = (params = {}) =>
 export const ackAlert = (id) => api.post(`/alerts/${id}/acknowledge/`).then((r) => r.data)
 export const sendCommand = (deviceId, payload) =>
   api.post(`/devices/${deviceId}/command/`, { payload }).then((r) => r.data)
+
+// --- geofences ---
+export const getGeofences = () =>
+  api.get('/geofences/').then((r) => r.data.results || r.data)
+export const createGeofence = (body) =>
+  api.post('/geofences/', body).then((r) => r.data)
+export const updateGeofence = (id, body) =>
+  api.patch(`/geofences/${id}/`, body).then((r) => r.data)
+export const deleteGeofence = (id) =>
+  api.delete(`/geofences/${id}/`).then((r) => r.data)

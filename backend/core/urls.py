@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .admin_views import (AdminUserViewSet, CompanyViewSet, ModulesView,
-                          RoleMatrixView)
+                          PlatformHealthView, RoleMatrixView)
 from .views import LoginView, MeView
 
 router = DefaultRouter()
@@ -16,4 +16,5 @@ urlpatterns = [
     path("auth/me", MeView.as_view(), name="me"),
     path("admin/modules", ModulesView.as_view(), name="admin-modules"),
     path("admin/roles", RoleMatrixView.as_view(), name="admin-roles"),
+    path("admin/health", PlatformHealthView.as_view(), name="admin-health"),
 ] + router.urls

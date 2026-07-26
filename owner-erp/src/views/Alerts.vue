@@ -7,7 +7,11 @@
     </div>
   </div>
 
-  <div class="card" style="padding:6px 0">
+  <div v-if="loading" style="padding:2px 0">
+    <div class="skel sk-row" v-for="n in 5" :key="n"></div>
+  </div>
+
+  <div v-else class="card" style="padding:6px 0">
     <table>
       <thead>
         <tr><th>Severity</th><th>Type</th><th>Title</th><th>Vehicle</th><th>When</th><th></th></tr>
@@ -37,9 +41,13 @@ import { ago } from '../util'
 
 const alerts = ref([])
 const filter = ref('open')
+const loading = ref(true)
 
 async function load() {
-  alerts.value = await getAlerts(filter.value ? { status: filter.value } : {})
+  loading.value = true
+  try { alerts.value = await getAlerts(filter.value ? { status: filter.value } : {}) }
+  catch (e) { /* keep last good data */ }
+  finally { loading.value = false }
 }
 function setFilter(f) { filter.value = f; load() }
 async function ack(a) { await ackAlert(a.id); load() }

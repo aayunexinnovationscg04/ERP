@@ -40,3 +40,8 @@ dist-ssr/
 .idea/
 .DS_Store
 *.swp
+
+# ---- e2e harness ----
+e2e/creds.json
+e2e/shots/
+e2e/node_modules/

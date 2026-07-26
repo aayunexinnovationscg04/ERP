@@ -6,6 +6,7 @@ import Dashboard from './views/Dashboard.vue'
 import Fleet from './views/Fleet.vue'
 import VehicleDetail from './views/VehicleDetail.vue'
 import Alerts from './views/Alerts.vue'
+import Geofences from './views/Geofences.vue'
 
 const routes = [
   { path: '/login', component: Login, meta: { public: true } },
@@ -13,6 +14,7 @@ const routes = [
   { path: '/fleet', component: Fleet },
   { path: '/vehicles/:id', component: VehicleDetail, props: true },
   { path: '/alerts', component: Alerts },
+  { path: '/geofences', component: Geofences },
 ]
 
 const router = createRouter({ history: createWebHashHistory(), routes })

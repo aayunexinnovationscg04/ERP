@@ -4,6 +4,7 @@ import Login from './views/Login.vue'
 import Users from './views/Users.vue'
 import Roles from './views/Roles.vue'
 import UserPermissions from './views/UserPermissions.vue'
+import Platform from './views/Platform.vue'
 
 const routes = [
   { path: '/login', component: Login, meta: { public: true } },
@@ -11,6 +12,7 @@ const routes = [
   { path: '/users', component: Users },
   { path: '/users/:id/permissions', component: UserPermissions, props: true },
   { path: '/roles', component: Roles },
+  { path: '/platform', component: Platform },
 ]
 
 const router = createRouter({ history: createWebHashHistory(), routes })

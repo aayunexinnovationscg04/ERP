@@ -1,7 +1,7 @@
 <template>
   <div class="topbar">
     <h1>User Management</h1>
-    <button class="primary" @click="showCreate = !showCreate">+ New user</button>
+    <button class="primary ico" @click="showCreate = !showCreate"><Plus :size="16" /> New user</button>
   </div>
 
   <div v-if="showCreate" class="card" style="padding:16px;margin-bottom:18px">
@@ -20,7 +20,7 @@
         <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
       </select>
       <input v-model="nu.phone" placeholder="phone (optional)" />
-      <button class="primary" @click="create" :disabled="!nu.username || !nu.password">Create</button>
+      <button class="primary ico" @click="create" :disabled="!nu.username || !nu.password"><Plus :size="16" /> Create</button>
     </div>
     <div v-if="msg" class="muted" style="margin-top:8px">{{ msg }}</div>
   </div>
@@ -28,7 +28,12 @@
   <div class="card" style="padding:6px 0">
     <table>
       <thead><tr><th>Username</th><th>Role</th><th>Company</th><th>Active</th><th>Access</th></tr></thead>
-      <tbody>
+      <tbody v-if="loading">
+        <tr v-for="n in 6" :key="n">
+          <td colspan="5" style="padding:6px 13px"><div class="skel sk-row" style="margin:0"></div></td>
+        </tr>
+      </tbody>
+      <tbody v-else>
         <tr v-for="u in users" :key="u.id">
           <td>{{ u.username }}<div class="muted" style="font-size:12px">{{ u.email }}</div></td>
           <td>
@@ -45,7 +50,7 @@
           <td>
             <input type="checkbox" :checked="u.is_active" @change="patch(u, { is_active: $event.target.checked })" />
           </td>
-          <td><router-link :to="`/users/${u.id}/permissions`">Tabs & overrides →</router-link></td>
+          <td><router-link :to="`/users/${u.id}/permissions`" class="ico">Tabs &amp; overrides <ChevronRight :size="14" /></router-link></td>
         </tr>
       </tbody>
     </table>
@@ -54,14 +59,18 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import { Plus, ChevronRight } from 'lucide-vue-next'
 import { getUsers, createUser, updateUser, getCompanies } from '../api'
 
 const users = ref([]); const companies = ref([])
+const loading = ref(true)
 const showCreate = ref(false); const msg = ref('')
 const nu = ref({ username: '', password: '', role: 'owner', company: null, phone: '' })
 
 async function load() {
-  ;[users.value, companies.value] = await Promise.all([getUsers(), getCompanies()])
+  try {
+    ;[users.value, companies.value] = await Promise.all([getUsers(), getCompanies()])
+  } finally { loading.value = false }
 }
 async function create() {
   msg.value = ''

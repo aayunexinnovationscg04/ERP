@@ -4,7 +4,24 @@
     <span class="badge" :class="v?.status">{{ v?.status }}</span>
   </div>
 
-  <div class="grid-2">
+  <div v-if="loading" class="grid-2">
+    <div>
+      <p class="section-title">Route history</p>
+      <div class="skel sk-map"></div>
+    </div>
+    <div>
+      <p class="section-title">Live telemetry</p>
+      <div class="card" style="padding:16px">
+        <div class="skel skel-line lg"></div>
+        <div class="skel skel-line md"></div>
+        <div class="skel skel-line lg"></div>
+        <div class="skel skel-line sm"></div>
+        <div class="skel skel-line md"></div>
+      </div>
+    </div>
+  </div>
+
+  <div v-else class="grid-2">
     <div>
       <p class="section-title">Route history ({{ track.length }} points)</p>
       <FleetMap :markers="markers" :track="trackLatLng" />
@@ -14,9 +31,9 @@
       <p class="section-title">Live telemetry</p>
       <div class="card" style="padding:14px 16px">
         <div class="kvs" v-if="latest">
-          <div><span class="muted">Speed</span><b>{{ fmt(latest.speed_kmph) }} km/h</b></div>
-          <div><span class="muted">Fuel</span><b>{{ fmt(latest.total_litres) }} L</b></div>
-          <div><span class="muted">Lock</span><b>{{ latest.lock_active ? '🔒 locked' : '🔓 open' }}</b></div>
+          <div><span class="muted">Speed</span><b class="ico"><Gauge :size="15" /> {{ fmt(latest.speed_kmph) }} km/h</b></div>
+          <div><span class="muted">Fuel</span><b class="ico"><Droplet :size="15" /> {{ fmt(latest.total_litres) }} L</b></div>
+          <div><span class="muted">Lock</span><b class="ico"><component :is="latest.lock_active ? Lock : LockOpen" :size="15" /> {{ latest.lock_active ? 'locked' : 'open' }}</b></div>
           <div><span class="muted">GPS fix</span><b>{{ latest.has_gps_fix ? `yes (${latest.satellites} sats)` : 'no' }}</b></div>
           <div><span class="muted">GSM</span><b>{{ latest.gsm_signal ?? '—' }}</b></div>
           <div><span class="muted">Recording</span><b>{{ latest.recording ? 'yes' : 'no' }}</b></div>
@@ -28,8 +45,8 @@
       <div class="card" style="padding:14px 16px;margin-top:14px" v-if="v?.device">
         <p class="section-title">Send command</p>
         <div class="row">
-          <button @click="cmd('open')" :disabled="sending">Open lock</button>
-          <button @click="cmd('testing')" :disabled="sending">Testing</button>
+          <button class="ico" @click="cmd('open')" :disabled="sending"><LockOpen :size="16" /> Open lock</button>
+          <button class="ico" @click="cmd('testing')" :disabled="sending"><Send :size="16" /> Testing</button>
           <span class="muted">{{ cmdMsg }}</span>
         </div>
       </div>
@@ -55,6 +72,7 @@
 
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { Gauge, Droplet, Lock, LockOpen, Send } from 'lucide-vue-next'
 import { getVehicle, getVehicleTrack, getVehicleTrips, sendCommand } from '../api'
 import { fmt, ago } from '../util'
 import FleetMap from '../components/FleetMap.vue'
@@ -63,6 +81,7 @@ const props = defineProps({ id: [String, Number] })
 const v = ref(null)
 const track = ref([])
 const trips = ref([])
+const loading = ref(true)
 const sending = ref(false)
 const cmdMsg = ref('')
 let timer
@@ -75,10 +94,13 @@ const markers = computed(() =>
     : [])
 
 async function load() {
-  v.value = await getVehicle(props.id)
-  ;[track.value, trips.value] = await Promise.all([
-    getVehicleTrack(props.id, 1000), getVehicleTrips(props.id),
-  ])
+  try {
+    v.value = await getVehicle(props.id)
+    ;[track.value, trips.value] = await Promise.all([
+      getVehicleTrack(props.id, 1000), getVehicleTrips(props.id),
+    ])
+  } catch (e) { /* keep last good data */ }
+  finally { loading.value = false }
 }
 async function cmd(payload) {
   if (!v.value?.device) return

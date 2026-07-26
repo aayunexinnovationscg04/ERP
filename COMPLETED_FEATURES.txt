@@ -5,6 +5,15 @@ Legend:  [x] done   [~] in progress   [ ] pending   [!] blocked (needs hardware/
 ================================================================================
 
 Full plan lives in docs/PHASE1_SPEC.md. This file tracks WHAT IS ACTUALLY DONE.
+Production readiness + go-live checklist: docs/PRODUCTION_READINESS.md
+
+TESTING (all green):
+  - Backend: 27 unit + API tests pass (auth, RBAC, driver isolation, company scoping,
+    geofence CRUD, platform health, derivation engine). `manage.py check --deploy` clean.
+  - Headless browser E2E (e2e/run.mjs, Playwright): 19/19 checks, 0 console/page errors
+    across all 3 apps, desktop + mobile. Screenshots captured per page.
+  - Live functional checks: login, RBAC 403s, geofence create/list/toggle/delete,
+    platform health — all verified against the production URL.
 
 
 ================================================================================
@@ -102,7 +111,9 @@ FRONTEND (owner-erp Vue app) - LIVE on nginx :8090
     [x] Fleet list (freshness dots, last seen, speed, fuel)
     [x] Vehicle detail (live map + route history + telemetry panel + send command)
     [x] Alerts page (acknowledge)
-    [ ] Geofences page (draw + manage)   <-- API ready; UI pending
+    [x] Geofences page (draw circle on map + list + activate/deactivate + delete) - LIVE
+    NOTE: real Lucide icons (no emojis) + skeleton loading states across every page;
+    split-screen branded login; desktop side navbar + mobile hamburger drawer; ORANGE theme.
 
 
 ================================================================================
@@ -133,12 +144,15 @@ FRONTEND (owner-erp Vue app) - LIVE on nginx :8090
     [x] Effective modules exposed in /api/auth/me (frontends show/hide tabs)
     [x] 18 modules defined across Owner/Driver/Admin groups; defaults seeded
     [x] Device management / device records (Django Admin + /api/devices)
-    [~] Global fleet monitoring (data exists; dedicated dashboard Phase 2)
-    [ ] Platform monitoring (API/server/DB health, error/audit logs)
-    [ ] Fraud monitoring / fuel-theft analytics / global reports
-    [ ] Blocked/rejected ingest view
-    [x] superadmin-erp Vue app LIVE on nginx :8091 - Users (create/edit role+company),
-        Role Management (matrix editor), per-member override editor (grant/deny/default)
+    [x] Platform monitoring (Platform Health page + GET /api/admin/health): DB status,
+        ingest freshness (last device/time, stale flag, records last hr/24h), live counts
+        (companies, users by role, devices online/total, vehicles, telemetry, trips, alerts)
+    [~] Global fleet monitoring (counts live on Platform page; per-vehicle console Phase 2)
+    [ ] Fraud monitoring / fuel-theft analytics / global reports  (needs fuel sensor + Phase 3)
+    [ ] Blocked/rejected ingest view  (ingest rejections not yet persisted; Phase 2)
+    [x] superadmin-erp Vue app LIVE - Users (create/edit role+company), Role Management
+        (matrix editor), per-member override editor, Platform Health; real icons + skeletons;
+        split login; side navbar + mobile hamburger; BLACK & WHITE theme
 
 
 ================================================================================

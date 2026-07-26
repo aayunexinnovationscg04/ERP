@@ -2,13 +2,13 @@
   <div class="login2">
     <!-- LEFT: which portal this is -->
     <section class="brandside">
-      <div class="bs-logo">🛡️ Fuel Guard X</div>
+      <div class="bs-logo"><ShieldCheck :size="20" /> Fuel Guard X</div>
       <div class="bs-portal">Super Admin Console</div>
       <p class="bs-tag">Manage companies, users, roles and tab-level access across the platform.</p>
       <ul class="bs-list">
-        <li>User &amp; company management</li>
-        <li>Role-based access control</li>
-        <li>Per-member permission overrides</li>
+        <li><Check :size="16" /> User &amp; company management</li>
+        <li><Check :size="16" /> Role-based access control</li>
+        <li><Check :size="16" /> Per-member permission overrides</li>
       </ul>
     </section>
 
@@ -34,6 +34,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ShieldCheck, Check } from 'lucide-vue-next'
 import { login } from '../api'
 import { setAuth } from '../auth'
 
@@ -69,7 +70,7 @@ async function submit() {
 .bs-tag { font-size: 15px; opacity: .9; max-width: 34ch; line-height: 1.55; margin: 0; }
 .bs-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 11px; }
 .bs-list li { display: flex; gap: 10px; align-items: center; font-size: 14px; opacity: .94; }
-.bs-list li::before { content: "✓"; font-weight: 800; }
+.bs-list li svg { flex: none; opacity: .9; }
 
 .formside { display: grid; place-items: center; padding: 32px 24px; background: var(--bg); }
 .formcard { width: 100%; max-width: 380px; }

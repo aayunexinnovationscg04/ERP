@@ -1,5 +1,9 @@
 """Super-Admin API: user management, role management, per-member overrides."""
 
+from datetime import timedelta
+
+from django.db import connection
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -66,6 +70,60 @@ class AdminUserViewSet(viewsets.ModelViewSet):
                 UserModuleOverride.objects.update_or_create(
                     user=user, module=module, defaults={"allowed": bool(val)})
         return Response({"ok": True, "effective": effective_modules(user)})
+
+
+class PlatformHealthView(APIView):
+    """Platform monitoring for Super Admin: DB health, live counts, ingest freshness."""
+
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        from alerts.models import Alert
+        from fleet.models import Device, Telemetry, Trip, Vehicle
+
+        now = timezone.now()
+        hour_ago = now - timedelta(hours=1)
+        day_ago = now - timedelta(days=1)
+
+        db_ok = True
+        try:
+            with connection.cursor() as cur:
+                cur.execute("SELECT 1")
+                cur.fetchone()
+        except Exception:
+            db_ok = False
+
+        last_t = Telemetry.objects.select_related("device").order_by("-received_at").first()
+        last_seen = last_t.received_at if last_t else None
+        # ingest is "stale" if the newest device record is older than 30 min
+        ingest_stale = bool(last_seen and (now - last_seen) > timedelta(minutes=30))
+
+        roles = {r: User.objects.filter(role=r).count() for r, _ in User.Role.choices}
+
+        return Response({
+            "status": "ok" if db_ok else "degraded",
+            "time": now,
+            "database": {"ok": db_ok, "engine": "postgresql"},
+            "ingest": {
+                "last_received_at": last_seen,
+                "last_device": last_t.device.device_id if last_t else None,
+                "stale": ingest_stale,
+                "records_last_hour": Telemetry.objects.filter(received_at__gte=hour_ago).count(),
+                "records_last_24h": Telemetry.objects.filter(received_at__gte=day_ago).count(),
+            },
+            "counts": {
+                "companies": Company.objects.count(),
+                "users": User.objects.count(),
+                "users_by_role": roles,
+                "devices_total": Device.objects.count(),
+                "devices_online": Device.objects.filter(online=True).count(),
+                "vehicles": Vehicle.objects.count(),
+                "telemetry_total": Telemetry.objects.count(),
+                "trips_total": Trip.objects.count(),
+                "trips_active": Trip.objects.filter(status=Trip.Status.ACTIVE).count(),
+                "open_alerts": Alert.objects.filter(status="open").count(),
+            },
+        })
 
 
 class RoleMatrixView(APIView):

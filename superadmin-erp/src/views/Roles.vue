@@ -2,13 +2,17 @@
   <div class="topbar">
     <h1>Role Management</h1>
     <div class="row">
-      <span class="muted" v-if="saved">Saved ✓</span>
-      <button class="primary" @click="save" :disabled="saving">{{ saving ? 'Saving…' : 'Save changes' }}</button>
+      <span class="muted ico" v-if="saved"><Check :size="16" /> Saved</span>
+      <button class="primary ico" @click="save" :disabled="saving"><Check :size="16" /> {{ saving ? 'Saving…' : 'Save changes' }}</button>
     </div>
   </div>
   <p class="muted" style="margin-top:-8px">Global default tabs each role can access. Super Admin is always all-access. Per-user exceptions are set on the user's page.</p>
 
-  <div class="card" style="padding:6px 0;margin-top:14px">
+  <div v-if="loading" class="card" style="padding:16px;margin-top:14px">
+    <div class="skel sk-row" v-for="n in 7" :key="n"></div>
+  </div>
+
+  <div v-else class="card" style="padding:6px 0;margin-top:14px">
     <table>
       <thead>
         <tr>
@@ -35,9 +39,11 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { Check } from 'lucide-vue-next'
 import { getRoles, setRoles } from '../api'
 
 const modules = ref([]); const matrix = ref({})
+const loading = ref(true)
 const saving = ref(false); const saved = ref(false)
 const editableRoles = ['owner', 'manager', 'driver']
 
@@ -47,14 +53,16 @@ const modulesByGroup = computed(() => {
 })
 
 async function load() {
-  const d = await getRoles()
-  modules.value = d.modules
-  // ensure every editable role has an entry for every module key
-  const m = {}
-  editableRoles.forEach((r) => {
-    m[r] = {}; modules.value.forEach((mod) => { m[r][mod.key] = !!d.matrix[r]?.[mod.key] })
-  })
-  matrix.value = m
+  try {
+    const d = await getRoles()
+    modules.value = d.modules
+    // ensure every editable role has an entry for every module key
+    const m = {}
+    editableRoles.forEach((r) => {
+      m[r] = {}; modules.value.forEach((mod) => { m[r][mod.key] = !!d.matrix[r]?.[mod.key] })
+    })
+    matrix.value = m
+  } finally { loading.value = false }
 }
 async function save() {
   saving.value = true; saved.value = false

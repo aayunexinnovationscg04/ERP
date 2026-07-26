@@ -215,3 +215,26 @@ tr.clickable:hover { background: var(--surface-2); cursor: pointer; }
   .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table { min-width: 560px; }
 }
+
+/* ---- inline icon + text alignment ---- */
+.ico { display: inline-flex; align-items: center; gap: 7px; }
+.nav a { display: flex; align-items: center; gap: 10px; }
+.nav a .ic { flex: none; }
+.brand svg, .hamburger svg, .side-brand svg { flex: none; }
+.brand svg { color: var(--brand); }
+
+/* ---- skeleton loading ---- */
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+.skel { position: relative; overflow: hidden; background: var(--surface-2); border-radius: 9px; }
+.skel::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+  animation: shimmer 1.25s var(--ease) infinite;
+}
+.skel-line { height: 13px; margin: 9px 0; }
+.skel-line.sm { width: 42%; } .skel-line.md { width: 66%; } .skel-line.lg { width: 85%; }
+.sk-hero { height: 148px; margin-bottom: 14px; border-radius: var(--radius); }
+.sk-map { height: 300px; border-radius: var(--radius); }
+.sk-item { height: 66px; margin-bottom: 11px; border-radius: var(--radius); }
+.sk-chip { height: 62px; border-radius: var(--radius-sm); }
+.sk-row { height: 44px; margin-bottom: 8px; border-radius: 8px; }
