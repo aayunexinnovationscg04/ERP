@@ -94,13 +94,13 @@ ERP & Billing
 AI Analytics
     [ ] Mileage / fuel / maintenance / delay prediction, route optimization      (Phase 3)
 
-FRONTEND (owner-erp Vue app) - not started yet
-    [ ] Login (JWT)
-    [ ] Dashboard (KPI tiles + live fleet map + alerts feed)
-    [ ] Fleet list (status dots, last seen, speed, fuel)
-    [ ] Vehicle detail (live Leaflet map + route history playback)
-    [ ] Alerts page (acknowledge)
-    [ ] Geofences page (draw + manage)
+FRONTEND (owner-erp Vue app) - LIVE on nginx :8090
+    [x] Login (JWT + refresh)
+    [x] Dashboard (KPI tiles + live Leaflet fleet map + alerts feed, 15s polling)
+    [x] Fleet list (freshness dots, last seen, speed, fuel)
+    [x] Vehicle detail (live map + route history + telemetry panel + send command)
+    [x] Alerts page (acknowledge)
+    [ ] Geofences page (draw + manage)   <-- API ready; UI pending
 
 
 ================================================================================
@@ -132,8 +132,8 @@ FRONTEND (owner-erp Vue app) - not started yet
     [ ] Platform monitoring (API/server/DB health, error/audit logs)
     [ ] Fraud monitoring / fuel-theft analytics / global reports
     [ ] Blocked/rejected ingest view
-    [~] superadmin-erp Vue app (RBAC backend done + Django Admin works now;
-        dedicated Vue UI being built)
+    [x] superadmin-erp Vue app LIVE on nginx :8091 - Users (create/edit role+company),
+        Role Management (matrix editor), per-member override editor (grant/deny/default)
 
 
 ================================================================================

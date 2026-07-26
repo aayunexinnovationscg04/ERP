@@ -7,11 +7,13 @@ source-of-truth copies of what's installed on the box.
 | Port | Service | Scope | Purpose |
 |------|---------|-------|---------|
 | 80 / 443 | **Caddy** | public | legacy device endpoint (`/api/telemetry` → old receiver on :8080). Unchanged. |
-| 8090 | **nginx** | public | Fuel Guard X ERP front door (this setup) |
+| 8090 | **nginx** | public | **Owner ERP** SPA + API |
+| 8091 | **nginx** | public | **Super Admin ERP** SPA + API |
 | 8000 | **gunicorn** | local | Django API + admin (`fuelguardx.service`) |
 | 5432 | PostgreSQL | local | database |
 
-nginx runs on **8090** deliberately so it does not collide with Caddy on 80/443.
+nginx runs on **8090/8091** deliberately so it does not collide with Caddy on 80/443.
+Both server blocks are in the one `nginx-fuelguardx.conf`. The Driver ERP will add :8092.
 
 ## Components
 - **`fuelguardx.service`** → `/etc/systemd/system/fuelguardx.service`
@@ -40,9 +42,13 @@ tail -f /var/log/nginx/fuelguardx.error.log
 # collect static after frontend/admin changes
 cd /root/erp/backend && .venv/bin/python manage.py collectstatic --noinput
 
-# deploy the Owner SPA (once built)
+# deploy the Owner SPA (:8090)
 cd /root/erp/owner-erp && npm run build
 rm -rf /var/www/fuelguardx/owner && cp -r dist /var/www/fuelguardx/owner
+
+# deploy the Super Admin SPA (:8091)
+cd /root/erp/superadmin-erp && npm run build
+rm -rf /var/www/fuelguardx/superadmin && cp -r dist /var/www/fuelguardx/superadmin
 ```
 
 ## Not yet done
