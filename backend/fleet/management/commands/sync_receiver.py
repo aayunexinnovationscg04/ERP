@@ -73,6 +73,10 @@ class Command(BaseCommand):
         # log truncated/rotated -> re-scan from start (seq-dedup guards duplicates)
         if offset > os.path.getsize(path):
             offset = 0
+        # Only the first run / a reset re-reads already-seen lines, so dedup there.
+        # The normal incremental path reads genuinely-new lines only -> skip the
+        # per-row existence query (keeps each run O(new lines), no JSONB scan).
+        dedup = offset == 0
 
         imported = skipped = 0
         with open(path, encoding="utf-8") as fh:
@@ -100,7 +104,7 @@ class Command(BaseCommand):
                     device.save(update_fields=["company"])
 
                 seq = e.get("seq")
-                if seq is not None and Telemetry.objects.filter(
+                if dedup and seq is not None and Telemetry.objects.filter(
                         device=device, raw___seq=seq).exists():
                     skipped += 1
                     continue

@@ -38,16 +38,33 @@ One HTTPS host, path-routed, TLS by Caddy → nginx (loopback) → gunicorn → 
 - PostgreSQL bound to `127.0.0.1`.
 - Default passwords rotated → `deploy/PILOT_CREDENTIALS.txt` (gitignored).
 
+## 3b. Live data pipeline (device → ERP)
+
+The device posts to the **legacy receiver** (`/root/receiver-dashboard/data/events.jsonl`,
+append-only). A **bridge** imports new rows into the ERP every 60s so the ERP stays live:
+`fuelguardx-sync.timer` → `manage.py sync_receiver`. Identity is the fixed **`device_id`**
+only (client IP is never used for identity); a byte-offset cursor + `(device,_seq)` dedup make
+it idempotent and O(new rows). So the moment the device transmits, the ERP reflects it within
+~1 min. (If the ERP shows stale data, check the device is powered/in coverage — the Platform
+Health page shows a "Stale" badge when the newest record is >30 min old.)
+
+## 3c. Access model
+
+Super Admin has full read + write + customization everywhere. Every other role can **view**
+their data but cannot **change** anything until a Super Admin sets that user's `can_edit`
+flag (`CanWriteOrReadOnly` enforces this on geofence CRUD, alert acknowledge, device command).
+`/api/auth/me` returns `may_write` so the UIs hide edit controls for view-only users.
+
 ## 4. Pre-go-live checklist
 
 - [ ] Change all pilot passwords again and distribute over a secure channel.
 - [ ] Set up **PostgreSQL backups** (nightly `pg_dump` + offsite copy). NOT yet configured.
 - [ ] Confirm Let's Encrypt auto-renew (Caddy handles it; verify after ~60 days).
-- [ ] Decide device cutover plan: when moving the device from the legacy Caddy receiver
-      to the Django ingest, issue a **strong per-device INGEST token** (current token
-      `fuelguardx` is firmware-baked and weak) and re-enable `/api/telemetry` in nginx.
+- [ ] Device data reaches the ERP via the receiver bridge (above). If you later point the
+      device straight at the Django `/api/telemetry`, issue a **strong per-device INGEST token**
+      first (current `fuelguardx` is firmware-baked and weak) and re-enable it in nginx.
 - [ ] Add uptime monitoring / alerting on `/api/health` and `/api/admin/health`.
-- [ ] Optional: relocate the project out of `/root` (e.g. `/opt/fuelguardx`) so gunicorn
+- [ ] Optional: relocate the project out of `/root` (e.g. `/opt/fuelguardx`) so gunicorn/sync
       can drop from root to an unprivileged user.
 
 ## 5. Blocked / out-of-scope (needs hardware or paid APIs)
@@ -73,6 +90,8 @@ These are built-to-spec but cannot be truthfully "completed" in software alone:
 systemctl status fuelguardx            # gunicorn (Django API)
 systemctl status nginx caddy postgresql
 systemctl status fuelguardx-offline.timer   # marks devices offline every 2 min
+systemctl status fuelguardx-sync.timer      # receiver->ERP bridge every 60s
+journalctl -u fuelguardx-sync.service -f     # watch new device data flow in
 
 # logs
 journalctl -u fuelguardx -f
