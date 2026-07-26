@@ -135,22 +135,60 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 50,
+    # Brute-force / abuse throttling. Anonymous hits (login, ingest) are the hot
+    # target, so they get the tightest bucket via the 'login' scope on the view.
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "60/min",
+        "user": "2000/hour",
+        "login": "10/min",
+    },
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=12),
+    # Short-lived access token; the SPAs silently refresh on 401. Refresh is 7 days.
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-# --- CORS (Vue dev servers) --------------------------------------------
+# --- CORS ---------------------------------------------------------------
+# In production the SPAs are served same-origin (erp.aayunexinnovations.com), so
+# CORS is not needed there. This allowlist only exists for local Vite dev servers.
 CORS_ALLOWED_ORIGINS = env_list(
     "CORS_ALLOWED_ORIGINS",
     "http://localhost:5173,http://localhost:5174,http://localhost:5175",
 )
+CORS_ALLOW_CREDENTIALS = False  # we use bearer tokens, never cookies, cross-origin
 
 # --- device ingest ------------------------------------------------------
 INGEST_TOKEN = env("INGEST_TOKEN", "fuelguardx")
+
+
+# --- production security -------------------------------------------------
+# Django runs behind Caddy (TLS) -> nginx -> gunicorn (plain HTTP on loopback).
+# Trust the proxy's X-Forwarded-Proto so request.is_secure() is correct, then
+# turn on the cookie/redirect/HSTS protections that depend on it.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_TRUSTED_ORIGINS = env_list(
+    "CSRF_TRUSTED_ORIGINS", "https://erp.aayunexinnovations.com"
+)
+X_FRAME_OPTIONS = "DENY"                     # no framing of Django admin
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True             # admin session cookie: HTTPS only
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    # HSTS is also set at the Caddy edge; setting it here is belt-and-suspenders
+    # for any response Django emits directly.
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False    # only erp/dashboard are on this apex
+    SECURE_HSTS_PRELOAD = False
 
 # Derivation defaults (per-company overrides live in core.CompanySettings)
 DERIVATION_DEFAULTS = {

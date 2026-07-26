@@ -27,5 +27,8 @@ http://31.42.125.144, http://:80 {
 #   /              -> redirects to /dealer/
 # Caddy auto-issues + renews the cert and redirects HTTP->HTTPS.
 erp.aayunexinnovations.com {
+	# HSTS belongs at the TLS terminator. Other security headers come from nginx.
+	header Strict-Transport-Security "max-age=31536000"
+	header -Server
 	reverse_proxy 127.0.0.1:8090
 }

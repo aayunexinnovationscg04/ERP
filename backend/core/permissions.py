@@ -25,6 +25,14 @@ class IsOwnerOrAdmin(BasePermission):
         ))
 
 
+class IsDriver(BasePermission):
+    """A driver account. Sees only their own assigned vehicle's data."""
+
+    def has_permission(self, request, view):
+        u = request.user
+        return bool(u and u.is_authenticated and u.role == User.Role.DRIVER)
+
+
 class CompanyScopedQuerysetMixin:
     """Filter a viewset's queryset to the caller's company.
 

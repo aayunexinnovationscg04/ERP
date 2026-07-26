@@ -5,6 +5,10 @@ Wants=postgresql.service
 
 [Service]
 Type=notify
+# NOTE: runs as root only because the code lives under /root (mode 700). The
+# sandbox directives below shrink the blast radius. To drop to an unprivileged
+# user later, relocate the project out of /root (e.g. /opt/fuelguardx) and set
+# User=fuelguardx + ReadWritePaths.
 User=root
 WorkingDirectory=/root/erp/backend
 ExecStart=/root/erp/backend/.venv/bin/gunicorn config.wsgi:application \
@@ -16,6 +20,18 @@ ExecStart=/root/erp/backend/.venv/bin/gunicorn config.wsgi:application \
 Restart=on-failure
 RestartSec=3
 KillMode=mixed
+
+# --- sandboxing / hardening ---
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectControlGroups=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 
 [Install]
 WantedBy=multi-user.target
