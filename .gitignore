@@ -1,0 +1,39 @@
+# ---- Python / Django ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+*.sqlite3
+db.sqlite3
+/backend/staticfiles/
+/backend/media/
+local_settings.py
+
+# ---- Secrets / env ----
+.env
+.env.*
+!.env.example
+*.pem
+config.local.json
+
+# ---- Node / Vue / Vite ----
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+.npm/
+.pnpm-store/
+
+# ---- Logs / data ----
+*.log
+/backend/data/
+/data/
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+.DS_Store
+*.swp
