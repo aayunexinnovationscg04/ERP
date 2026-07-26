@@ -14,7 +14,7 @@ PUBLIC LINKS (open in a browser)  --  ALL ERPs on ONE subdomain, HTTPS via Caddy
 --------------------------------------------------------------------------------
   Owner / Company ERP  https://erp.aayunexinnovations.com/dealer/   login: owner1 / owner123
   Super Admin ERP      https://erp.aayunexinnovations.com/admin/    login: admin  / admin123
-  Driver ERP (pilot)   https://erp.aayunexinnovations.com/pilot/    (placeholder - app not built yet)
+  Driver ERP (pilot)   https://erp.aayunexinnovations.com/pilot/    login: driver1 / (see creds file)
   Django Admin panel   https://erp.aayunexinnovations.com/django-admin/   login: admin / admin123
   Bare host            https://erp.aayunexinnovations.com/          -> redirects to /dealer/
   Receiver Dashboard   https://dashboard.aayunexinnovations.com     login: admin / admin123
@@ -94,6 +94,11 @@ TLS / HTTPS  (DONE)
 
 TEST / DEV LOGINS (pilot only - CHANGE BEFORE PRODUCTION)
 --------------------------------------------------------------------------------
-  admin  / admin123   -> superadmin (Super Admin ERP + Django admin)
-  owner1 / owner123   -> owner of "Aayunex Transport" (Owner ERP)
+  The old weak passwords (admin123 / owner123) were ROTATED to strong random ones
+  on 2026-07-26. Passwords are NOT stored in this committed file anymore.
+  See the gitignored file (server only, mode 600):
+      /root/erp/deploy/PILOT_CREDENTIALS.txt
+  Users:  admin  -> Super Admin ERP + Django admin
+          owner1 -> Owner ERP ("Aayunex Transport")
+          driver1 -> Driver ERP (assigned to CG04-TEST-01 / esp32-01)
 ================================================================================

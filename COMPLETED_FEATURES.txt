@@ -106,16 +106,19 @@ FRONTEND (owner-erp Vue app) - LIVE on nginx :8090
 
 
 ================================================================================
-3. DRIVER ERP   (Phase 2)
+3. DRIVER ERP   -- LIVE at https://erp.aayunexinnovations.com/pilot/
 ================================================================================
-    [ ] Driver login
-    [ ] Assigned vehicle + fuel status + current route
-    [ ] Trip operations (start / stop / status) via command queue
-    [ ] Route guidance + ETA
-    [ ] Driver info (attendance / performance / salary / tasks)
-    [ ] Driver alerts (overspeed / route / fuel / security / emergency)
-    [ ] Navigation (optimized route / traffic / delay)   <-- needs maps API (Phase 3)
-    NOTE: driver-erp/ folder scaffolded (empty placeholder)
+    [x] Driver login (JWT; role=DRIVER; self-scoped)
+    [x] Assigned vehicle + live status + current route (map) + fuel-cap/GPS chips
+    [x] Driver alerts (safety/security notices for their vehicle)
+    [x] Trip history for their vehicle
+    [x] Backend: IsDriver permission + /api/driver/{summary,vehicle,vehicle/telemetry,
+        trips,alerts}; role isolation verified (driver 403 on owner endpoints)
+    [x] Mobile-first Vue app (bottom-tab shell), BLUE theme; hash-routed, base=/pilot/
+    [!] Fuel status shows cap lock + GPS today; litres inert until sensor reports (see blocker)
+    [ ] Trip start/stop via command queue (device 'recording' is automatic today; P2)
+    [ ] Route guidance + ETA / navigation   <-- needs maps routing API (Phase 3)
+    [ ] Driver info (attendance / performance / salary / tasks)   (Phase 2)
 
 
 ================================================================================

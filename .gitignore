@@ -17,6 +17,9 @@ local_settings.py
 !.env.example
 *.pem
 config.local.json
+# rotated pilot login credentials — never commit
+PILOT_CREDENTIALS.txt
+**/PILOT_CREDENTIALS.txt
 
 # ---- Node / Vue / Vite ----
 node_modules/

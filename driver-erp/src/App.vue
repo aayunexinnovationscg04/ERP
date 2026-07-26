@@ -1,37 +1,42 @@
 <template>
   <div v-if="isLogin"><router-view /></div>
-  <div v-else class="shell">
-    <header class="appbar">
+  <div v-else class="app">
+    <!-- mobile top bar with hamburger (hidden on desktop) -->
+    <header class="mobilebar">
+      <button class="hamburger" aria-label="Open menu" @click="menuOpen = true">☰</button>
       <div class="brand">⛽ <span>Fuel Guard X</span></div>
-      <div class="who">{{ auth.user?.username }}</div>
+      <div class="spacer"></div>
     </header>
 
-    <main class="screen"><router-view /></main>
+    <!-- drawer backdrop (mobile only) -->
+    <div class="backdrop" :class="{ show: menuOpen }" @click="menuOpen = false"></div>
 
-    <nav class="tabbar">
-      <router-link to="/" class="tab">
-        <span class="ic">🚚</span><span>My Truck</span>
-      </router-link>
-      <router-link to="/trips" class="tab">
-        <span class="ic">🛣️</span><span>Trips</span>
-      </router-link>
-      <router-link to="/alerts" class="tab">
-        <span class="ic">🔔</span><span>Alerts</span>
-      </router-link>
-      <a class="tab" @click="logout">
-        <span class="ic">⏻</span><span>Log out</span>
-      </a>
-    </nav>
+    <!-- side navbar (desktop) / slide-in drawer (mobile) -->
+    <aside class="sidebar" :class="{ open: menuOpen }">
+      <div class="brand side-brand">⛽ <span>Fuel Guard X</span></div>
+      <nav class="nav" @click="menuOpen = false">
+        <router-link to="/"><span class="ic">🚚</span> My Truck</router-link>
+        <router-link to="/trips"><span class="ic">🛣️</span> Trips</router-link>
+        <router-link to="/alerts"><span class="ic">🔔</span> Alerts</router-link>
+      </nav>
+      <div class="spacer" style="flex:1"></div>
+      <div class="muted" style="font-size:12px">{{ auth.user?.username }} · driver</div>
+      <button style="margin-top:12px" @click="logout">Log out</button>
+    </aside>
+
+    <main class="main"><router-view /></main>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { auth, clearAuth } from './auth'
 
 const route = useRoute()
 const router = useRouter()
 const isLogin = computed(() => route.path === '/login')
+const menuOpen = ref(false)
+watch(() => route.path, () => { menuOpen.value = false })
 function logout() { clearAuth(); router.push('/login') }
 </script>
