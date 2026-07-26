@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-// Owner ERP SPA. In production it is served by nginx at the root of :8090, so API
-// calls are same-origin ("/api/..."). In dev, proxy /api to Django on :8000.
+// Owner ERP SPA. In production nginx serves it under /dealer/ on erp.aayunexinnovations.com;
+// API calls are same-origin ("/api/..."). base must match the nginx location so built
+// asset URLs resolve to /dealer/assets/... In dev, proxy /api to Django on :8000.
 export default defineConfig({
+  base: '/dealer/',
   plugins: [vue()],
   server: {
     port: 5173,

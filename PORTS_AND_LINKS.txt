@@ -10,22 +10,28 @@ passwords below are for the pilot only - CHANGE THEM BEFORE PRODUCTION.
 ================================================================================
 
 
-PUBLIC LINKS (open in a browser)
+PUBLIC LINKS (open in a browser)  --  ALL ERPs on ONE subdomain, HTTPS via Caddy
 --------------------------------------------------------------------------------
-  Owner ERP            http://31.42.125.144:8090          login: owner1 / owner123
-  Super Admin ERP      http://31.42.125.144:8091          login: admin  / admin123
-  Django Admin panel   http://31.42.125.144:8090/admin/   login: admin  / admin123
-  Receiver Dashboard   https://dashboard.aayunexinnovations.com   login: admin / admin123
-     (legacy device dashboard - the ONLY one on HTTPS, via Caddy)
+  Owner / Company ERP  https://erp.aayunexinnovations.com/dealer/   login: owner1 / owner123
+  Super Admin ERP      https://erp.aayunexinnovations.com/admin/    login: admin  / admin123
+  Driver ERP (pilot)   https://erp.aayunexinnovations.com/pilot/    (placeholder - app not built yet)
+  Django Admin panel   https://erp.aayunexinnovations.com/django-admin/   login: admin / admin123
+  Bare host            https://erp.aayunexinnovations.com/          -> redirects to /dealer/
+  Receiver Dashboard   https://dashboard.aayunexinnovations.com     login: admin / admin123
+     (legacy device dashboard - separate subdomain, also HTTPS via Caddy)
+
+  HOW IT ROUTES: Caddy terminates TLS for erp.aayunexinnovations.com and reverse-
+  proxies to nginx :8090, which path-routes: /dealer/ /admin/ /pilot/ (SPAs),
+  /api/ + /django-admin/ (Django). Direct http://31.42.125.144:8090/... still works
+  for on-server testing but the public, TLS URLs above are the ones to use.
 
 
 BACKEND API (public, through nginx)
 --------------------------------------------------------------------------------
-  Base (Owner front door)       http://31.42.125.144:8090/api/
-  Base (Super Admin front door) http://31.42.125.144:8091/api/
-  Health check                  http://31.42.125.144:8090/api/health   -> {"ok":true}
-  Auth login (POST)             http://31.42.125.144:8090/api/auth/login
-     (Same API is served by both nginx front doors; use either.)
+  Base                          https://erp.aayunexinnovations.com/api/
+  Health check                  https://erp.aayunexinnovations.com/api/health  -> {"ok":true}
+  Auth login (POST)             https://erp.aayunexinnovations.com/api/auth/login
+     (One shared API behind all three ERP paths; same-origin, so SPAs call /api/... )
 
 
 DEVICE TELEMETRY (HTTP ONLY - required, the SIM800L cannot do TLS)
@@ -57,34 +63,33 @@ INTERNAL SERVICES (127.0.0.1 = reachable only from inside the VPS)
 
 FULL PORT MAP
 --------------------------------------------------------------------------------
-  Port   Scope        Service                        Public link
-  22     public       SSH                            ssh root@31.42.125.144
-  80     public       Caddy (device HTTP)            http://31.42.125.144/api/telemetry
-  443    public       Caddy (HTTPS, legacy dash)     https://dashboard.aayunexinnovations.com
-  8090   public       nginx -> Owner ERP + API       http://31.42.125.144:8090
-  8091   public       nginx -> Super Admin ERP + API http://31.42.125.144:8091
-  8092   (planned)    nginx -> Driver ERP            http://31.42.125.144:8092  (not built yet)
-  8000   local-only   Django / gunicorn              (internal, via nginx)
-  8080   local-only   old receiver-dashboard         (internal, via Caddy)
-  5432   local-only   PostgreSQL                     (internal, private)
-  2019   local-only   Caddy admin API                (internal)
+  Port   Scope        Service                          Public link
+  22     public       SSH                              ssh root@31.42.125.144
+  80     public       Caddy (device HTTP + ACME)       http://31.42.125.144/api/telemetry
+  443    public       Caddy (HTTPS: ERP + legacy dash) https://erp.aayunexinnovations.com
+  8090   local->Caddy nginx -> all 3 ERPs + API        (public via erp.aayunex... over 443)
+  8000   local-only   Django / gunicorn                (internal, via nginx)
+  8080   local-only   old receiver-dashboard           (internal, via Caddy)
+  5432   local-only   PostgreSQL                       (internal, private)
+  2019   local-only   Caddy admin API                  (internal)
+  NOTE: nginx :8091 retired - Super Admin now lives at erp.aayunex.../admin/ (path,
+  not a port). :8092 no longer needed either; Driver ERP will be the /pilot/ path.
 
 
 WHY 127.0.0.1 vs 31.42.125.144
 --------------------------------------------------------------------------------
-  31.42.125.144:PORT = public front doors you actually use (nginx 8090/8091, Caddy 80/443).
-  127.0.0.1:PORT     = internal engine parts (gunicorn, Postgres) that only nginx
-                       talks to. The backend IS public - through nginx - not on its
-                       own exposed port. This is standard, secure architecture.
+  Public traffic now enters ONLY on 443 (Caddy) and 80 (device + ACME). Caddy
+  proxies erp.aayunexinnovations.com -> nginx :8090 -> gunicorn :8000. nginx and
+  gunicorn are internal engine parts; the public never hits 8090/8000 directly.
+  This is standard, secure architecture and needs no extra provider-firewall ports.
 
 
-REACHABILITY CAVEAT
+TLS / HTTPS  (DONE)
 --------------------------------------------------------------------------------
-  Ports 8090/8091 work on the server and the OS firewall is open, but the CLOUD
-  PROVIDER firewall may only allow 80/443/22 from the internet. If the ERP links
-  don't open from your browser, either open 8090/8091 in the provider panel, OR
-  move the ERPs onto the domain via 443 (e.g. owner.aayunexinnovations.com) so no
-  extra ports are needed.
+  erp.aayunexinnovations.com -> A record 31.42.125.144 (IPv4 only; AAAA removed so
+  Let's Encrypt validates against the VPS). Caddy auto-issued + auto-renews the cert.
+  All ERP paths are HTTPS; http:// is 308-redirected to https:// by Caddy.
+  Reachability caveat is resolved: no 8090/8091 provider-firewall ports required.
 
 
 TEST / DEV LOGINS (pilot only - CHANGE BEFORE PRODUCTION)

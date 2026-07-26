@@ -19,15 +19,13 @@ http://31.42.125.144, http://:80 {
 }
 
 # ---- Fuel Guard X ERP (automatic Let's Encrypt HTTPS) ----
-# Caddy auto-issues + renews certs and redirects HTTP->HTTPS for these hosts.
-# Each proxies to the nginx app that serves the SPA + Django API.
-dealer.aayunexinnovations.com {
+# ONE subdomain serves all three ERPs via path routing on nginx :8090:
+#   /dealer/       -> Owner / Company ERP
+#   /admin/        -> Super Admin ERP
+#   /pilot/        -> Driver ERP (placeholder for now)
+#   /api/ + /django-admin/ -> Django backend + admin panel
+#   /              -> redirects to /dealer/
+# Caddy auto-issues + renews the cert and redirects HTTP->HTTPS.
+erp.aayunexinnovations.com {
 	reverse_proxy 127.0.0.1:8090
-}
-admin.aayunexinnovations.com {
-	reverse_proxy 127.0.0.1:8091
-}
-# Driver / pilot app not built yet — placeholder until nginx :8092 exists.
-pilot.aayunexinnovations.com {
-	respond "Fuel Guard X — Pilot app coming soon" 200
 }

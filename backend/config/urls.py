@@ -9,7 +9,8 @@ def health(_request):
     return JsonResponse({"ok": True, "service": "fuelguardx-api"})
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    # Django admin panel moved off /admin/ so the Super Admin Vue ERP can live at /admin/.
+    path("django-admin/", admin.site.urls),
     path("api/health", health, name="health"),
     # device ingest (firmware-compatible)
     path("api/", include("ingest.urls")),

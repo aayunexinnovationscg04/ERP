@@ -22,7 +22,9 @@ Full plan lives in docs/PHASE1_SPEC.md. This file tracks WHAT IS ACTUALLY DONE.
 [x] gunicorn systemd service (fuelguardx.service) running Django on 127.0.0.1:8000, enabled at boot
 [x] Static served by nginx from /var/www/fuelguardx/static (www-data readable)
 [x] Deploy configs versioned in deploy/ (nginx conf, systemd unit, README)
-[ ] TLS/HTTPS for the ERP (plain HTTP on 8090 for now; add certbot or move to 443 later)
+[x] TLS/HTTPS for the ERP - LIVE at https://erp.aayunexinnovations.com (Caddy auto-cert)
+    Single subdomain, path-routed: /dealer/ (Owner), /admin/ (Super Admin), /pilot/
+    (Driver placeholder), /api/ + /django-admin/ (backend). nginx :8090 behind Caddy 443.
 
 
 ================================================================================
