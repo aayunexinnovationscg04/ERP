@@ -7,6 +7,8 @@
     </div>
   </div>
 
+  <p v-if="!canWrite" class="viewonly" style="margin:-8px 0 14px"><Lock :size="14" /> View-only — ask an admin to enable editing.</p>
+
   <div v-if="loading" style="padding:2px 0">
     <div class="skel sk-row" v-for="n in 5" :key="n"></div>
   </div>
@@ -24,7 +26,7 @@
           <td>{{ a.vehicle_reg || a.device_id || '—' }}</td>
           <td class="muted">{{ ago(a.created_at) }}</td>
           <td>
-            <button v-if="a.status === 'open'" @click="ack(a)">Acknowledge</button>
+            <button v-if="a.status === 'open' && canWrite" @click="ack(a)">Acknowledge</button>
             <span v-else class="muted">{{ a.status }}</span>
           </td>
         </tr>
@@ -35,11 +37,14 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
+import { Lock } from 'lucide-vue-next'
 import { getAlerts, ackAlert } from '../api'
+import { auth } from '../auth'
 import { ago } from '../util'
 import { toast } from '../toast'
 
+const canWrite = computed(() => auth.user?.may_write !== false)
 const alerts = ref([])
 const filter = ref('open')
 const loading = ref(true)

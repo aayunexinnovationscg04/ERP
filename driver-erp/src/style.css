@@ -179,6 +179,25 @@ h2 { font-size: 15px; margin: 0; }
 
 .map { height: 300px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
 
+/* ---- live position marker (pulsing) ---- */
+.live-marker { background: none; border: none; }
+.live-dot{width:14px;height:14px;border-radius:50%;background:#2563eb;border:2px solid #fff;box-shadow:0 0 0 0 rgba(37,99,235,.5);animation:pulse 1.8s var(--ease) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(37,99,235,.45)}70%{box-shadow:0 0 0 16px rgba(37,99,235,0)}100%{box-shadow:0 0 0 0 rgba(37,99,235,0)}}
+.leaflet-popup-content-wrapper{border-radius:12px}
+
+/* ---- speed sparkline ---- */
+.viz-card { padding: 14px 16px; margin-bottom: 14px; }
+.viz-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.viz-head .l { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
+.viz-head .m { color: var(--muted); font-size: 12px; }
+.viz-body { display: flex; align-items: center; gap: 14px; }
+.gauge { flex: 0 0 auto; line-height: 0; }
+.spark { display: block; flex: 1 1 auto; min-width: 0; width: 100%; height: 90px; }
+@media (max-width: 380px) {
+  .viz-body { flex-direction: column; align-items: stretch; gap: 8px; }
+  .gauge { align-self: center; }
+}
+
 /* ---- list items (trips / alerts) ---- */
 .item { padding: 15px 16px; margin-bottom: 11px; display: flex; justify-content: space-between; gap: 12px; }
 .item:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }

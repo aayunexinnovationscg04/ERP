@@ -15,8 +15,6 @@ const emit = defineEmits(['select'])
 const el = ref(null)
 let map, markerLayer, trackLayer
 
-const COLOR = { active: '#22c55e', idle: '#f59e0b', offline: '#64748b', maintenance: '#94a3b8' }
-
 function draw() {
   if (!map) return
   markerLayer.clearLayers()
@@ -25,17 +23,19 @@ function draw() {
 
   props.markers.forEach((m) => {
     if (m.lat == null || m.lng == null) return
-    const c = COLOR[m.status] || '#38bdf8'
-    const mk = L.circleMarker([m.lat, m.lng], {
-      radius: 9, color: '#0b1220', weight: 2, fillColor: c, fillOpacity: 1,
-    }).bindTooltip(m.label || String(m.id), { permanent: false })
+    const icon = L.divIcon({
+      className: 'live-marker', html: '<span class="live-dot"></span>',
+      iconSize: [14, 14], iconAnchor: [7, 7],
+    })
+    const mk = L.marker([m.lat, m.lng], { icon })
+      .bindTooltip(m.label || String(m.id), { permanent: false })
     mk.on('click', () => emit('select', m.id))
     mk.addTo(markerLayer)
     pts.push([m.lat, m.lng])
   })
 
   if (props.track.length > 1) {
-    L.polyline(props.track, { color: '#38bdf8', weight: 3, opacity: 0.8 }).addTo(trackLayer)
+    L.polyline(props.track, { color: '#2563eb', weight: 4, opacity: 0.85, lineJoin: 'round' }).addTo(trackLayer)
     L.circleMarker(props.track[0], { radius: 6, color: '#22c55e', fillColor: '#22c55e', fillOpacity: 1 })
       .bindTooltip('Start').addTo(trackLayer)
     L.circleMarker(props.track[props.track.length - 1], { radius: 6, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1 })
@@ -48,8 +48,8 @@ function draw() {
 
 onMounted(() => {
   map = L.map(el.value, { zoomControl: true }).setView([21.145, 81.664], 12)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap', maxZoom: 19,
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 20, attribution: '© OpenStreetMap © CARTO',
   }).addTo(map)
   markerLayer = L.layerGroup().addTo(map)
   trackLayer = L.layerGroup().addTo(map)

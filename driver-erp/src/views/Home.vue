@@ -42,6 +42,33 @@
       </div>
     </div>
 
+    <!-- speed data viz -->
+    <div v-if="spark" class="card viz-card">
+      <div class="viz-head">
+        <span class="l">Speed — last {{ spark.n }} points</span>
+        <span class="spacer"></span>
+        <span class="m">max {{ spark.max }} km/h</span>
+      </div>
+      <div class="viz-body">
+        <div v-if="gauge" class="gauge">
+          <svg viewBox="0 0 120 66" width="112" height="62" role="img"
+               :aria-label="`Current speed ${gauge.speed} km/h out of 60 km/h reference`">
+            <path :d="gauge.track" fill="none" stroke="var(--surface-2)" stroke-width="9" stroke-linecap="round" />
+            <path :d="gauge.val" fill="none" stroke="var(--brand)" stroke-width="9" stroke-linecap="round" />
+            <text x="60" y="52" text-anchor="middle" font-size="22" font-weight="800" fill="var(--text)">{{ gauge.speed }}</text>
+            <text x="60" y="63" text-anchor="middle" font-size="9" fill="var(--muted)">km/h · ref 60</text>
+          </svg>
+        </div>
+        <svg class="spark" :viewBox="`0 0 ${spark.w} ${spark.h}`" preserveAspectRatio="none"
+             role="img" :aria-label="`Speed over the last ${spark.n} readings, currently ${spark.last} km/h, peak ${spark.max} km/h`">
+          <polyline :points="spark.area" fill="var(--brand)" fill-opacity=".10" stroke="none" />
+          <line x1="0" :y1="spark.base" :x2="spark.w" :y2="spark.base" stroke="var(--border)" stroke-width="1" vector-effect="non-scaling-stroke" />
+          <polyline :points="spark.line" fill="none" stroke="var(--brand)" stroke-width="1.5"
+                    stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+        </svg>
+      </div>
+    </div>
+
     <div v-if="summary.open_alerts" class="card item" style="border-color:var(--crit)">
       <div><div class="t ico"><Bell :size="16" /> {{ summary.open_alerts }} open alert{{ summary.open_alerts > 1 ? 's' : '' }}</div>
         <div class="d">Tap the Alerts tab to review</div></div>
@@ -66,6 +93,7 @@ import { getSummary, getMyTrack } from '../api'
 const loading = ref(true)
 const summary = ref({})
 const track = ref([])
+const speeds = ref([])
 let timer = null
 
 const assigned = computed(() => summary.value.assigned)
@@ -80,12 +108,47 @@ const markers = computed(() => {
 
 function fmt(n) { return n == null ? '—' : Math.round(n) }
 
+// speed sparkline (inline SVG, brand-colored, built from recent telemetry)
+const spark = computed(() => {
+  const arr = speeds.value.slice(-60)
+  if (arr.length < 2) return null
+  const w = 300, h = 90, pad = 8
+  const max = Math.max(...arr), min = Math.min(...arr)
+  const range = (max - min) || 1
+  const n = arr.length
+  const X = (i) => pad + (i / (n - 1)) * (w - pad * 2)
+  const Y = (val) => pad + (1 - (val - min) / range) * (h - pad * 2)
+  const line = arr.map((val, i) => `${X(i).toFixed(1)},${Y(val).toFixed(1)}`).join(' ')
+  const base = (h - pad).toFixed(1)
+  const area = `${X(0).toFixed(1)},${base} ${line} ${X(n - 1).toFixed(1)},${base}`
+  return { line, area, w, h, base, n, max: Math.round(max), last: Math.round(arr[n - 1]) }
+})
+
+// speed gauge (SVG arc) — current speed vs a 60 km/h reference
+const gauge = computed(() => {
+  const s = latest.value?.speed_kmph
+  if (s == null) return null
+  const cx = 60, cy = 44, r = 40
+  const pct = Math.max(0, Math.min(1, s / 60))
+  const polar = (deg) => {
+    const a = (deg * Math.PI) / 180
+    return [cx + r * Math.cos(a), cy - r * Math.sin(a)]
+  }
+  const arc = (endDeg) => {
+    const [x1, y1] = polar(180)
+    const [x2, y2] = polar(endDeg)
+    return `M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 0 0 ${x2.toFixed(1)} ${y2.toFixed(1)}`
+  }
+  return { track: arc(0), val: arc(180 - pct * 180), speed: Math.round(s) }
+})
+
 async function load() {
   try {
     summary.value = await getSummary()
     if (summary.value.assigned) {
       const pts = await getMyTrack(500)
       track.value = pts.filter((p) => p.has_gps_fix).map((p) => [p.latitude, p.longitude])
+      speeds.value = pts.filter((p) => p.speed_kmph != null).map((p) => p.speed_kmph)
     }
   } catch (e) { /* keep last good data */ }
   finally { loading.value = false }

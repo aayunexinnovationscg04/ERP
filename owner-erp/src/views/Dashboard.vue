@@ -36,6 +36,21 @@
         <FleetMap :markers="markers" @select="goVehicle" />
       </div>
       <div>
+        <template v-if="bars">
+          <p class="section-title">Open alerts by severity</p>
+          <div class="card" style="padding:14px 16px;margin-bottom:14px">
+            <svg class="bars" :viewBox="`0 0 ${bars.W} ${bars.H}`" preserveAspectRatio="xMidYMid meet"
+                 role="img" :aria-label="bars.label">
+              <line :x1="0" :y1="bars.base" :x2="bars.W" :y2="bars.base"
+                    stroke="var(--border)" stroke-width="1" vector-effect="non-scaling-stroke" />
+              <g v-for="b in bars.items" :key="b.label">
+                <rect :x="b.x" :y="b.y" :width="b.w" :height="b.h" rx="3" fill="var(--brand)" />
+                <text :x="b.cx" :y="b.y - 6" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)">{{ b.n }}</text>
+                <text :x="b.cx" :y="bars.H - 4" text-anchor="middle" font-size="11" fill="var(--muted)">{{ b.label }}</text>
+              </g>
+            </svg>
+          </div>
+        </template>
         <p class="section-title">Recent alerts</p>
         <div class="card" style="padding:6px 0">
           <table>
@@ -56,7 +71,7 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, ref, reactive } from 'vue'
+import { onMounted, onBeforeUnmount, ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { CircleCheck } from 'lucide-vue-next'
 import { auth } from '../auth'
@@ -68,7 +83,25 @@ const loading = ref(true)
 const s = ref({})
 const markers = ref([])
 const alerts = ref([])
+const sev = ref([])
 let timer
+
+// tiny bar chart of open alerts by severity (single brand accent)
+const bars = computed(() => {
+  const data = sev.value.filter((d) => d.n > 0)
+  if (!data.length) return null
+  const W = 300, H = 100, padX = 14, padTop = 22, padBottom = 22, gap = 16
+  const base = H - padBottom
+  const max = Math.max(...data.map((d) => d.n), 1)
+  const n = data.length
+  const bw = (W - padX * 2 - gap * (n - 1)) / n
+  const items = data.map((d, i) => {
+    const h = (d.n / max) * (base - padTop)
+    const x = padX + i * (bw + gap)
+    return { label: d.label, n: d.n, x, w: bw, h, y: base - h, cx: x + bw / 2 }
+  })
+  return { W, H, base, items, label: `Open alerts by severity: ${data.map((d) => `${d.label} ${d.n}`).join(', ')}` }
+})
 
 // KPI count-up (easeOutCubic, ~600ms) — first load only, honours reduced-motion
 const KPI_KEYS = ['vehicles_total', 'active', 'idle', 'offline', 'open_alerts', 'distance_today_km']
@@ -113,6 +146,8 @@ async function load() {
       .filter((v) => v.latest && v.latest.has_gps_fix)
       .map((v) => ({ id: v.id, lat: v.latest.latitude, lng: v.latest.longitude, label: v.registration_number, status: v.status }))
     alerts.value = al.slice(0, 8)
+    const order = [['critical', 'Critical'], ['warning', 'Warning'], ['info', 'Info']]
+    sev.value = order.map(([k, label]) => ({ label, n: al.filter((a) => a.severity === k).length }))
   } catch (e) { /* keep last good data */ }
   finally { loading.value = false }
 }

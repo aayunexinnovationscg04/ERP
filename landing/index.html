@@ -52,6 +52,24 @@
   .trust span{display:inline-flex;align-items:center;gap:8px}
   .dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.18)}
 
+  /* hero 3D globe */
+  .hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:36px;align-items:center}
+  .hero-copy{min-width:0}
+  .hero-visual{position:relative;min-width:0;display:flex;justify-content:flex-end}
+  .globe-wrap{position:relative;width:100%;max-width:460px;aspect-ratio:1/1}
+  /* CSS fallback orb — always present so the slot is never a blank box (shows if WebGL/Three fails) */
+  .globe-wrap::before{content:"";position:absolute;inset:10%;border-radius:50%;pointer-events:none;
+    background:
+      radial-gradient(circle at 36% 30%,rgba(124,192,255,.42),rgba(37,99,235,.14) 46%,transparent 70%),
+      radial-gradient(circle at 72% 76%,rgba(255,178,122,.32),transparent 60%);
+    filter:blur(3px);opacity:.75}
+  .globe-wrap canvas{position:relative;z-index:1;width:100%;height:100%;display:block}
+  @media(max-width:880px){
+    .hero-visual{position:absolute;inset:0;justify-content:center;align-items:center;pointer-events:none;z-index:0;opacity:.32}
+    .hero-copy{position:relative;z-index:1}
+    .globe-wrap{max-width:min(74vw,380px)}
+  }
+
   /* section */
   section{padding:74px 0}
   .kicker{font-size:13px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--blue)}
@@ -114,17 +132,26 @@
 
 <div class="hero">
   <div class="wrap">
-    <span class="eyebrow"><span class="dot"></span> Live pilot · 5–30 trucks</span>
-    <h1>Secure your fleet &amp; fuel,<br/><span class="grad">in real time.</span></h1>
-    <p class="sub">Fuel Guard X turns your ESP32 trackers into a live command centre — GPS tracking, geofencing, tamper &amp; fuel-security alerts — across three role-based portals on one shared backend.</p>
-    <div class="cta">
-      <a class="btn solid" href="/dealer/">Open Dealer portal →</a>
-      <a class="btn line" href="#portals">Explore portals</a>
-    </div>
-    <div class="trust">
-      <span><span class="dot"></span> Real-time telemetry</span>
-      <span><span class="dot"></span> Multi-tenant &amp; role-based</span>
-      <span><span class="dot"></span> HTTPS / Let's Encrypt</span>
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow"><span class="dot"></span> Live pilot · 5–30 trucks</span>
+        <h1>Secure your fleet &amp; fuel,<br/><span class="grad">in real time.</span></h1>
+        <p class="sub">Fuel Guard X turns your ESP32 trackers into a live command centre — GPS tracking, geofencing, tamper &amp; fuel-security alerts — across three role-based portals on one shared backend.</p>
+        <div class="cta">
+          <a class="btn solid" href="/dealer/">Open Dealer portal →</a>
+          <a class="btn line" href="#portals">Explore portals</a>
+        </div>
+        <div class="trust">
+          <span><span class="dot"></span> Real-time telemetry</span>
+          <span><span class="dot"></span> Multi-tenant &amp; role-based</span>
+          <span><span class="dot"></span> HTTPS / Let's Encrypt</span>
+        </div>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="globe-wrap">
+          <canvas id="globe"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -210,6 +237,204 @@
   } else {
     els.forEach(reveal);
   }
+</script>
+
+<!-- Three.js (vendored locally; served by nginx at /assets/). Falls back to unpkg. -->
+<script src="/assets/three.min.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById('globe');
+  if (!canvas) return;
+
+  var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches);
+
+  // --- WebGL capability probe (fail -> keep CSS orb fallback) ---
+  function webglOK() {
+    try {
+      var c = document.createElement('canvas');
+      return !!(window.WebGLRenderingContext &&
+        (c.getContext('webgl') || c.getContext('experimental-webgl')));
+    } catch (e) { return false; }
+  }
+
+  // --- ensure THREE is present; fall back to CDN if the local vendor 404s ---
+  function ensureThree(cb) {
+    if (window.THREE) return cb();
+    var s = document.createElement('script');
+    s.src = 'https://unpkg.com/three@0.160.0/build/three.min.js';
+    s.crossOrigin = 'anonymous';
+    s.onload = function () { cb(); };
+    s.onerror = function () { /* give up: CSS fallback orb stays visible */ };
+    document.head.appendChild(s);
+  }
+
+  function latLonToVec3(THREE, lat, lon, r) {
+    var phi = (90 - lat) * Math.PI / 180;
+    var theta = (lon + 180) * Math.PI / 180;
+    return new THREE.Vector3(
+      -r * Math.sin(phi) * Math.cos(theta),
+       r * Math.cos(phi),
+       r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+
+  function makeGlowTexture(THREE, r, g, b) {
+    var s = 64, cv = document.createElement('canvas');
+    cv.width = cv.height = s;
+    var ctx = cv.getContext('2d');
+    var grd = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    grd.addColorStop(0.0, 'rgba(' + r + ',' + g + ',' + b + ',1)');
+    grd.addColorStop(0.28, 'rgba(' + r + ',' + g + ',' + b + ',0.75)');
+    grd.addColorStop(1.0, 'rgba(' + r + ',' + g + ',' + b + ',0)');
+    ctx.fillStyle = grd; ctx.fillRect(0, 0, s, s);
+    var tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  function init() {
+    var THREE = window.THREE;
+    if (!THREE) return;
+    var wrap = canvas.parentElement;
+
+    var renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+    } catch (e) { return; } // keep CSS orb
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+    camera.position.set(0, 0, 6.2);
+
+    var root = new THREE.Group();
+    root.rotation.z = 0.28;
+    root.rotation.x = 0.16;
+    scene.add(root);
+
+    var R = 2;
+
+    // base sphere, lit blue on one side / orange on the other
+    var sphere = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(R, 5),
+      new THREE.MeshStandardMaterial({
+        color: 0x0e2247, roughness: 0.55, metalness: 0.15,
+        emissive: 0x0a1730, emissiveIntensity: 0.6,
+        transparent: true, opacity: 0.92
+      })
+    );
+    root.add(sphere);
+
+    // low-poly wireframe overlay
+    var wire = new THREE.LineSegments(
+      new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(R * 1.004, 3)),
+      new THREE.LineBasicMaterial({ color: 0x4f8cff, transparent: true, opacity: 0.26 })
+    );
+    root.add(wire);
+
+    // faint outer atmosphere ring
+    var halo = new THREE.Mesh(
+      new THREE.SphereGeometry(R * 1.06, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0x2c5cff, transparent: true, opacity: 0.05, side: THREE.BackSide })
+    );
+    root.add(halo);
+
+    // lighting: blue key + orange rim + soft ambient
+    scene.add(new THREE.AmbientLight(0x223355, 0.6));
+    var blue = new THREE.PointLight(0x4f8cff, 2.4, 0, 1.2); blue.position.set(-4, 3, 4); scene.add(blue);
+    var orange = new THREE.PointLight(0xff8a3d, 1.9, 0, 1.2); orange.position.set(4, -2, 3); scene.add(orange);
+
+    // fleet markers on the surface
+    var glowBlue = makeGlowTexture(THREE, 124, 192, 255);
+    var glowOrange = makeGlowTexture(THREE, 255, 160, 90);
+    var dotGeo = new THREE.SphereGeometry(0.045, 10, 10);
+    var pts = [[20, 78], [50, 9], [-15, -47], [38, -96], [35, 139], [-31, 150], [8, 38], [-1, 113]];
+    var sprites = [];
+    for (var i = 0; i < pts.length; i++) {
+      var pos = latLonToVec3(THREE, pts[i][0], pts[i][1], R * 1.01);
+      var isOrange = (i % 3 === 0);
+      var tex = isOrange ? glowOrange : glowBlue;
+      var col = isOrange ? 0xffb27a : 0xbfe0ff;
+      var spr = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: tex, blending: THREE.AdditiveBlending, transparent: true,
+        depthWrite: false, opacity: 0.95
+      }));
+      var base = 0.5;
+      spr.scale.setScalar(base);
+      spr.position.copy(pos);
+      spr.userData = { base: base, phase: i * 0.9 };
+      root.add(spr);
+      sprites.push(spr);
+      var dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: col }));
+      dot.position.copy(pos);
+      root.add(dot);
+    }
+
+    var running = false, raf = 0, start = performance.now();
+    function renderOnce() { renderer.render(scene, camera); }
+
+    function frame(now) {
+      if (!running) return;
+      var t = (now - start) / 1000;
+      root.rotation.y = t * 0.18;
+      for (var i = 0; i < sprites.length; i++) {
+        var s = sprites[i];
+        var p = 0.82 + 0.28 * Math.sin(t * 2.0 + s.userData.phase);
+        s.scale.setScalar(s.userData.base * p);
+      }
+      renderOnce();
+      raf = requestAnimationFrame(frame);
+    }
+    function play() {
+      if (running || reduce) return;
+      running = true; start = performance.now() - 0;
+      raf = requestAnimationFrame(frame);
+    }
+    function pause() {
+      running = false;
+      if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    }
+
+    function resize() {
+      var w = wrap.clientWidth, h = wrap.clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      if (!running) renderOnce(); // refresh static frame while paused / reduced-motion
+    }
+
+    resize();
+    if (reduce) { renderOnce(); } else { play(); }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) pause(); else play();
+    });
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) play(); else pause(); });
+      }, { threshold: 0.05 }).observe(wrap);
+    }
+    if ('ResizeObserver' in window) {
+      new ResizeObserver(resize).observe(wrap);
+    } else {
+      window.addEventListener('resize', resize);
+    }
+  }
+
+  // lazy init after load; skip entirely if WebGL is unavailable (CSS orb remains)
+  function boot() {
+    if (!webglOK()) return;
+    ensureThree(init);
+  }
+  if (document.readyState === 'complete') {
+    (window.requestIdleCallback || function (f) { setTimeout(f, 1); })(boot);
+  } else {
+    window.addEventListener('load', function () {
+      (window.requestIdleCallback || function (f) { setTimeout(f, 1); })(boot);
+    });
+  }
+})();
 </script>
 </body>
 </html>

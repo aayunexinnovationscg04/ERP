@@ -27,7 +27,9 @@
 
     <main class="main">
       <router-view v-slot="{ Component }">
-        <transition name="page" mode="out-in"><component :is="Component" /></transition>
+        <transition name="page" mode="out-in">
+          <div :key="$route.fullPath"><component :is="Component" /></div>
+        </transition>
       </router-view>
     </main>
   </div>

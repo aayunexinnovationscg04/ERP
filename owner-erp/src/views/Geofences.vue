@@ -1,10 +1,11 @@
 <template>
   <div class="topbar">
     <h1>Geofences</h1>
-    <button class="primary ico" @click="toggleCreate">
+    <button v-if="canWrite" class="primary ico" @click="toggleCreate">
       <component :is="createMode ? X : Plus" :size="16" />
       {{ createMode ? 'Cancel' : 'New zone' }}
     </button>
+    <p v-else class="viewonly"><Lock :size="14" /> View-only — ask an admin to enable editing.</p>
   </div>
 
   <!-- loading skeleton -->
@@ -84,13 +85,14 @@
               </td>
               <td><span class="badge" :style="badgeStyle(z.purpose)">{{ purposeLabel(z.purpose) }}</span></td>
               <td @click.stop>
-                <button class="ico" :class="{ primary: z.active }" @click="toggleActive(z)">
+                <button v-if="canWrite" class="ico" :class="{ primary: z.active }" @click="toggleActive(z)">
                   <component :is="z.active ? Eye : EyeOff" :size="15" />
                   {{ z.active ? 'Active' : 'Off' }}
                 </button>
+                <span v-else class="badge" :class="{ active: z.active, off: !z.active }">{{ z.active ? 'Active' : 'Off' }}</span>
               </td>
               <td @click.stop style="text-align:right">
-                <button class="ico" @click="remove(z)"><Trash2 :size="15" /></button>
+                <button v-if="canWrite" class="ico" @click="remove(z)"><Trash2 :size="15" /></button>
               </td>
             </tr>
           </tbody>
@@ -103,9 +105,12 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import L from 'leaflet'
-import { Plus, X, Save, MapPin, Trash2, Eye, EyeOff } from 'lucide-vue-next'
+import { Plus, X, Save, MapPin, Trash2, Eye, EyeOff, Lock } from 'lucide-vue-next'
 import { getGeofences, createGeofence, updateGeofence, deleteGeofence } from '../api'
+import { auth } from '../auth'
 import { toast } from '../toast'
+
+const canWrite = computed(() => auth.user?.may_write !== false)
 
 const PURPOSE = {
   allowed:       { label: 'Allowed',       color: '#16a34a', soft: 'rgba(22,163,74,.14)' },
@@ -251,8 +256,8 @@ async function load() {
 function initMap() {
   if (map || !mapEl.value) return
   map = L.map(mapEl.value, { zoomControl: true }).setView([21.145, 81.664], 12)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap', maxZoom: 19,
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 20, attribution: '© OpenStreetMap © CARTO',
   }).addTo(map)
   zoneLayer = L.layerGroup().addTo(map)
   draftLayer = L.layerGroup().addTo(map)

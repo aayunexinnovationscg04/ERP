@@ -1,4 +1,5 @@
 <template>
+  <div class="platform">
   <div class="topbar">
     <h1 class="ico"><Activity :size="20" /> Platform Health</h1>
     <div class="row">
@@ -84,7 +85,68 @@
     </div>
   </div>
 
+  <!-- distribution & utilization (monochrome inline-SVG viz) -->
+  <div v-if="loading && !h" class="grid-2" style="margin-top:20px">
+    <div class="card" style="padding:16px">
+      <div class="skel skel-line md"></div>
+      <div class="skel sk-row" v-for="n in 4" :key="n"></div>
+    </div>
+    <div class="card" style="padding:16px">
+      <div class="skel skel-line md"></div>
+      <div class="skel sk-row" v-for="n in 2" :key="n"></div>
+    </div>
+  </div>
+  <div v-else-if="h" class="grid-2" style="margin-top:20px">
+    <!-- users by role: horizontal bars, near-black on a muted track -->
+    <div class="card" style="padding:16px">
+      <p class="section-title" style="margin-bottom:14px">Users by role</p>
+      <div v-if="hasRoleData" class="barchart">
+        <div class="brow" v-for="d in roleData" :key="d.key">
+          <span class="blabel">{{ d.label }}</span>
+          <svg class="btrack" width="100%" height="12" role="img" :aria-label="`${d.label}: ${d.count} ${d.count === 1 ? 'user' : 'users'}`">
+            <rect width="100%" height="12" rx="3" fill="var(--surface-2)" />
+            <rect :width="barPct(d.count) + '%'" height="12" rx="3" fill="var(--brand)" />
+          </svg>
+          <span class="bval">{{ d.count }}</span>
+        </div>
+      </div>
+      <div v-else class="empty">No users yet</div>
+    </div>
+
+    <!-- utilization: progress meters (filled = online / active) -->
+    <div class="card" style="padding:16px">
+      <p class="section-title" style="margin-bottom:14px">Utilization</p>
+      <div class="meter">
+        <div class="mhead">
+          <span class="mlabel">Devices online</span>
+          <span class="mval" v-if="devMeter.total">{{ fmt(devMeter.online) }} / {{ fmt(devMeter.total) }}</span>
+          <span class="mval muted" v-else>None</span>
+        </div>
+        <svg class="btrack" width="100%" height="12" role="img"
+             :aria-label="`Devices online ${devMeter.online} of ${devMeter.total}`">
+          <rect width="100%" height="12" rx="3" fill="var(--surface-2)" />
+          <rect :width="devMeter.pct + '%'" height="12" rx="3" fill="var(--brand)" />
+        </svg>
+        <div class="msub muted">{{ devMeter.total ? devMeter.pct + '% online' : 'No devices registered' }}</div>
+      </div>
+      <div class="meter" style="margin-top:18px">
+        <div class="mhead">
+          <span class="mlabel">Active trips</span>
+          <span class="mval" v-if="tripMeter.total">{{ fmt(tripMeter.active) }} / {{ fmt(tripMeter.total) }}</span>
+          <span class="mval muted" v-else>None</span>
+        </div>
+        <svg class="btrack" width="100%" height="12" role="img"
+             :aria-label="`Active trips ${tripMeter.active} of ${tripMeter.total}`">
+          <rect width="100%" height="12" rx="3" fill="var(--surface-2)" />
+          <rect :width="tripMeter.pct + '%'" height="12" rx="3" fill="var(--brand)" />
+        </svg>
+        <div class="msub muted">{{ tripMeter.total ? tripMeter.pct + '% active' : 'No trips recorded' }}</div>
+      </div>
+    </div>
+  </div>
+
   <div v-if="error" class="muted" style="margin-top:14px;font-size:12px">Could not refresh — showing last known data.</div>
+  </div>
 </template>
 
 <script setup>
@@ -102,6 +164,33 @@ const roleBreakdown = computed(() => {
   const r = h.value?.counts?.users_by_role
   if (!r) return ''
   return `${r.owner ?? 0} owner · ${r.manager ?? 0} mgr · ${r.driver ?? 0} driver · ${r.superadmin ?? 0} admin`
+})
+
+const rolesOrder = [
+  { key: 'owner', label: 'Owner' },
+  { key: 'manager', label: 'Manager' },
+  { key: 'driver', label: 'Driver' },
+  { key: 'superadmin', label: 'Admin' },
+]
+const roleData = computed(() => {
+  const r = h.value?.counts?.users_by_role || {}
+  return rolesOrder.map((o) => ({ ...o, count: Number(r[o.key] ?? 0) }))
+})
+const roleMax = computed(() => Math.max(1, ...roleData.value.map((d) => d.count)))
+const hasRoleData = computed(() => roleData.value.some((d) => d.count > 0))
+function barPct(n) {
+  if (!n) return 0
+  return Math.max(6, (n / roleMax.value) * 100)   // floor so a small non-zero bar stays visible
+}
+const devMeter = computed(() => {
+  const online = Number(c.value.devices_online ?? 0)
+  const total = Number(c.value.devices_total ?? 0)
+  return { online, total, pct: total ? Math.round((online / total) * 100) : 0 }
+})
+const tripMeter = computed(() => {
+  const active = Number(c.value.trips_active ?? 0)
+  const total = Number(c.value.trips_total ?? 0)
+  return { active, total, pct: total ? Math.round((active / total) * 100) : 0 }
 })
 
 function fmt(n) { return n == null ? '—' : Number(n).toLocaleString() }
@@ -129,4 +218,18 @@ onBeforeUnmount(() => clearInterval(timer))
 .l { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
 .v { font-size: 18px; font-weight: 800; margin-top: 4px; letter-spacing: -.01em; }
 .sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+
+/* users-by-role bar chart */
+.barchart { display: flex; flex-direction: column; gap: 13px; }
+.brow { display: grid; grid-template-columns: 74px 1fr 32px; align-items: center; gap: 12px; }
+.blabel { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.bval { font-size: 13px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.btrack { display: block; }
+.empty { color: var(--muted); font-size: 13px; text-align: center; padding: 16px 0; }
+
+/* utilization meters */
+.meter .mhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.mlabel { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.mval { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.msub { font-size: 11px; margin-top: 6px; }
 </style>
