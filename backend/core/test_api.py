@@ -108,13 +108,30 @@ class CompanyScopingTests(ApiBase):
     def _names(self, data):
         return [g["name"] for g in (data.get("results") if isinstance(data, dict) else data)]
 
+    def _grant_edit(self, user):
+        user.can_edit = True
+        user.save(update_fields=["can_edit"])
+
     def test_owner_sees_only_own_geofences(self):
+        # read is allowed even without edit rights
         r = self.client_for("owner1", "OwnPass1234").get("/api/geofences/")
         names = self._names(r.data)
         self.assertIn("Depot", names)
         self.assertNotIn("Yard", names)
 
-    def test_owner_creates_geofence_scoped_to_company(self):
+    def test_readonly_owner_cannot_write(self):
+        # owner1 has can_edit=False by default -> read OK, write 403
+        c = self.client_for("owner1", "OwnPass1234")
+        self.assertEqual(c.get("/api/geofences/").status_code, 200)
+        r = c.post("/api/geofences/",
+                   {"name": "Nope", "kind": "circle", "center_lat": 21.2,
+                    "center_lng": 81.7, "radius_m": 150, "purpose": "allowed", "active": True},
+                   format="json")
+        self.assertEqual(r.status_code, 403)
+        self.assertFalse(Geofence.objects.filter(name="Nope").exists())
+
+    def test_granted_owner_creates_geofence_scoped_to_company(self):
+        self._grant_edit(self.owner1)
         c = self.client_for("owner1", "OwnPass1234")
         r = c.post("/api/geofences/",
                    {"name": "NewZone", "kind": "circle", "center_lat": 21.2,
@@ -123,7 +140,8 @@ class CompanyScopingTests(ApiBase):
         self.assertIn(r.status_code, (200, 201), r.content)
         self.assertEqual(Geofence.objects.get(name="NewZone").company_id, self.c1.id)
 
-    def test_owner_cannot_touch_other_company_geofence(self):
+    def test_granted_owner_cannot_touch_other_company_geofence(self):
+        self._grant_edit(self.owner1)
         c = self.client_for("owner1", "OwnPass1234")
         self.assertEqual(c.delete(f"/api/geofences/{self.g2.id}/").status_code, 404)
 

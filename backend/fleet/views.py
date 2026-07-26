@@ -6,7 +6,8 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from core.permissions import CompanyScopedQuerysetMixin, IsOwnerOrAdmin
+from core.permissions import (CanWriteOrReadOnly, CompanyScopedQuerysetMixin,
+                              IsOwnerOrAdmin)
 from ingest.models import Command
 
 from .models import Device, Geofence, Telemetry, Trip, Vehicle
@@ -60,7 +61,8 @@ class TripViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
 
 
 class DeviceViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsOwnerOrAdmin]
+    # read for owners/managers; the `command` write action needs may_write
+    permission_classes = [IsOwnerOrAdmin, CanWriteOrReadOnly]
     serializer_class = DeviceSerializer
 
     def get_queryset(self):
@@ -78,7 +80,8 @@ class DeviceViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
 
 
 class GeofenceViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
-    permission_classes = [IsOwnerOrAdmin]
+    # read for owners/managers; create/update/delete need may_write
+    permission_classes = [IsOwnerOrAdmin, CanWriteOrReadOnly]
     serializer_class = GeofenceSerializer
 
     def get_queryset(self):

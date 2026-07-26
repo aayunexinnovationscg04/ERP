@@ -44,6 +44,17 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.OWNER)
     phone = models.CharField(max_length=20, blank=True)
+    # Write gate: non-superadmins can VIEW their data but cannot CHANGE anything
+    # unless a Super Admin grants this. Super Admin always has full write access.
+    can_edit = models.BooleanField(
+        default=False,
+        help_text="If on, this user may make changes (create/edit/delete). "
+                  "Super Admins can always edit regardless of this flag.",
+    )
+
+    @property
+    def may_write(self):
+        return self.role == self.Role.SUPERADMIN or self.can_edit
 
     def __str__(self):
         return f"{self.username} ({self.role})"

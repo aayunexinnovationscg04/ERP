@@ -3,14 +3,16 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from core.permissions import CompanyScopedQuerysetMixin, IsOwnerOrAdmin
+from core.permissions import (CanWriteOrReadOnly, CompanyScopedQuerysetMixin,
+                              IsOwnerOrAdmin)
 
 from .models import Alert
 from .serializers import AlertSerializer
 
 
 class AlertViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsOwnerOrAdmin]
+    # read for owners/managers; the `acknowledge` write action needs may_write
+    permission_classes = [IsOwnerOrAdmin, CanWriteOrReadOnly]
     serializer_class = AlertSerializer
 
     def get_queryset(self):

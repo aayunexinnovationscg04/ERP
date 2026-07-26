@@ -12,11 +12,12 @@ class CompanySerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
+    may_write = serializers.BooleanField(read_only=True)  # true for superadmin or granted can_edit
 
     class Meta:
         model = User
         fields = ["id", "username", "email", "role", "phone", "company",
-                  "first_name", "last_name"]
+                  "first_name", "last_name", "can_edit", "may_write"]
 
 
 class LoginSerializer(TokenObtainPairSerializer):
@@ -46,7 +47,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "email", "role", "phone", "company",
-                  "company_name", "is_active", "password", "last_login"]
+                  "company_name", "is_active", "can_edit", "password", "last_login"]
         read_only_fields = ["last_login"]
 
     def create(self, validated):

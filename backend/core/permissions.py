@@ -4,9 +4,29 @@ Every Owner-facing endpoint is scoped to request.user.company. Super-admins see
 everything. Drivers get their own narrow scope (fleshed out in Phase 2).
 """
 
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from core.models import User
+
+
+class CanWriteOrReadOnly(BasePermission):
+    """Everyone authorized may READ; only Super Admin or an admin-granted
+    `can_edit` user may WRITE (create/update/delete + mutating actions).
+
+    Combine with a role/scope permission (e.g. IsOwnerOrAdmin) — DRF ANDs them,
+    so the role gate still decides *who can see the endpoint at all*, while this
+    decides *who may change things*.
+    """
+
+    message = "Editing is disabled for your account. Ask an administrator to enable it."
+
+    def has_permission(self, request, view):
+        u = request.user
+        if not (u and u.is_authenticated):
+            return False
+        if request.method in SAFE_METHODS:
+            return True
+        return bool(getattr(u, "may_write", False))
 
 
 class IsSuperAdmin(BasePermission):
