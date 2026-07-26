@@ -1,0 +1,94 @@
+================================================================================
+FUEL GUARD X - PORTS, LINKS & ACCESS
+Last updated: 2026-07-26
+VPS public IP : 31.42.125.144
+Domain        : dashboard.aayunexinnovations.com  ->  31.42.125.144
+--------------------------------------------------------------------------------
+NOTE ON SECRETS: real secrets (DB password, Django SECRET_KEY) are NOT in this
+file. They live in /root/erp/backend/.env (gitignored, mode 600). The dev login
+passwords below are for the pilot only - CHANGE THEM BEFORE PRODUCTION.
+================================================================================
+
+
+PUBLIC LINKS (open in a browser)
+--------------------------------------------------------------------------------
+  Owner ERP            http://31.42.125.144:8090          login: owner1 / owner123
+  Super Admin ERP      http://31.42.125.144:8091          login: admin  / admin123
+  Django Admin panel   http://31.42.125.144:8090/admin/   login: admin  / admin123
+  Receiver Dashboard   https://dashboard.aayunexinnovations.com   login: admin / admin123
+     (legacy device dashboard - the ONLY one on HTTPS, via Caddy)
+
+
+BACKEND API (public, through nginx)
+--------------------------------------------------------------------------------
+  Base (Owner front door)       http://31.42.125.144:8090/api/
+  Base (Super Admin front door) http://31.42.125.144:8091/api/
+  Health check                  http://31.42.125.144:8090/api/health   -> {"ok":true}
+  Auth login (POST)             http://31.42.125.144:8090/api/auth/login
+     (Same API is served by both nginx front doors; use either.)
+
+
+DEVICE TELEMETRY (HTTP ONLY - required, the SIM800L cannot do TLS)
+--------------------------------------------------------------------------------
+  Ingest URL   http://31.42.125.144/api/telemetry     (port 80, plain HTTP)
+  Auth header  X-Auth: fuelguardx
+  Served by Caddy -> old receiver on 127.0.0.1:8080 (legacy path, unchanged).
+  New Django ingest also exists at :8090/api/telemetry for future cutover.
+
+
+DATABASE (PRIVATE - no web link, and must stay that way)
+--------------------------------------------------------------------------------
+  Engine    PostgreSQL 16
+  Host/Port 127.0.0.1 : 5432   (local-only; refuses public connections = correct)
+  Database  fuelguardx
+  User      fuelguardx
+  Password  see DATABASE_URL in /root/erp/backend/.env
+  Connect on the server:   su postgres -c "psql fuelguardx"
+  A database is NOT a website - never expose 5432 to the internet.
+
+
+INTERNAL SERVICES (127.0.0.1 = reachable only from inside the VPS)
+--------------------------------------------------------------------------------
+  Django API (gunicorn)   127.0.0.1:8000    <- nginx proxies to this
+  PostgreSQL              127.0.0.1:5432
+  Old receiver-dashboard  127.0.0.1:8080    <- Caddy proxies to this
+  These are deliberately private; the public reaches them only via nginx/Caddy.
+
+
+FULL PORT MAP
+--------------------------------------------------------------------------------
+  Port   Scope        Service                        Public link
+  22     public       SSH                            ssh root@31.42.125.144
+  80     public       Caddy (device HTTP)            http://31.42.125.144/api/telemetry
+  443    public       Caddy (HTTPS, legacy dash)     https://dashboard.aayunexinnovations.com
+  8090   public       nginx -> Owner ERP + API       http://31.42.125.144:8090
+  8091   public       nginx -> Super Admin ERP + API http://31.42.125.144:8091
+  8092   (planned)    nginx -> Driver ERP            http://31.42.125.144:8092  (not built yet)
+  8000   local-only   Django / gunicorn              (internal, via nginx)
+  8080   local-only   old receiver-dashboard         (internal, via Caddy)
+  5432   local-only   PostgreSQL                     (internal, private)
+  2019   local-only   Caddy admin API                (internal)
+
+
+WHY 127.0.0.1 vs 31.42.125.144
+--------------------------------------------------------------------------------
+  31.42.125.144:PORT = public front doors you actually use (nginx 8090/8091, Caddy 80/443).
+  127.0.0.1:PORT     = internal engine parts (gunicorn, Postgres) that only nginx
+                       talks to. The backend IS public - through nginx - not on its
+                       own exposed port. This is standard, secure architecture.
+
+
+REACHABILITY CAVEAT
+--------------------------------------------------------------------------------
+  Ports 8090/8091 work on the server and the OS firewall is open, but the CLOUD
+  PROVIDER firewall may only allow 80/443/22 from the internet. If the ERP links
+  don't open from your browser, either open 8090/8091 in the provider panel, OR
+  move the ERPs onto the domain via 443 (e.g. owner.aayunexinnovations.com) so no
+  extra ports are needed.
+
+
+TEST / DEV LOGINS (pilot only - CHANGE BEFORE PRODUCTION)
+--------------------------------------------------------------------------------
+  admin  / admin123   -> superadmin (Super Admin ERP + Django admin)
+  owner1 / owner123   -> owner of "Aayunex Transport" (Owner ERP)
+================================================================================
