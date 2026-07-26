@@ -1,0 +1,150 @@
+================================================================================
+FUEL GUARD X - COMPLETED FEATURE LIST / PROGRESS TRACKER
+Last updated: 2026-07-26
+Legend:  [x] done   [~] in progress   [ ] pending   [!] blocked (needs hardware/data)
+================================================================================
+
+Full plan lives in docs/PHASE1_SPEC.md. This file tracks WHAT IS ACTUALLY DONE.
+
+
+================================================================================
+0. INFRASTRUCTURE & PROJECT SETUP
+================================================================================
+[x] Monorepo created and connected to GitHub (git@github.com:aayunexinnovationscg04/ERP.git)
+[x] Repo layout: backend/ + owner-erp/ + driver-erp/ + superadmin-erp/ + shared/ + docs/
+[x] .gitignore (secrets, .env, .venv, node_modules, data all excluded)
+[x] PostgreSQL 16 installed, running, enabled at boot
+[x] Database + role 'fuelguardx' created
+[x] Python virtualenv + Django stack installed (requirements.txt pinned)
+[x] .env config (secret key, DB URL, ingest token, CORS) - gitignored, .env.example committed
+[x] Phase 1 spec written and versioned (docs/PHASE1_SPEC.md)
+
+
+================================================================================
+1. BACKEND FOUNDATION  (shared by all 3 ERPs)
+================================================================================
+[x] Django project (config) wired to PostgreSQL
+[x] Django REST Framework + JWT auth (SimpleJWT) + CORS configured
+[x] Custom User model with roles (SUPERADMIN / OWNER / MANAGER / DRIVER)
+[x] Multi-tenant model: Company is the tenant (ready for 5-30+ trucks, many companies)
+[x] Django Admin enabled + superuser created (admin / admin123)  <-- CHANGE PASSWORD before prod
+
+DATA MODELS (tables) created + migrated:
+[x] core:   Company, User, CompanySettings (per-company alert thresholds)
+[x] fleet:  Device, Vehicle, Driver, Telemetry, Trip, Geofence, GeofenceEvent
+[x] ingest: Command (server->device queue, replaces old queues.json)
+[x] alerts: Alert (overspeed/geofence/fuel/tamper/offline)
+[x] Django Admin screens for every model (this IS the Super-Admin tool for now)
+
+[ ] Telemetry ingest endpoint  POST /api/telemetry  (firmware-compatible)   <-- NEXT
+[ ] Command queue delivery in ingest reply
+[ ] Derivation engine (trips, overspeed, geofence, tamper, offline alerts)
+[ ] Device-offline sweep (management command)
+[ ] Backfill script: import receiver-dashboard events.jsonl into Telemetry
+[ ] REST API: auth, dashboard summary, vehicles, telemetry, trips, devices, geofences, alerts
+[ ] RBAC permission classes (owner / driver / superadmin scoping)
+
+
+================================================================================
+2. OWNER / COMPANY ERP   (Phase 1 target)
+================================================================================
+BACKEND / DATA (models exist; endpoints + logic pending)
+Fleet Management
+    [~] Total / Active / Idle trucks        (Vehicle model + status; needs API + live calc)
+    [~] Truck health / online-offline        (Device.online; needs offline sweep)
+    [~] Vehicle information                   (Vehicle model done; needs API/forms)
+    [ ] Vehicle documents
+    [~] Assigned drivers                      (Driver model + assignment field done)
+Live Vehicle Monitoring
+    [~] Live truck location                   (Telemetry lat/long; needs ingest + API)
+    [~] Route tracking / route history        (Telemetry stored; needs API + map)
+    [ ] GPS geofencing                        (Geofence model done; needs point-in-zone check)
+    [~] Trip status                           (Trip model done; needs derivation)
+Fuel Monitoring
+    [!] Current fuel level                    (blocked: flow sensor reads 0; no tank sensor)
+    [!] Fuel refill logs / fill detection     (blocked: needs real sensor data)
+    [!] Fuel theft alerts                     (coded to spec, inert until sensor works)
+    [!] Fuel consumption / efficiency / trends (blocked: needs real sensor data)
+Driver Management
+    [~] Assigned driver                       (model done)
+    [ ] Driver attendance                     (Phase 2)
+    [ ] Driver performance score              (partly derivable from speed; Phase 2)
+    [ ] Driver behavior / overspeed violations (overspeed derivation pending)
+    [ ] Driver salary information             (Phase 2)
+Trip Management
+    [~] Trip scheduling / assignment          (Trip model; scheduling UI Phase 2)
+    [ ] Route planning / ETA monitoring       (Phase 3 - needs maps routing API)
+    [ ] Delivery timeline monitoring          (Phase 3)
+Alerts & Security
+    [~] Overspeed alerts                      (Alert model done; derivation pending)
+    [~] Geo security alerts                   (Alert + Geofence models done)
+    [~] Tamper alerts                         (lock_active tracked; derivation pending)
+    [!] Fuel theft / low fuel alerts          (blocked on sensor)
+ERP & Billing
+    [ ] Order booking / challan / invoice / customer billing / expense tracking  (Phase 3)
+AI Analytics
+    [ ] Mileage / fuel / maintenance / delay prediction, route optimization      (Phase 3)
+
+FRONTEND (owner-erp Vue app) - not started yet
+    [ ] Login (JWT)
+    [ ] Dashboard (KPI tiles + live fleet map + alerts feed)
+    [ ] Fleet list (status dots, last seen, speed, fuel)
+    [ ] Vehicle detail (live Leaflet map + route history playback)
+    [ ] Alerts page (acknowledge)
+    [ ] Geofences page (draw + manage)
+
+
+================================================================================
+3. DRIVER ERP   (Phase 2)
+================================================================================
+    [ ] Driver login
+    [ ] Assigned vehicle + fuel status + current route
+    [ ] Trip operations (start / stop / status) via command queue
+    [ ] Route guidance + ETA
+    [ ] Driver info (attendance / performance / salary / tasks)
+    [ ] Driver alerts (overspeed / route / fuel / security / emergency)
+    [ ] Navigation (optimized route / traffic / delay)   <-- needs maps API (Phase 3)
+    NOTE: driver-erp/ folder scaffolded (empty placeholder)
+
+
+================================================================================
+4. SUPER ADMIN ERP   (Phase 2 - Django Admin covers most of this today)
+================================================================================
+    [x] Company management (via Django Admin)
+    [x] User management + roles (via Django Admin)
+    [x] Device management / device records (via Django Admin)
+    [~] Global fleet monitoring (data exists; dedicated dashboard Phase 2)
+    [ ] Platform monitoring (API/server/DB health, error/audit logs)
+    [ ] Fraud monitoring / fuel-theft analytics / global reports
+    [ ] Blocked/rejected ingest view
+    NOTE: superadmin-erp/ Vue folder scaffolded (empty placeholder); Django Admin is
+          the working super-admin tool in the meantime.
+
+
+================================================================================
+SHARED BACKEND INFRASTRUCTURE  (from the platform doc)
+================================================================================
+    [x] Central Backend API (Django + DRF)
+    [x] PostgreSQL Database
+    [~] Authentication System (JWT configured; login endpoint pending)
+    [~] Role Based Access Control (roles on User; permission classes pending)
+    [~] GPS Tracking Engine (telemetry model; ingest + derivation pending)
+    [~] Alert System (Alert model; derivation pending)
+    [!] Fuel Analytics Engine (blocked on sensor)
+    [~] IoT Device Integration (ingest contract designed; endpoint pending)
+    [ ] Docker Infrastructure (deployment - later)
+    [ ] NGINX / reverse proxy (deployment - later)
+
+
+================================================================================
+IMPORTANT NOTES / BLOCKERS
+================================================================================
+- FUEL SENSOR: every real telemetry record so far shows flow_rate_lpm=0 and
+  total_litres=0. All fuel features are built to spec but stay INERT until the
+  flow sensor is confirmed reporting real values. Verify with hardware vendor.
+- Only 1 real device (esp32-01) has reported so far. Fleet/company aggregation
+  features work but have little data to show until more devices are deployed.
+- Superuser password is admin123 (dev only) - MUST be changed before pilot/prod.
+- Device firmware already points at /api/telemetry with token 'fuelguardx'; the
+  new ingest endpoint keeps that exact contract so no re-flashing is needed.
+================================================================================
