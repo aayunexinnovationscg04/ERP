@@ -135,18 +135,23 @@ function groupHasActiveRoute(g) {
 
 // Accordion: at most ONE group open at a time, so the sidebar never grows
 // tall enough to need scrolling — opening a group closes whichever was open.
-// Defaults to whichever group contains the current route (falls back to the
-// first group), not "everything expanded".
+// Navigating to a page auto-opens its group (so the active link is never
+// hidden on arrival), but after that the toggle is a real toggle — clicking
+// an already-open group (including the active one) closes it, same as any
+// other group. It doesn't force back open just because you're still on that
+// route; it only re-opens on the NEXT navigation into that section.
 const initialGroup = navGroups.find(groupHasActiveRoute)?.key
   ?? localStorage.getItem(GROUP_STORAGE_KEY)
   ?? navGroups[0].key
 const openGroupKey = ref(initialGroup)
 watch(openGroupKey, (v) => localStorage.setItem(GROUP_STORAGE_KEY, v || ''))
+watch(() => route.path, () => {
+  const g = navGroups.find(groupHasActiveRoute)
+  if (g) openGroupKey.value = g.key
+})
 
-// a group containing the active route always renders expanded, regardless of
-// the accordion's open/closed state
 function isExpanded(g) {
-  return groupHasActiveRoute(g) || openGroupKey.value === g.key
+  return openGroupKey.value === g.key
 }
 function toggleGroup(g) {
   openGroupKey.value = openGroupKey.value === g.key ? null : g.key

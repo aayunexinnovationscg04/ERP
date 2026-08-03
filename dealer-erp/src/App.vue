@@ -166,24 +166,29 @@ const NAV_GROUPS = [
 ]
 
 const NAV_GROUPS_STORAGE_KEY = 'fgx_dealer_nav_groups'
-// A group containing the current route must always render expanded, even if
-// the user previously collapsed it — never hide the active page's own link.
 function groupHasActiveRoute(g) { return g.items.some((item) => inSection(item.to)) }
 
 // Accordion: at most ONE group open at a time, so the sidebar never grows
 // tall enough to need scrolling — opening a group closes whichever was open.
-// Defaults to whichever group contains the current route (falls back to the
-// first group), not "everything expanded".
+// Navigating to a page auto-opens its group (so the active link is never
+// hidden on arrival), but after that the toggle is a real toggle — clicking
+// an already-open group (including the active one) closes it, same as any
+// other group. It doesn't force back open just because you're still on that
+// route; it only re-opens on the NEXT navigation into that section.
 const initialGroup = NAV_GROUPS.find(groupHasActiveRoute)?.id
   ?? localStorage.getItem(NAV_GROUPS_STORAGE_KEY)
   ?? NAV_GROUPS[0].id
 const openGroupId = ref(initialGroup)
 watch(openGroupId, (v) => localStorage.setItem(NAV_GROUPS_STORAGE_KEY, v || ''))
+watch(() => route.path, () => {
+  const g = NAV_GROUPS.find(groupHasActiveRoute)
+  if (g) openGroupId.value = g.id
+})
 
 function toggleGroup(id) {
   openGroupId.value = openGroupId.value === id ? null : id
 }
 function isGroupOpen(g) {
-  return groupHasActiveRoute(g) || openGroupId.value === g.id
+  return openGroupId.value === g.id
 }
 </script>
