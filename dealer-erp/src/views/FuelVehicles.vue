@@ -20,10 +20,10 @@
       </div>
       <div class="muted fb-reg">{{ v.registration_number }}</div>
       <div class="fb-level">
-        <Fuel :size="15" class="fb-ic" />
+        <Fuel :size="15" class="fb-ic" :class="levelClass(v)" />
         <b>{{ fmt(v.latest?.total_litres) }}</b><span class="muted">L</span>
       </div>
-      <div class="fb-bar"><div class="fb-bar-fill" :style="{ width: pct(v) + '%' }"></div></div>
+      <div class="fb-bar"><div class="fb-bar-fill" :class="levelClass(v)" :style="{ width: pct(v) + '%' }"></div></div>
       <div class="muted fb-cap">{{ v.tank_capacity_litres ? pct(v) + '% of ' + v.tank_capacity_litres + ' L tank' : 'Tank capacity not set' }}</div>
     </motion.button>
 
@@ -45,6 +45,19 @@ let timer
 function pct(v) {
   if (!v.tank_capacity_litres || v.latest?.total_litres == null) return 0
   return Math.max(0, Math.min(100, Math.round((v.latest.total_litres / v.tank_capacity_litres) * 100)))
+}
+
+// The tile's own fuel level decides its accent, not just its text — a near-
+// empty tank reads visually urgent (crit) rather than the same violet as a
+// full one with only the number differing. Only color-code when there's an
+// actual sensor reading — a vehicle with no telemetry yet (total_litres
+// null) stays neutral instead of misreading as "critically empty".
+function levelClass(v) {
+  if (!v.tank_capacity_litres || v.latest?.total_litres == null) return ''
+  const p = pct(v)
+  if (p <= 15) return 'crit'
+  if (p <= 40) return 'amber'
+  return ''
 }
 
 async function load() {
@@ -76,12 +89,16 @@ onBeforeUnmount(() => clearInterval(timer))
 .fb-name { font-weight: 700; font-size: 15.5px; color: var(--ink-strong); }
 .fb-reg { font-size: 12px; margin-bottom: 10px; }
 
-.fb-level { display: flex; align-items: baseline; gap: 5px; }
-.fb-ic { color: var(--violet); flex: none; align-self: center; margin-right: 2px; }
+.fb-level { display: flex; align-items: baseline; gap: 8px; }
+.fb-ic { color: var(--violet); flex: none; align-self: center; }
+.fb-ic.amber { color: var(--amber); }
+.fb-ic.crit { color: var(--crit); }
 .fb-level b { font-size: 22px; font-weight: 800; letter-spacing: -.01em; color: var(--ink-strong); }
 .fb-level .muted { font-size: 12.5px; }
 
 .fb-bar { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 8px; }
-.fb-bar-fill { height: 100%; background: linear-gradient(90deg, #7c5cf0, var(--violet) 60%, #d8c8ff); border-radius: 999px; }
+.fb-bar-fill { height: 100%; background: linear-gradient(90deg, #7c5cf0, var(--violet) 60%, #d8c8ff); border-radius: 999px; transition: width var(--dur) var(--ease); }
+.fb-bar-fill.amber { background: linear-gradient(90deg, #b45309, var(--amber) 60%, #ffe4a8); }
+.fb-bar-fill.crit { background: linear-gradient(90deg, #9f1239, var(--crit) 60%, #ffd0d8); }
 .fb-cap { font-size: 11.5px; margin-top: 5px; }
 </style>

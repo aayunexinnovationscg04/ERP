@@ -9,16 +9,16 @@
   </div>
   <div v-else class="kpis">
     <motion.div class="card kpi glow-blue" :while-hover="{ y: -2 }">
-      <Truck :size="16" class="ic" /><div class="n">{{ vehicles.length }}</div><div class="l">Total fleet</div>
+      <span class="icon-chip lg blue ic"><Truck :size="20" class="icon-lg" /></span><div class="n">{{ vehicles.length }}</div><div class="l">Total fleet</div>
     </motion.div>
     <motion.div class="card kpi glow-green hero" :while-hover="{ y: -2 }">
-      <Activity :size="16" class="ic" /><div class="n">{{ activeCount }}</div><div class="l">Active now</div>
+      <span class="icon-chip lg green ic"><Activity :size="20" class="icon-lg" /></span><div class="n">{{ activeCount }}</div><div class="l">Active now</div>
     </motion.div>
     <motion.div class="card kpi glow-amber" :while-hover="{ y: -2 }">
-      <PauseCircle :size="16" class="ic" /><div class="n">{{ idleCount }}</div><div class="l">Idle / maint.</div>
+      <span class="icon-chip lg amber ic"><PauseCircle :size="20" class="icon-lg" /></span><div class="n">{{ idleCount }}</div><div class="l">Idle / maint.</div>
     </motion.div>
     <motion.div class="card kpi glow-violet" :while-hover="{ y: -2 }">
-      <Fuel :size="16" class="ic" /><div class="n">{{ avgFuelPct == null ? '—' : avgFuelPct + '%' }}</div><div class="l">Avg fuel level</div>
+      <span class="icon-chip lg violet ic"><Fuel :size="20" class="icon-lg" /></span><div class="n">{{ avgFuelPct == null ? '—' : avgFuelPct + '%' }}</div><div class="l">Avg fuel level</div>
     </motion.div>
   </div>
 
@@ -47,11 +47,20 @@
           :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }"
           :transition="{ duration: .22, delay: Math.min(i, 12) * .025, ease: [.4, 0, .2, 1] }">
           <td>
-            <span class="dot" :class="freshness(v)"></span>
-            <button type="button" class="local-name-btn" @click="renaming = v" title="Rename">
-              {{ v.local_name }} <Pencil :size="12" class="pencil" />
-            </button>
-            <div class="muted" style="font-size:12px">{{ v.registration_number }}</div>
+            <span class="row-with-chip">
+              <span class="icon-chip" :class="statusChip(v.status)">
+                <component :is="statusIcon(v.status)" :size="16" />
+              </span>
+              <span class="row-chip-text">
+                <span class="row-chip-name">
+                  <span class="dot" :class="freshness(v)"></span>
+                  <button type="button" class="local-name-btn" @click="renaming = v" title="Rename">
+                    {{ v.local_name }} <Pencil :size="12" class="pencil" />
+                  </button>
+                </span>
+                <div class="muted" style="font-size:12px">{{ v.registration_number }}</div>
+              </span>
+            </span>
           </td>
           <td><span class="badge" :class="v.status">{{ v.status }}</span></td>
           <td class="col-optional">{{ fmt(v.latest?.total_litres) }}</td>
@@ -74,11 +83,19 @@
 
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import { Activity, ArrowDownAZ, ChevronRight, Fuel, PauseCircle, Pencil, Truck } from 'lucide-vue-next'
+import { Activity, ArrowDownAZ, ChevronRight, Fuel, Navigation, PauseCircle, Pencil, Truck, Wrench, WifiOff } from 'lucide-vue-next'
 import { motion } from 'motion-v'
 import { getVehicles } from '../api'
 import { freshness, ago, fmt } from '../util'
 import RenameVehicleModal from '../components/RenameVehicleModal.vue'
+
+// Per-row status identity — a vehicle's icon+chip actually changes shape by
+// its real state (moving / paused / wrenched / signal-lost) rather than every
+// row showing the same truck glyph with only the text label differing.
+const STATUS_ICON = { active: Navigation, idle: PauseCircle, maintenance: Wrench, offline: WifiOff }
+const STATUS_CHIP = { active: 'green', idle: 'amber', maintenance: 'amber', offline: 'gray' }
+function statusIcon(status) { return STATUS_ICON[status] || Truck }
+function statusChip(status) { return STATUS_CHIP[status] || 'gray' }
 
 // Which status is pinned to the top of the table. null = default (alphabetical
 // by registration number). The API does the actual sorting (?priority_status=);
@@ -142,13 +159,17 @@ onBeforeUnmount(() => clearInterval(timer))
 <style scoped>
 .status-sort {
   border: none; background: none; padding: 0; font: inherit; font-weight: 700; color: inherit;
-  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
 }
 .status-sort:hover { color: var(--blue); }
 
+.row-with-chip { display: flex; align-items: center; gap: 10px; }
+.row-chip-text { min-width: 0; }
+.row-chip-name { display: flex; align-items: center; }
+
 .local-name-btn {
   border: none; background: none; padding: 4px 0; font: inherit; font-weight: 600; color: var(--ink-strong);
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 8px;
 }
 .local-name-btn .pencil { color: var(--muted); opacity: 0; transition: opacity var(--dur) var(--ease); }
 .local-name-btn:hover .pencil { opacity: 1; }

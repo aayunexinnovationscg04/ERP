@@ -18,7 +18,7 @@
     <p class="section-title">Fuel Monitoring</p>
     <div class="card fuel-highlight">
       <div class="fh-main">
-        <span class="icon-chip violet fh-ic"><Fuel :size="22" /></span>
+        <span class="icon-chip lg violet fh-ic"><Fuel :size="22" class="icon-lg" /></span>
         <div>
           <div class="fh-value">{{ fmt(latest?.total_litres) }} <span class="fh-unit">L</span></div>
           <div class="muted" style="font-size:13px">Current fuel level · updated {{ ago(latest?.received_at) }}</div>

@@ -15,7 +15,9 @@
             :transition="{ duration: .22, delay: Math.min(i, 12) * .03, ease: [.4, 0, .2, 1] }"
             :while-hover="v.active_pilot ? { y: -3 } : {}" :while-tap="v.active_pilot ? { scale: .98 } : {}"
             @click="v.active_pilot && $router.push(`/pilots/${v.active_pilot.id}`)">
-      <div class="pb-avatar"><UserRound :size="19" /></div>
+      <div class="pb-avatar" :class="{ empty: !v.active_pilot }">
+        <component :is="v.active_pilot ? UserRound : UserRoundX" :size="20" class="icon-lg" />
+      </div>
       <div class="pb-name">{{ v.local_name }}</div>
       <div class="muted pb-reg"><Truck :size="12" class="pb-reg-ic" />{{ v.registration_number }}</div>
       <div class="pb-pilot" :class="{ muted: !v.active_pilot }">
@@ -30,7 +32,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { UserRound, Truck } from 'lucide-vue-next'
+import { UserRound, UserRoundX, Truck } from 'lucide-vue-next'
 import { motion } from 'motion-v'
 import { getVehicles } from '../api'
 
@@ -61,9 +63,11 @@ onMounted(load)
 .pilot-box:disabled { cursor: default; opacity: .6; }
 
 .pb-avatar {
-  width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
   background: var(--teal-soft); color: var(--teal);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
+.pb-avatar.empty { background: var(--gray-soft); color: var(--gray); }
 .pb-name { font-weight: 700; font-size: 15.5px; margin-top: 2px; color: var(--ink-strong); }
 .pb-reg { font-size: 12px; margin-top: -6px; display: flex; align-items: center; gap: 5px; }
 .pb-reg-ic { flex: none; }

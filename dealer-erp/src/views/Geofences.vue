@@ -66,7 +66,7 @@
       <p class="section-title">Zones ({{ zones.length }})</p>
 
       <div v-if="!zones.length" class="card empty">
-        <MapPin :size="30" :stroke-width="1.75" style="color:var(--muted)" />
+        <MapPin :size="30" class="icon-lg" style="color:var(--muted)" />
         <div style="margin-top:8px">No zones yet.</div>
         <div class="muted" style="font-size:13px; margin-top:4px">
           Use “New zone” to draw your first geofence on the map.
@@ -78,10 +78,17 @@
           <tbody>
             <tr v-for="z in zones" :key="z.id" class="clickable" @click="focusZone(z)">
               <td>
-                <div style="font-weight:600">{{ z.name }}</div>
-                <div class="muted" style="font-size:12px">
-                  {{ z.kind }}<span v-if="z.kind === 'circle' && z.radius_m"> · {{ Math.round(z.radius_m) }} m</span>
-                </div>
+                <span class="row-with-chip">
+                  <span class="icon-chip" :class="purposeChip(z.purpose)">
+                    <component :is="purposeIcon(z.purpose)" :size="16" />
+                  </span>
+                  <span>
+                    <div style="font-weight:600">{{ z.name }}</div>
+                    <div class="muted" style="font-size:12px">
+                      {{ z.kind }}<span v-if="z.kind === 'circle' && z.radius_m"> · {{ Math.round(z.radius_m) }} m</span>
+                    </div>
+                  </span>
+                </span>
               </td>
               <td><span class="badge" :style="badgeStyle(z.purpose)">{{ purposeLabel(z.purpose) }}</span></td>
               <td @click.stop>
@@ -105,7 +112,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import L from 'leaflet'
-import { Plus, X, Save, MapPin, Trash2, Eye, EyeOff, Lock } from 'lucide-vue-next'
+import { Plus, X, Save, MapPin, Trash2, Eye, EyeOff, Lock, ShieldCheck, Ban, Building2 } from 'lucide-vue-next'
 import { getGeofences, createGeofence, updateGeofence, deleteGeofence } from '../api'
 import { auth } from '../auth'
 import { TILE_URL, TILE_ATTRIBUTION, TILE_SUBDOMAINS } from '../tiles'
@@ -120,6 +127,12 @@ const PURPOSE = {
 }
 function purposeColor(p) { return PURPOSE[p]?.color || '#93a0bd' }
 function purposeLabel(p) { return PURPOSE[p]?.label || p }
+// Row identity by purpose — an "allowed" zone and a "restricted" one should
+// not look like the same pin with only the badge text differing.
+const PURPOSE_ICON = { allowed: ShieldCheck, restricted: Ban, customer_site: Building2 }
+const PURPOSE_CHIP = { allowed: 'green', restricted: 'crit', customer_site: 'blue' }
+function purposeIcon(p) { return PURPOSE_ICON[p] || MapPin }
+function purposeChip(p) { return PURPOSE_CHIP[p] || 'gray' }
 function badgeStyle(p) {
   const m = PURPOSE[p]
   return m ? `background:${m.soft};color:${m.color}` : ''
@@ -285,4 +298,5 @@ onBeforeUnmount(() => { if (map) map.remove() })
 .gf-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; }
 .gf-form label:first-child { grid-column: 1 / -1; }
 .gf-swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+.row-with-chip { display: flex; align-items: center; gap: 10px; }
 </style>

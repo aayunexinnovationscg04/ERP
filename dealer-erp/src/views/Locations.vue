@@ -12,6 +12,9 @@
     <div class="card loc-card" v-for="v in vehicles" :key="v.id">
       <div class="loc-row">
         <div class="loc-name">
+          <span class="icon-chip" :class="locChip(v)">
+            <MapPin :size="16" />
+          </span>
           <span class="dot" :class="freshness(v)"></span>
           <button type="button" class="local-name-btn" @click="renaming = v" title="Rename">
             {{ v.local_name }} <Pencil :size="12" class="pencil" />
@@ -60,6 +63,13 @@ let timer
 
 function toggle(v) { shownId.value = shownId.value === v.id ? null : v.id }
 
+// Row identity follows the same telemetry recency as the freshness dot —
+// stale/never-seen trucks get a muted chip instead of the live cyan tint.
+function locChip(v) {
+  const f = freshness(v)
+  return f === 'green' || f === 'amber' ? 'cyan' : 'gray'
+}
+
 function onRenamed(name) {
   // Look up by id (not the captured `renaming` reference) in case the 15s
   // poll swapped `vehicles` for a fresh array while the modal was open —
@@ -87,14 +97,14 @@ onBeforeUnmount(() => clearInterval(timer))
 
 .local-name-btn {
   border: none; background: none; padding: 2px 0; font: inherit; font-size: 15px; font-weight: 700; color: var(--ink-strong);
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 8px;
 }
 .local-name-btn .pencil { color: var(--muted); opacity: 0; transition: opacity var(--dur) var(--ease); }
 .local-name-btn:hover .pencil { opacity: 1; }
 .local-name-btn:hover { color: var(--cyan); }
 
 .see-loc-btn {
-  display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 700;
+  display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700;
   color: var(--cyan); background: var(--cyan-soft); border: 1px solid transparent;
   padding: 8px 14px; border-radius: var(--radius-pill); flex: none;
 }

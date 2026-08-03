@@ -14,13 +14,13 @@
   </div>
   <div v-else class="kpis">
     <motion.div class="card kpi glow-crit" :while-hover="{ y: -2 }">
-      <TriangleAlert :size="16" class="ic" /><div class="n">{{ criticalCount }}</div><div class="l">Critical</div>
+      <span class="icon-chip lg crit ic"><TriangleAlert :size="20" class="icon-lg" /></span><div class="n">{{ criticalCount }}</div><div class="l">Critical</div>
     </motion.div>
     <motion.div class="card kpi glow-amber" :while-hover="{ y: -2 }">
-      <TriangleAlert :size="16" class="ic" /><div class="n">{{ warningCount }}</div><div class="l">Warning</div>
+      <span class="icon-chip lg amber ic"><TriangleAlert :size="20" class="icon-lg" /></span><div class="n">{{ warningCount }}</div><div class="l">Warning</div>
     </motion.div>
     <motion.div class="card kpi glow-blue" :while-hover="{ y: -2 }">
-      <Info :size="16" class="ic" /><div class="n">{{ infoCount }}</div><div class="l">Info</div>
+      <span class="icon-chip lg blue ic"><Info :size="20" class="icon-lg" /></span><div class="n">{{ infoCount }}</div><div class="l">Info</div>
     </motion.div>
   </div>
 
@@ -38,7 +38,9 @@
           :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }"
           :transition="{ duration: .2, delay: Math.min(i, 12) * .025, ease: [.4, 0, .2, 1] }">
           <td>
-            <span class="icon-chip sm" :class="chipClass[a.severity]"><TriangleAlert v-if="a.severity !== 'info'" :size="14" /><Info v-else :size="14" /></span>
+            <span class="icon-chip" :class="chipClass[a.severity]">
+              <component :is="typeIcon(a.type)" :size="16" />
+            </span>
             <span class="badge" :class="a.severity">{{ a.severity }}</span>
           </td>
           <td class="muted">{{ a.type_label || a.type }}</td>
@@ -58,7 +60,7 @@
 
 <script setup>
 import { onMounted, ref, computed } from 'vue'
-import { Lock, TriangleAlert, Info } from 'lucide-vue-next'
+import { Lock, TriangleAlert, Info, Gauge, MapPin, Fuel, ShieldAlert, Siren, WifiOff, Wrench, PauseCircle } from 'lucide-vue-next'
 import { motion } from 'motion-v'
 import { getAlerts, ackAlert } from '../api'
 import { auth } from '../auth'
@@ -70,6 +72,22 @@ const alerts = ref([])
 const filter = ref('open')
 const loading = ref(true)
 const chipClass = { critical: 'crit', warning: 'amber', info: 'blue' }
+
+// Every alert already carries a real category (type) beyond its severity —
+// use it to vary the row's icon, not just its color, so a critical overspeed
+// row doesn't look identical to a critical fuel-theft row.
+const TYPE_ICON = {
+  overspeed: Gauge,
+  geofence_breach: MapPin,
+  low_fuel: Fuel,
+  fuel_fill: Fuel,
+  fuel_theft: ShieldAlert,
+  tamper: Siren,
+  device_offline: WifiOff,
+  sensor_fault: Wrench,
+  idle_too_long: PauseCircle,
+}
+function typeIcon(type) { return TYPE_ICON[type] || TriangleAlert }
 
 const criticalCount = computed(() => alerts.value.filter((a) => a.severity === 'critical').length)
 const warningCount = computed(() => alerts.value.filter((a) => a.severity === 'warning').length)

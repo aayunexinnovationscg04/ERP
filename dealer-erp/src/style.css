@@ -154,25 +154,41 @@ input:focus, select:focus { outline: none; border-color: var(--brand); box-shado
 .nav { display: flex; flex-direction: column; gap: 2px; }
 .nav a {
   display: flex; align-items: center; justify-content: flex-start; gap: 12px;
-  width: 100%; padding: 11px 14px; border-radius: var(--radius-sm);
+  width: 100%; padding: 8px 14px; border-radius: var(--radius-sm);
   color: var(--muted); font-weight: 600;
   transition: background .25s var(--ease), color .25s var(--ease),
               box-shadow .25s var(--ease), transform .15s var(--ease);
 }
 .nav a:hover { background: var(--surface-3); color: var(--text); }
 .nav a:active { transform: scale(.97); }
-.nav a .ic { transition: color .2s var(--ease); }
-.nav a.nav-vehicles .ic  { color: var(--blue); }
-.nav a.nav-locations .ic { color: var(--cyan); }
-.nav a.nav-fuel .ic      { color: var(--violet); }
-.nav a.nav-pilots .ic    { color: var(--teal); }
-.nav a.nav-alerts .ic    { color: var(--crit); }
-.nav a.nav-geofences .ic { color: var(--amber); }
+
+/* every nav icon lives in its own tinted chip — a soft/ghost tint per
+   section's hue at rest — instead of a bare colored glyph floating next to
+   the label. Same chip system as table/list rows, sized to the sidebar row. */
+.nav a .ic {
+  width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none;
+  transition: background .25s var(--ease), color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.nav a.nav-vehicles .ic  { background: var(--blue-soft);   color: var(--blue); }
+.nav a.nav-locations .ic { background: var(--cyan-soft);   color: var(--cyan); }
+.nav a.nav-fuel .ic      { background: var(--violet-soft); color: var(--violet); }
+.nav a.nav-pilots .ic    { background: var(--teal-soft);   color: var(--teal); }
+.nav a.nav-alerts .ic    { background: var(--crit-soft);   color: var(--crit); }
+.nav a.nav-geofences .ic { background: var(--amber-soft);  color: var(--amber); }
+
 .nav a.router-link-active {
   background: var(--accent-grad); color: var(--brand-ink);
   box-shadow: var(--shadow-brand);
 }
-.nav a.router-link-active .ic { color: var(--brand-ink); }
+/* the active item's chip flips from the soft ghost tint to a solid, higher-
+   contrast fill and its icon gets a bolder stroke — lucide has no separate
+   filled variant for most of these glyphs, so this stands in as the real
+   active/inactive distinction instead of just swapping a background color. */
+.nav a.router-link-active .ic {
+  background: rgba(255, 255, 255, .24); color: var(--brand-ink);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .3);
+}
+.nav a.router-link-active .ic svg.lucide { stroke-width: 2.5; }
 .nav a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); }
 .main { overflow: auto; padding: 24px 28px; }
 .logout-btn {
@@ -187,7 +203,7 @@ input:focus, select:focus { outline: none; border-color: var(--brand); box-shado
   .app.collapsed .side-head { justify-content: center; }
   .app.collapsed .side-head .brand { display: none; }
   .app.collapsed .label { display: none; }
-  .app.collapsed .nav a { justify-content: center; padding: 11px; }
+  .app.collapsed .nav a { justify-content: center; padding: 8px; }
   .app.collapsed .logout-btn { justify-content: center; padding: 11px; }
 }
 
@@ -217,7 +233,7 @@ h2 { font-size: 15px; margin: 0; }
 .kpi:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--border-strong); }
 .kpi .n { font-size: clamp(24px, 3vw, 29px); font-weight: 700; letter-spacing: -.02em; position: relative; z-index: 1; color: var(--ink-strong); }
 .kpi .l { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; margin-top: 2px; position: relative; z-index: 1; }
-.kpi .ic { color: var(--brand); margin-bottom: 8px; position: relative; z-index: 1; }
+.kpi .ic { margin-bottom: 10px; position: relative; z-index: 1; }
 /* hero tile: ambient glow behind the numeral. Each kpi additionally takes a
    glow-<hue> modifier so the KPI row reads as a real multi-color instrument
    panel (blue/green/amber/violet/crimson) instead of four identical white
@@ -235,23 +251,19 @@ h2 { font-size: 15px; margin: 0; }
 .kpi.glow-violet::before { background: radial-gradient(circle, rgba(177, 139, 255, .4), transparent 72%); }
 .kpi.glow-crit::before   { background: radial-gradient(circle, rgba(251, 113, 133, .4), transparent 72%); }
 .kpi.glow-cyan::before   { background: radial-gradient(circle, rgba(56, 212, 232, .4), transparent 72%); }
-.kpi.glow-blue .ic   { color: var(--blue); }
-.kpi.glow-green .ic  { color: var(--green); }
-.kpi.glow-amber .ic  { color: var(--amber); }
-.kpi.glow-violet .ic { color: var(--violet); }
-.kpi.glow-crit .ic   { color: var(--crit); }
-.kpi.glow-cyan .ic   { color: var(--cyan); }
 @keyframes kpi-glow { 0%, 100% { opacity: .38; transform: scale(1); } 50% { opacity: .6; transform: scale(1.1); } }
 @media (prefers-reduced-motion: reduce) { .kpi.hero::before, .kpi[class*="glow-"]::before { animation: none; } }
 
-/* generic small icon chip — a tinted rounded square behind a lucide icon,
-   used wherever a row/card needs a category identity (fuel, pilot, device…)
-   instead of a flat monochrome icon floating in space. */
+/* icon-chip size scale — one consistent system used everywhere an icon needs
+   a tinted background instead of floating bare: .sm = 20px inline accents,
+   default = 32px table/list rows, .lg = 44px KPI tiles / hero numbers. */
 .icon-chip {
-  width: 34px; height: 34px; border-radius: 10px; display: inline-grid; place-items: center;
+  width: 32px; height: 32px; border-radius: 10px; display: inline-grid; place-items: center;
   flex: none; background: var(--surface-3); vertical-align: middle;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
-.icon-chip.sm { width: 27px; height: 27px; border-radius: 8px; margin-right: 8px; }
+.icon-chip.sm { width: 20px; height: 20px; border-radius: 6px; margin-right: 8px; }
+.icon-chip.lg { width: 44px; height: 44px; border-radius: 13px; }
 .icon-chip.blue   { background: var(--blue-soft);   color: var(--blue); }
 .icon-chip.violet { background: var(--violet-soft); color: var(--violet); }
 .icon-chip.green  { background: var(--green-soft);  color: var(--green); }
@@ -260,6 +272,17 @@ h2 { font-size: 15px; margin: 0; }
 .icon-chip.cyan   { background: var(--cyan-soft);   color: var(--cyan); }
 .icon-chip.teal   { background: var(--teal-soft);   color: var(--teal); }
 .icon-chip.gray   { background: var(--gray-soft);   color: var(--gray); }
+
+/* icon stroke-width system — lucide ships stroke-width as an SVG presentation
+   attribute, which loses to *any* matching CSS declaration regardless of
+   selector specificity. One rule here quietly bumps every icon under ~20px
+   (the vast majority app-wide: nav, buttons, table/list rows, chips) from
+   lucide's stock 2 to a slightly bolder 2.25 so they read solid rather than
+   thin/weak at small sizes. Icons explicitly flagged .icon-lg (KPI tiles,
+   empty states, avatars — 20px+) opt back out to the stock weight so they
+   don't look clunky blown up. */
+svg.lucide { stroke-width: 2.25; }
+svg.lucide.icon-lg { stroke-width: 2; }
 
 /* ---- status dots ---- */
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 7px; box-shadow: 0 0 0 3px currentColor; opacity: .95; filter: saturate(1.3); }
@@ -382,32 +405,14 @@ tr[class] td:first-child { padding-left: 17px; }
   .collapse-btn { display: none; }
 
   /* Nav becomes a tappable card grid rather than a thin link list — bigger
-     touch targets, each item visibly its own tinted chip so the drawer itself
-     carries the same multi-color identity as the rest of the redesign. */
+     touch targets. The icon chip treatment itself (tint per section, solid
+     fill on active) is shared with desktop — see the base .nav rules above. */
   .nav { flex-direction: column; gap: 6px; }
   .nav a {
-    width: 100%; padding: 13px 14px; border-radius: var(--radius-sm);
+    width: 100%; padding: 10px 14px; border-radius: var(--radius-sm);
     background: var(--surface-2); border: 1px solid var(--border);
   }
-  .nav a .ic {
-    width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
-    background: var(--surface-3); flex: none;
-  }
-  .nav a.nav-vehicles .ic  { background: var(--blue-soft); }
-  .nav a.nav-locations .ic { background: var(--cyan-soft); }
-  .nav a.nav-fuel .ic      { background: var(--violet-soft); }
-  .nav a.nav-pilots .ic    { background: var(--teal-soft); }
-  .nav a.nav-alerts .ic    { background: var(--crit-soft); }
-  .nav a.nav-geofences .ic { background: var(--amber-soft); }
-  .nav a.nav-vehicles .ic svg  { color: var(--blue); }
-  .nav a.nav-locations .ic svg { color: var(--cyan); }
-  .nav a.nav-fuel .ic svg      { color: var(--violet); }
-  .nav a.nav-pilots .ic svg    { color: var(--teal); }
-  .nav a.nav-alerts .ic svg    { color: var(--crit); }
-  .nav a.nav-geofences .ic svg { color: var(--amber); }
   .nav a.router-link-active { background: var(--accent-grad); border-color: transparent; }
-  .nav a.router-link-active .ic { background: rgba(255, 255, 255, .22); }
-  .nav a.router-link-active .ic svg { color: var(--brand-ink); }
   .logout-btn { justify-content: center; padding: 14px; font-size: 15px; margin-top: 8px; }
 
   .main { padding: 16px 14px 26px; }
@@ -450,7 +455,7 @@ tr[class] td:first-child { padding-left: 17px; }
 }
 
 /* ---- inline icon + text alignment ---- */
-.ico { display: inline-flex; align-items: center; gap: 7px; }
+.ico { display: inline-flex; align-items: center; gap: 8px; }
 .nav a .ic { flex: none; }
 .brand svg, .hamburger svg, .side-brand svg { flex: none; }
 .brand svg { color: var(--brand); }

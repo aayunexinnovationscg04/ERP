@@ -31,9 +31,6 @@
         <router-link to="/geofences" title="Geofences" class="nav-geofences" :class="{ 'router-link-active': inSection('/geofences') }"><span class="ic"><MapPin :size="18" /></span><span class="label">Geofences</span></router-link>
       </nav>
       <div class="spacer" style="flex:1"></div>
-      <div class="muted label side-user" style="font-size:12px">
-        {{ auth.user?.username }} · {{ auth.user?.role }}
-      </div>
       <button class="logout-btn" style="margin-top:12px" @click="logout" title="Log out">
         <PowerOff :size="16" class="ic" /><span class="label">Log out</span>
       </button>
