@@ -12,10 +12,15 @@ passwords below are for the pilot only - CHANGE THEM BEFORE PRODUCTION.
 
 PUBLIC LINKS (open in a browser)  --  ALL ERPs on ONE subdomain, HTTPS via Caddy
 --------------------------------------------------------------------------------
-  Owner / Company ERP  https://erp.aayunexinnovations.com/dealer/   login: owner1 / owner123
-  Super Admin ERP      https://erp.aayunexinnovations.com/admin/    login: admin  / admin123
-  Driver ERP (pilot)   https://erp.aayunexinnovations.com/pilot/    login: driver1 / (see creds file)
-  Bare host            https://erp.aayunexinnovations.com/          -> redirects to /dealer/
+  Dealer ERP           https://erp.aayunexinnovations.com/dealer/   demo login: dealer / dealer123
+  Admin ERP            https://erp.aayunexinnovations.com/admin/    login: admin  / admin123
+  Pilot ERP            https://erp.aayunexinnovations.com/pilot/    demo login: pilot / pilot123
+  Landing page         https://erp.aayunexinnovations.com/          -- "pick your portal" (real Aayunex logo)
+
+  (Real customer tenant is company "aayunex-transport" with the one real device
+  esp32-01 -- unrelated to the "demo-fleet"/"shree-logistics"/"om-sai-transport"
+  demo companies above, which exist purely to make the ERP look populated for
+  demos/sales. `seed_demo --reset` wipes only those demo companies.)
 
   Django Admin panel   NOT publicly routed (as of 2026-08-02) -- no nginx location
      for /django-admin/ means no network path to it from the internet at all.
