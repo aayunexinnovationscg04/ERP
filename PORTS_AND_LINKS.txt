@@ -15,8 +15,13 @@ PUBLIC LINKS (open in a browser)  --  ALL ERPs on ONE subdomain, HTTPS via Caddy
   Owner / Company ERP  https://erp.aayunexinnovations.com/dealer/   login: owner1 / owner123
   Super Admin ERP      https://erp.aayunexinnovations.com/admin/    login: admin  / admin123
   Driver ERP (pilot)   https://erp.aayunexinnovations.com/pilot/    login: driver1 / (see creds file)
-  Django Admin panel   https://erp.aayunexinnovations.com/django-admin/   login: admin / admin123
   Bare host            https://erp.aayunexinnovations.com/          -> redirects to /dealer/
+
+  Django Admin panel   NOT publicly routed (as of 2026-08-02) -- no nginx location
+     for /django-admin/ means no network path to it from the internet at all.
+     Reach it via SSH tunnel:
+       ssh -L 8000:127.0.0.1:8000 root@31.42.125.144
+       then browse http://127.0.0.1:8000/django-admin/   login: admin / admin123
   Receiver Dashboard   https://dashboard.aayunexinnovations.com     login: admin / admin123
      (legacy device dashboard - separate subdomain, also HTTPS via Caddy)
 

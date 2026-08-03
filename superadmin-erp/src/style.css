@@ -233,6 +233,22 @@ tr.clickable:hover { background: var(--surface-2); cursor: pointer; }
   .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table { width: auto; min-width: 100%; }
   th, td { white-space: nowrap; }
+
+  /* CSS-only scroll-shadow cue, scoped to cards that actually wrap a table:
+     two masks that scroll with the content plus two shadows fixed to the
+     edges, so a phone user sees there's more to the right without a hint
+     label — it self-hides once there's nothing left to scroll to. */
+  .card:has(table) {
+    background-color: var(--surface);
+    background-image:
+      linear-gradient(to right, var(--surface) 30%, rgba(255,255,255,0)),
+      linear-gradient(to right, rgba(255,255,255,0), var(--surface) 70%) 100% 0,
+      linear-gradient(to right, rgba(0,0,0,.12), rgba(0,0,0,0)),
+      linear-gradient(to left, rgba(0,0,0,.12), rgba(0,0,0,0)) 100% 0;
+    background-repeat: no-repeat;
+    background-size: 32px 100%, 32px 100%, 12px 100%, 12px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
 }
 
 /* ---- inline icon + text alignment ---- */

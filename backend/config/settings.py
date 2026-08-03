@@ -116,7 +116,7 @@ TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "django-static/"
 # Served by nginx (unprivileged www-data), so it must live outside /root (mode 700).
 STATIC_ROOT = Path("/var/www/fuelguardx/static")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -195,4 +195,5 @@ DERIVATION_DEFAULTS = {
     "overspeed_limit_kmph": 60,
     "offline_after_seconds": 900,
     "theft_drop_litres": 5,
+    "max_idle_minutes": 45,
 }

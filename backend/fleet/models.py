@@ -30,8 +30,6 @@ class Device(models.Model):
 
 
 class Driver(models.Model):
-    """Minimal in Phase 1 (identity + assignment). Attendance/salary land in P2."""
-
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="drivers")
     user = models.ForeignKey(
         "core.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="driver_profiles"
@@ -39,10 +37,36 @@ class Driver(models.Model):
     name = models.CharField(max_length=120)
     phone = models.CharField(max_length=20, blank=True)
     license_no = models.CharField(max_length=40, blank=True)
+    # Entered via Django Admin (no self-service payroll UI) — same pattern as
+    # VehicleDocument: admin-entered, frontend read-only.
+    monthly_salary = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
+
+
+class DriverAttendance(models.Model):
+    class Status(models.TextChoices):
+        PRESENT = "present", "Present"
+        ABSENT = "absent", "Absent"
+        HALF_DAY = "half_day", "Half day"
+        LEAVE = "leave", "On leave"
+
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name="attendance")
+    date = models.DateField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PRESENT)
+    notes = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["driver", "date"], name="uniq_attendance_per_day")
+        ]
+        ordering = ["-date"]
+        verbose_name_plural = "driver attendance"
+
+    def __str__(self):
+        return f"{self.driver} · {self.date} · {self.status}"
 
 
 class Vehicle(models.Model):
@@ -64,6 +88,9 @@ class Vehicle(models.Model):
         Driver, null=True, blank=True, on_delete=models.SET_NULL, related_name="vehicles"
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.OFFLINE)
+    # Dealer-facing nickname, separate from the (often cryptic) registration
+    # number — e.g. "Loader 2". Editable anytime by the owner/admin.
+    local_name = models.CharField(max_length=10, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -73,8 +100,37 @@ class Vehicle(models.Model):
             )
         ]
 
+    def save(self, *args, **kwargs):
+        if not self.local_name:
+            n = Vehicle.objects.filter(company_id=self.company_id).count() + 1
+            self.local_name = f"Vehicle {n}"[:10]
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.registration_number
+
+
+class VehicleDocument(models.Model):
+    class DocType(models.TextChoices):
+        RC = "rc", "Registration (RC)"
+        INSURANCE = "insurance", "Insurance"
+        PERMIT = "permit", "Permit"
+        PUC = "puc", "Pollution (PUC)"
+        FITNESS = "fitness", "Fitness certificate"
+        OTHER = "other", "Other"
+
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name="documents")
+    doc_type = models.CharField(max_length=20, choices=DocType.choices)
+    number = models.CharField(max_length=80, blank=True)
+    expiry_date = models.DateField(null=True, blank=True)
+    notes = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = [models.F("expiry_date").asc(nulls_last=True)]
+
+    def __str__(self):
+        return f"{self.vehicle} · {self.get_doc_type_display()}"
 
 
 class Telemetry(models.Model):

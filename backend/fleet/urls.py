@@ -4,14 +4,15 @@ from rest_framework.routers import DefaultRouter
 from .driver_views import (DriverAlertsView, DriverSummaryView,
                            DriverTelemetryView, DriverTripsView,
                            DriverVehicleView)
-from .views import (DashboardViewSet, DeviceViewSet, GeofenceViewSet,
-                    TripViewSet, VehicleViewSet)
+from .views import (DashboardViewSet, DeviceViewSet, DriverViewSet,
+                    GeofenceViewSet, TripViewSet, VehicleViewSet)
 
 router = DefaultRouter()
 router.register("vehicles", VehicleViewSet, basename="vehicle")
 router.register("trips", TripViewSet, basename="trip")
 router.register("devices", DeviceViewSet, basename="device")
 router.register("geofences", GeofenceViewSet, basename="geofence")
+router.register("drivers", DriverViewSet, basename="driver")
 router.register("dashboard/summary", DashboardViewSet, basename="dashboard")
 
 urlpatterns = router.urls + [

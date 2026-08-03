@@ -24,7 +24,8 @@ class UserAdmin(DjangoUserAdmin):
 
 @admin.register(CompanySettings)
 class CompanySettingsAdmin(admin.ModelAdmin):
-    list_display = ("company", "overspeed_limit_kmph", "offline_after_seconds", "theft_drop_litres")
+    list_display = ("company", "overspeed_limit_kmph", "offline_after_seconds",
+                     "theft_drop_litres", "low_fuel_litres", "max_idle_minutes")
 
 
 @admin.register(RolePermission)

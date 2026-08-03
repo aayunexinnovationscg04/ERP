@@ -21,7 +21,7 @@
       <tbody>
         <tr v-for="a in alerts" :key="a.id">
           <td><span class="badge" :class="a.severity">{{ a.severity }}</span></td>
-          <td class="muted">{{ a.type }}</td>
+          <td class="muted">{{ a.type_label || a.type }}</td>
           <td>{{ a.title }}<div class="muted" style="font-size:12px">{{ a.message }}</div></td>
           <td>{{ a.vehicle_reg || a.device_id || '—' }}</td>
           <td class="muted">{{ ago(a.created_at) }}</td>

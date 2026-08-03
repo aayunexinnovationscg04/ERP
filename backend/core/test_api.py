@@ -6,14 +6,17 @@ test client (all requests come from 127.0.0.1).
 """
 
 import copy
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.cache import cache
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from core.models import Company, User
-from fleet.models import Device, Driver, Geofence, Vehicle
+from fleet.models import (Device, Driver, DriverAttendance, Geofence, Vehicle,
+                          VehicleDocument)
 
 _DRF = copy.deepcopy(settings.REST_FRAMEWORK)
 _DRF["DEFAULT_THROTTLE_RATES"] = {
@@ -172,3 +175,127 @@ class DriverApiTests(ApiBase):
 
     def test_owner_blocked_from_driver_endpoints(self):
         self.assertEqual(self.client_for("owner1", "OwnPass1234").get("/api/driver/summary").status_code, 403)
+
+
+class FleetTableTests(ApiBase):
+    """The Fleet page's table + row-expand panel are powered entirely by
+    /api/vehicles/ — no client-side sorting or date math. These pin that
+    contract: documents/driver ride along in the list payload, and
+    ?priority_status= reorders server-side."""
+
+    def setUp(self):
+        super().setUp()
+        self.v_active = Vehicle.objects.create(
+            company=self.c1, registration_number="A-ACTIVE", status=Vehicle.Status.ACTIVE)
+        self.v_idle = Vehicle.objects.create(
+            company=self.c1, registration_number="B-IDLE", status=Vehicle.Status.IDLE)
+        self.v_offline = Vehicle.objects.create(
+            company=self.c1, registration_number="C-OFFLINE", status=Vehicle.Status.OFFLINE)
+        today = timezone.localdate()
+        VehicleDocument.objects.create(
+            vehicle=self.v_active, doc_type=VehicleDocument.DocType.INSURANCE,
+            number="INS-1", expiry_date=today - timedelta(days=1))  # expired
+        VehicleDocument.objects.create(
+            vehicle=self.v_active, doc_type=VehicleDocument.DocType.PUC,
+            number="PUC-1", expiry_date=today + timedelta(days=10))  # expiring soon
+        VehicleDocument.objects.create(
+            vehicle=self.v_active, doc_type=VehicleDocument.DocType.RC,
+            number="RC-1", expiry_date=today + timedelta(days=365))  # valid
+
+    def _regs(self, data):
+        return [v["registration_number"] for v in (data.get("results") if isinstance(data, dict) else data)]
+
+    def test_default_order_is_by_registration_number(self):
+        r = self.client_for("owner1", "OwnPass1234").get("/api/vehicles/")
+        self.assertEqual(self._regs(r.data), ["A-ACTIVE", "B-IDLE", "C-OFFLINE"])
+
+    def test_priority_status_sorts_that_status_first(self):
+        r = self.client_for("owner1", "OwnPass1234").get("/api/vehicles/?priority_status=offline")
+        self.assertEqual(self._regs(r.data)[0], "C-OFFLINE")
+
+    def test_invalid_priority_status_falls_back_to_default(self):
+        r = self.client_for("owner1", "OwnPass1234").get("/api/vehicles/?priority_status=bogus")
+        self.assertEqual(self._regs(r.data), ["A-ACTIVE", "B-IDLE", "C-OFFLINE"])
+
+    def test_documents_carry_computed_expiry_status(self):
+        r = self.client_for("owner1", "OwnPass1234").get("/api/vehicles/")
+        rows = r.data.get("results") if isinstance(r.data, dict) else r.data
+        docs = next(v for v in rows if v["registration_number"] == "A-ACTIVE")["documents"]
+        by_number = {d["number"]: d["expiry_status"] for d in docs}
+        self.assertEqual(by_number["INS-1"], "expired")
+        self.assertEqual(by_number["PUC-1"], "expiring_soon")
+        self.assertEqual(by_number["RC-1"], "valid")
+
+    def test_local_name_defaults_sequentially_per_company(self):
+        self.assertEqual(self.v_active.local_name, "Vehicle 1")
+        self.assertEqual(self.v_idle.local_name, "Vehicle 2")
+        self.assertEqual(self.v_offline.local_name, "Vehicle 3")
+
+    def test_granted_owner_can_rename_vehicle(self):
+        self.owner1.can_edit = True
+        self.owner1.save(update_fields=["can_edit"])
+        c = self.client_for("owner1", "OwnPass1234")
+        r = c.patch(f"/api/vehicles/{self.v_active.id}/local_name/",
+                    {"local_name": "Loader 2"}, format="json")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.v_active.refresh_from_db()
+        self.assertEqual(self.v_active.local_name, "Loader 2")
+
+    def test_readonly_owner_cannot_rename_vehicle(self):
+        c = self.client_for("owner1", "OwnPass1234")  # can_edit=False by default
+        r = c.patch(f"/api/vehicles/{self.v_active.id}/local_name/",
+                    {"local_name": "Nope"}, format="json")
+        self.assertEqual(r.status_code, 403)
+
+    def test_rename_over_10_chars_rejected(self):
+        self.owner1.can_edit = True
+        self.owner1.save(update_fields=["can_edit"])
+        c = self.client_for("owner1", "OwnPass1234")
+        r = c.patch(f"/api/vehicles/{self.v_active.id}/local_name/",
+                    {"local_name": "WayTooLongName"}, format="json")
+        self.assertEqual(r.status_code, 400)
+
+
+class PilotsTests(ApiBase):
+    """The Pilots page (/api/drivers/) — assigned vehicle, attendance, and
+    salary. Salary is only in the detail payload, never the list, since the
+    list powers a grid other users could be glancing at."""
+
+    def setUp(self):
+        super().setUp()
+        self.driver_a = Driver.objects.create(
+            company=self.c1, name="Ramesh Kumar", phone="9990001111",
+            license_no="CG04-2020-001", monthly_salary="18000.00")
+        self.veh = Vehicle.objects.create(
+            company=self.c1, registration_number="CG04-PILOT-01", active_driver=self.driver_a)
+        DriverAttendance.objects.create(
+            driver=self.driver_a, date=timezone.localdate(), status=DriverAttendance.Status.PRESENT)
+        # a driver in the other company must never show up for owner1
+        Driver.objects.create(company=self.c2, name="Other Co Driver")
+
+    def _rows(self, data):
+        return data.get("results") if isinstance(data, dict) else data
+
+    def test_owner_sees_only_own_company_drivers(self):
+        r = self.client_for("owner1", "OwnPass1234").get("/api/drivers/")
+        names = [d["name"] for d in self._rows(r.data)]
+        self.assertIn("Ramesh Kumar", names)
+        self.assertNotIn("Other Co Driver", names)
+
+    def test_list_carries_assigned_vehicle_but_not_salary(self):
+        r = self.client_for("owner1", "OwnPass1234").get("/api/drivers/")
+        row = next(d for d in self._rows(r.data) if d["name"] == "Ramesh Kumar")
+        self.assertEqual(row["assigned_vehicle"]["registration_number"], "CG04-PILOT-01")
+        self.assertNotIn("monthly_salary", row)
+
+    def test_detail_carries_salary_and_attendance(self):
+        r = self.client_for("owner1", "OwnPass1234").get(f"/api/drivers/{self.driver_a.id}/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["monthly_salary"], "18000.00")
+        self.assertEqual(len(r.data["attendance"]), 1)
+        self.assertEqual(r.data["attendance"][0]["status"], "present")
+
+    def test_driver_with_no_vehicle_gets_null_assignment(self):
+        lone = Driver.objects.create(company=self.c1, name="Unassigned Driver")
+        r = self.client_for("owner1", "OwnPass1234").get(f"/api/drivers/{lone.id}/")
+        self.assertIsNone(r.data["assigned_vehicle"])

@@ -1,6 +1,11 @@
 <template>
   <div class="topbar">
-    <h1><router-link to="/fleet" class="muted">Fleet</router-link> / {{ v?.registration_number || '…' }}</h1>
+    <div class="row" style="gap:12px">
+      <button type="button" class="back-btn" @click="$router.back()" title="Back">
+        <ArrowLeft :size="17" />
+      </button>
+      <h1><router-link to="/vehicles" class="muted">Vehicles</router-link> / {{ v?.registration_number || '…' }}</h1>
+    </div>
     <span class="badge" :class="v?.status">{{ v?.status }}</span>
   </div>
 
@@ -22,11 +27,43 @@
   </div>
 
   <div v-else class="grid-2">
+    <!-- LEFT: what/who this truck is — map + static identity -->
     <div>
       <p class="section-title">Route history ({{ track.length }} points)</p>
       <FleetMap :markers="markers" :track="trackLatLng" />
+
+      <div class="card" style="padding:14px 16px;margin-top:14px">
+        <p class="section-title" style="margin-top:0">Vehicle &amp; driver</p>
+        <div class="kvs">
+          <div><span class="muted">Make / model</span><b>{{ v?.make || v?.model ? `${v?.make || ''} ${v?.model || ''}`.trim() : '—' }}</b></div>
+          <div><span class="muted">Tank capacity</span><b>{{ v?.tank_capacity_litres ? v.tank_capacity_litres + ' L' : '—' }}</b></div>
+          <div><span class="muted">Device</span><b>{{ v?.device?.device_id || 'Not linked' }}</b></div>
+          <div><span class="muted">SIM</span><b>{{ v?.device?.sim_number || '—' }}</b></div>
+        </div>
+        <div class="driver-row">
+          <span class="muted">Assigned driver</span>
+          <template v-if="v?.active_driver">
+            <b>{{ v.active_driver.name }}</b>
+            <span class="muted">{{ v.active_driver.phone || '—' }} · {{ v.active_driver.license_no || '—' }}</span>
+          </template>
+          <span v-else class="muted">No driver assigned</span>
+        </div>
+      </div>
+
+      <div class="card" style="padding:14px 16px;margin-top:14px">
+        <p class="section-title" style="margin-top:0">Documents</p>
+        <div v-if="v?.documents?.length" class="doc-list">
+          <div class="doc-row" v-for="d in v.documents" :key="d.id">
+            <span>{{ d.doc_type_label }}<span v-if="d.number" class="muted"> · {{ d.number }}</span></span>
+            <span class="muted doc-exp" v-if="d.expiry_date">{{ d.expiry_date }}</span>
+            <span class="badge" :class="expiryBadge[d.expiry_status]">{{ expiryLabel[d.expiry_status] }}</span>
+          </div>
+        </div>
+        <p v-else class="muted" style="margin:0">No documents on file.</p>
+      </div>
     </div>
 
+    <!-- RIGHT: how this truck is doing right now — live telemetry -->
     <div>
       <p class="section-title">Live telemetry</p>
       <div class="card" style="padding:14px 16px">
@@ -70,28 +107,40 @@
         <Lock :size="14" /> View-only — ask an admin to enable editing.
       </p>
 
-      <p class="section-title" style="margin-top:18px">Recent trips</p>
-      <div class="card" style="padding:6px 0">
-        <table>
-          <thead><tr><th>Started</th><th>Dist</th><th>Max</th><th>Status</th></tr></thead>
-          <tbody>
-            <tr v-for="t in trips" :key="t.id">
-              <td>{{ new Date(t.started_at).toLocaleString() }}</td>
-              <td>{{ fmt(t.distance_km) }} km</td>
-              <td>{{ fmt(t.max_speed_kmph, 0) }}</td>
-              <td><span class="badge" :class="t.status==='active'?'active':'offline'">{{ t.status }}</span></td>
-            </tr>
-            <tr v-if="!trips.length"><td colspan="4" class="muted" style="padding:14px">No trips.</td></tr>
-          </tbody>
-        </table>
+      <div class="card raw-card" style="padding:14px 16px;margin-top:14px" v-if="v?.latest_raw">
+        <p class="section-title raw-title" style="margin-top:0">
+          <span class="ico"><FileCode :size="14" class="ico-inline" /> Last raw payload
+            <span class="muted" style="font-weight:500"> — device {{ v?.device?.device_id }}</span></span>
+          <button type="button" class="raw-toggle" @click="showRaw = !showRaw" :title="showRaw ? 'Hide' : 'Show'">
+            <component :is="showRaw ? EyeOff : Eye" :size="15" />
+          </button>
+        </p>
+        <pre v-if="showRaw" class="raw-json">{{ prettyRaw }}</pre>
       </div>
     </div>
+  </div>
+
+  <!-- full width: naturally a wide table, doesn't belong squeezed into a column -->
+  <p class="section-title" style="margin-top:18px" v-if="!loading">Recent trips</p>
+  <div class="card" style="padding:6px 0" v-if="!loading">
+    <table>
+      <thead><tr><th>Started</th><th>Dist</th><th>Max</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr v-for="t in trips" :key="t.id">
+          <td>{{ new Date(t.started_at).toLocaleString() }}</td>
+          <td>{{ fmt(t.distance_km) }} km</td>
+          <td>{{ fmt(t.max_speed_kmph, 0) }}</td>
+          <td><span class="badge" :class="t.status==='active'?'active':'offline'">{{ t.status }}</span></td>
+        </tr>
+        <tr v-if="!trips.length"><td colspan="4" class="muted" style="padding:14px">No trips.</td></tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
-import { Gauge, Droplet, Lock, LockOpen, Send } from 'lucide-vue-next'
+import { Gauge, Droplet, Lock, LockOpen, Send, FileCode, Eye, EyeOff, ArrowLeft } from 'lucide-vue-next'
 import { getVehicle, getVehicleTrack, getVehicleTrips, sendCommand } from '../api'
 import { auth } from '../auth'
 import { fmt, ago } from '../util'
@@ -99,6 +148,8 @@ import { toast } from '../toast'
 import FleetMap from '../components/FleetMap.vue'
 
 const canWrite = computed(() => auth.user?.may_write !== false)
+const expiryLabel = { valid: 'Valid', expiring_soon: 'Expiring soon', expired: 'Expired', unknown: 'No expiry set' }
+const expiryBadge = { valid: 'active', expiring_soon: 'idle', expired: 'critical', unknown: 'offline' }
 
 const props = defineProps({ id: [String, Number] })
 const v = ref(null)
@@ -110,6 +161,8 @@ const cmdMsg = ref('')
 let timer
 
 const latest = computed(() => v.value?.latest)
+const prettyRaw = computed(() => JSON.stringify(v.value?.latest_raw ?? {}, null, 2))
+const showRaw = ref(false)
 const trackLatLng = computed(() => track.value.map((p) => [p.latitude, p.longitude]))
 const markers = computed(() =>
   latest.value?.has_gps_fix
@@ -157,7 +210,36 @@ onBeforeUnmount(() => clearInterval(timer))
 </script>
 
 <style scoped>
+.back-btn {
+  flex: none; width: 34px; height: 34px; padding: 0; display: grid; place-items: center;
+  border-radius: var(--radius-sm); color: var(--text);
+}
+.back-btn:hover { background: var(--surface-2); }
+
 .kvs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
 .kvs div { display: flex; flex-direction: column; }
 .kvs b { font-size: 16px; margin-top: 2px; }
+
+.driver-row {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 14px;
+}
+
+.doc-list { display: grid; gap: 10px; }
+.doc-row { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.doc-row > span:first-child { flex: 1; min-width: 0; }
+.doc-exp { font-size: 12.5px; }
+
+.ico-inline { vertical-align: -2px; margin-right: 4px; }
+.raw-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.raw-toggle {
+  flex: none; width: 28px; height: 28px; padding: 0; border: none; background: none;
+  color: var(--muted); display: grid; place-items: center; border-radius: 7px;
+}
+.raw-toggle:hover { background: var(--surface-2); color: var(--text); }
+.raw-json {
+  margin: 0; max-height: 320px; overflow: auto; font-size: 12.5px; line-height: 1.5;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 12px 14px; white-space: pre-wrap; word-break: break-all;
+}
 </style>

@@ -40,8 +40,8 @@ export default api
 export const login = (username, password) =>
   api.post('/auth/login', { username, password }).then((r) => r.data)
 export const getMe = () => api.get('/auth/me').then((r) => r.data)
-export const getSummary = () => api.get('/dashboard/summary/').then((r) => r.data)
-export const getVehicles = () => api.get('/vehicles/').then((r) => r.data.results || r.data)
+export const getVehicles = (params = {}) =>
+  api.get('/vehicles/', { params }).then((r) => r.data.results || r.data)
 export const getVehicle = (id) => api.get(`/vehicles/${id}/`).then((r) => r.data)
 export const getVehicleTrack = (id, limit = 1000) =>
   api.get(`/vehicles/${id}/telemetry/`, { params: { limit } }).then((r) => r.data)
@@ -51,6 +51,10 @@ export const getAlerts = (params = {}) =>
 export const ackAlert = (id) => api.post(`/alerts/${id}/acknowledge/`).then((r) => r.data)
 export const sendCommand = (deviceId, payload) =>
   api.post(`/devices/${deviceId}/command/`, { payload }).then((r) => r.data)
+export const setVehicleLocalName = (id, local_name) =>
+  api.patch(`/vehicles/${id}/local_name/`, { local_name }).then((r) => r.data)
+export const getDrivers = () => api.get('/drivers/').then((r) => r.data.results || r.data)
+export const getDriver = (id) => api.get(`/drivers/${id}/`).then((r) => r.data)
 
 // --- geofences ---
 export const getGeofences = () =>

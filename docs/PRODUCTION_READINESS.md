@@ -15,7 +15,7 @@ One HTTPS host, path-routed, TLS by Caddy → nginx (loopback) → gunicorn → 
 | Super Admin ERP | https://erp.aayunexinnovations.com/admin/ | platform staff |
 | Driver ERP | https://erp.aayunexinnovations.com/pilot/ | drivers (mobile) |
 | Backend API | https://erp.aayunexinnovations.com/api/ | shared |
-| Django admin | https://erp.aayunexinnovations.com/django-admin/ | platform staff |
+| Django admin | SSH tunnel only (`ssh -L 8000:127.0.0.1:8000 ...` → `http://127.0.0.1:8000/django-admin/`) — not publicly routed | platform staff |
 
 ## 2. Verification (how each layer is tested)
 

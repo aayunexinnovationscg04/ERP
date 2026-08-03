@@ -1,14 +1,17 @@
 """Derivation engine.
 
 Turns each raw telemetry point into higher-level state: trips, overspeed /
-geofence / tamper / fuel alerts, and live vehicle status. Runs synchronously on
-every ingest (cheap at pilot scale; extractable to Celery later).
+geofence / tamper / fuel / idle alerts, and live vehicle status. Runs
+synchronously on every ingest (cheap at pilot scale; extractable to Celery later).
 
 Everything is guarded for missing/None fields — the firmware is permissive and a
 point may have no GPS fix, no speed, etc.
 
-Fuel rules (fill / theft / low) are wired up but stay effectively inert while the
-flow sensor reports 0 (see project notes).
+Fuel fill/theft rules are wired up but stay effectively inert while the flow
+sensor reports 0 (see project notes) — the delta they watch for looks identical
+to sensor noise without flow corroboration. Low fuel (absolute level, not a
+delta) and excessive idle don't need that gate and are live once a company sets
+a threshold (low_fuel_litres) / uses the idle default (max_idle_minutes).
 """
 
 from django.conf import settings as dj_settings
@@ -21,6 +24,7 @@ from .geo import haversine_km, point_in_geofence
 from .models import Geofence, GeofenceEvent, Telemetry, Trip
 
 MOVING_KMPH = 3.0  # below this the truck is considered stopped
+MAX_PLAUSIBLE_KMPH = 140  # segment-implied speed above this = GPS jitter, not real travel
 
 
 class _Thresholds:
@@ -34,6 +38,7 @@ class _Thresholds:
         self.low_fuel = cs.low_fuel_litres if cs else None
         self.theft_drop = cs.theft_drop_litres if cs else d["theft_drop_litres"]
         self.tamper_on_lock_change = cs.tamper_on_lock_change if cs else True
+        self.max_idle_minutes = cs.max_idle_minutes if cs else d["max_idle_minutes"]
 
 
 def _prev(t):
@@ -60,6 +65,8 @@ def process_telemetry(t):
         _handle_geofence(company, vehicle, t, prev)
         _handle_tamper(company, vehicle, device, t, prev, th)
         _handle_fuel(company, vehicle, device, t, prev, th)
+        _handle_low_fuel(company, vehicle, device, t, prev, th)
+        _handle_long_idle(company, vehicle, device, t, prev, th)
         _update_vehicle_status(vehicle, t)
 
 
@@ -104,9 +111,20 @@ def _accumulate_trip(trip, t, prev):
     """Grow distance / max-speed / fuel as points arrive. Average speed is derived
     at close time from distance and duration (persistent and simple)."""
     fields = []
-    if t.has_gps_fix and prev is not None and prev.has_gps_fix:
-        trip.distance_km += haversine_km(prev.latitude, prev.longitude, t.latitude, t.longitude)
-        fields.append("distance_km")
+    # A parked truck's GPS fix still drifts a few metres between reads; summed over many
+    # pings that drift becomes many "phantom" kilometres (observed live: 12km accrued for
+    # a vehicle whose own speed readings never exceeded 1.5 km/h). Require the device's own
+    # speedometer to agree the truck was actually moving before trusting the GPS delta, and
+    # separately cap any single segment's implied speed to drop one-off bad fixes — together
+    # these keep distance_km (and therefore avg_speed_kmph) consistent with max_speed_kmph.
+    moving = max(t.speed_kmph or 0, (prev.speed_kmph if prev else 0) or 0) > MOVING_KMPH
+    if t.has_gps_fix and prev is not None and prev.has_gps_fix and moving:
+        seg_km = haversine_km(prev.latitude, prev.longitude, t.latitude, t.longitude)
+        elapsed_h = (t.received_at - prev.received_at).total_seconds() / 3600
+        implied_kmph = (seg_km / elapsed_h) if elapsed_h > 0 else 0
+        if implied_kmph <= MAX_PLAUSIBLE_KMPH:
+            trip.distance_km += seg_km
+            fields.append("distance_km")
     if t.speed_kmph is not None and t.speed_kmph > trip.max_speed_kmph:
         trip.max_speed_kmph = t.speed_kmph
         fields.append("max_speed_kmph")
@@ -201,7 +219,19 @@ def _handle_tamper(company, vehicle, device, t, prev, th):
 def _handle_fuel(company, vehicle, device, t, prev, th):
     if t.total_litres is None or prev is None or prev.total_litres is None:
         return
+    elapsed_min = (t.received_at - prev.received_at).total_seconds() / 60
+    if elapsed_min <= 0:
+        return
     delta = t.total_litres - prev.total_litres
+    # A real fill/theft event must be corroborated by the flow sensor itself reporting
+    # nonzero flow across the window. flow_rate_lpm reads 0 in every pilot record so far
+    # (see PHASE1_SPEC) while total_litres still drifts/resets from sensor noise — without
+    # this gate that noise was firing false fuel_fill/fuel_theft alerts. Once the flow
+    # sensor genuinely reports nonzero flow, this gate opens automatically.
+    observed_flow_lpm = max(t.flow_rate_lpm or 0, prev.flow_rate_lpm or 0)
+    plausible_litres = observed_flow_lpm * elapsed_min
+    if abs(delta) > max(plausible_litres * 2, 0.05):
+        return
     if delta >= 1.0:
         raise_alert(
             company, type=Alert.Type.FUEL_FILL, severity=Alert.Severity.INFO,
@@ -219,6 +249,51 @@ def _handle_fuel(company, vehicle, device, t, prev, th):
             lng=t.longitude if t.has_gps_fix else None,
             meta={"delta_litres": delta},
         )
+
+
+# --- low fuel (absolute level, no flow-sensor gate needed) --------------
+def _handle_low_fuel(company, vehicle, device, t, prev, th):
+    if th.low_fuel is None or t.total_litres is None or t.total_litres > th.low_fuel:
+        return
+    # rising edge only: fire once when crossing the threshold, not on every point after
+    prev_above = prev is None or prev.total_litres is None or prev.total_litres > th.low_fuel
+    if not prev_above:
+        return
+    raise_alert(
+        company, type=Alert.Type.LOW_FUEL, severity=Alert.Severity.WARNING,
+        title=f"Low fuel: {t.total_litres:.1f} L",
+        message=f"{vehicle.registration_number} is down to {t.total_litres:.1f} L.",
+        vehicle=vehicle, device=device,
+        meta={"total_litres": t.total_litres, "threshold": th.low_fuel},
+    )
+
+
+# --- excessive idle ("too long waiting") ---------------------------------
+def _handle_long_idle(company, vehicle, device, t, prev, th):
+    if t.speed_kmph is None or t.speed_kmph > MOVING_KMPH:
+        return
+    last_moving = (
+        Telemetry.objects.filter(vehicle=vehicle, speed_kmph__gt=MOVING_KMPH)
+        .order_by("-received_at", "-pk")
+        .first()
+    )
+    since = last_moving.received_at if last_moving else vehicle.created_at
+    idle_minutes = (t.received_at - since).total_seconds() / 60
+    if idle_minutes < th.max_idle_minutes:
+        return
+    # rising edge only: one alert per idle stretch, not one per point while it continues
+    prev_idle_minutes = (prev.received_at - since).total_seconds() / 60 if prev else 0
+    if prev_idle_minutes >= th.max_idle_minutes:
+        return
+    raise_alert(
+        company, type=Alert.Type.IDLE_TOO_LONG, severity=Alert.Severity.WARNING,
+        title=f"Idle {int(idle_minutes)} min",
+        message=f"{vehicle.registration_number} has not moved for {int(idle_minutes)} minutes.",
+        vehicle=vehicle, device=device,
+        lat=t.latitude if t.has_gps_fix else None,
+        lng=t.longitude if t.has_gps_fix else None,
+        meta={"idle_minutes": int(idle_minutes)},
+    )
 
 
 # --- vehicle live status ------------------------------------------------
@@ -253,6 +328,22 @@ def mark_offline(now=None):
             if vehicle:
                 vehicle.status = vehicle.Status.OFFLINE
                 vehicle.save(update_fields=["status"])
+                # A trip normally only closes when a *new* telemetry point reveals the
+                # gap; a device that goes silent for good would otherwise leave its
+                # last trip "active" forever. Close it here using the last known point.
+                active_trip = (
+                    Trip.objects.filter(vehicle=vehicle, status=Trip.Status.ACTIVE)
+                    .order_by("-started_at")
+                    .first()
+                )
+                if active_trip:
+                    last_point = (
+                        Telemetry.objects.filter(vehicle=vehicle)
+                        .order_by("-received_at", "-pk")
+                        .first()
+                    )
+                    if last_point:
+                        _close_trip(active_trip, last_point)
             raise_alert(
                 company, type=Alert.Type.DEVICE_OFFLINE, severity=Alert.Severity.WARNING,
                 title="Device offline",

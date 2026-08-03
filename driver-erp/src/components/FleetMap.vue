@@ -5,6 +5,7 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import L from 'leaflet'
+import { TILE_URL, TILE_ATTRIBUTION, TILE_SUBDOMAINS } from '../tiles'
 
 const props = defineProps({
   markers: { type: Array, default: () => [] }, // [{id,lat,lng,label,status}]
@@ -48,9 +49,7 @@ function draw() {
 
 onMounted(() => {
   map = L.map(el.value, { zoomControl: true }).setView([21.145, 81.664], 12)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd', maxZoom: 20, attribution: '© OpenStreetMap © CARTO',
-  }).addTo(map)
+  L.tileLayer(TILE_URL, { subdomains: TILE_SUBDOMAINS, maxZoom: 20, attribution: TILE_ATTRIBUTION }).addTo(map)
   markerLayer = L.layerGroup().addTo(map)
   trackLayer = L.layerGroup().addTo(map)
   draw()

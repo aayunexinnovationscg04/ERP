@@ -70,6 +70,9 @@ class CompanySettings(models.Model):
     low_fuel_litres = models.FloatField(null=True, blank=True)
     theft_drop_litres = models.FloatField(default=5)
     tamper_on_lock_change = models.BooleanField(default=True)
+    max_idle_minutes = models.PositiveIntegerField(
+        default=45, help_text="Alert when a vehicle sits stopped (not moving) this long."
+    )
 
     class Meta:
         verbose_name_plural = "company settings"

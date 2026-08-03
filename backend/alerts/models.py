@@ -18,6 +18,7 @@ class Alert(models.Model):
         TAMPER = "tamper", "Tamper"
         DEVICE_OFFLINE = "device_offline", "Device offline"
         SENSOR_FAULT = "sensor_fault", "Sensor fault"
+        IDLE_TOO_LONG = "idle_too_long", "Idle too long"
 
     class Severity(models.TextChoices):
         INFO = "info", "Info"

@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from django.db.models import Sum
+from django.db.models import Case, IntegerField, Sum, Value, When
 from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -10,22 +10,56 @@ from core.permissions import (CanWriteOrReadOnly, CompanyScopedQuerysetMixin,
                               IsOwnerOrAdmin)
 from ingest.models import Command
 
-from .models import Device, Geofence, Telemetry, Trip, Vehicle
-from .serializers import (DeviceSerializer, GeofenceSerializer,
+from .models import Device, Driver, Geofence, Telemetry, Trip, Vehicle
+from .serializers import (DeviceSerializer, DriverDetailSerializer,
+                          DriverListSerializer, GeofenceSerializer,
                           TelemetrySerializer, TripSerializer,
                           VehicleDetailSerializer, VehicleListSerializer)
 
 MAX_HISTORY = 5000
+STATUS_VALUES = [c[0] for c in Vehicle.Status.choices]
 
 
 class VehicleViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsOwnerOrAdmin]
 
     def get_queryset(self):
-        return self.scoped(Vehicle.objects.select_related("device", "active_driver"))
+        qs = self.scoped(
+            Vehicle.objects.select_related("device", "active_driver")
+                           .prefetch_related("documents")
+        )
+        # ?priority_status=active|idle|offline|maintenance sorts that status to the
+        # top; the client only tracks *which* status is prioritised (for the arrow
+        # icon) and re-requests — the actual row ordering happens here, in the DB.
+        priority = self.request.query_params.get("priority_status")
+        if priority in STATUS_VALUES:
+            qs = qs.annotate(
+                _priority=Case(
+                    When(status=priority, then=Value(0)),
+                    default=Value(1), output_field=IntegerField(),
+                )
+            ).order_by("_priority", "registration_number")
+        else:
+            qs = qs.order_by("registration_number")
+        return qs
 
     def get_serializer_class(self):
         return VehicleDetailSerializer if self.action == "retrieve" else VehicleListSerializer
+
+    @action(detail=True, methods=["patch"], permission_classes=[IsOwnerOrAdmin, CanWriteOrReadOnly])
+    def local_name(self, request, pk=None):
+        """The only writable field on this otherwise read-only viewset — a
+        dealer-facing nickname, separate from the write-gating on everything
+        else fleet-related (which has no create/update UI at all yet)."""
+        vehicle = self.get_object()
+        name = (request.data.get("local_name") or "").strip()
+        if not name:
+            return Response({"error": "local_name is required"}, status=400)
+        if len(name) > 10:
+            return Response({"error": "local_name must be 10 characters or fewer"}, status=400)
+        vehicle.local_name = name
+        vehicle.save(update_fields=["local_name"])
+        return Response({"id": vehicle.id, "local_name": vehicle.local_name})
 
     @action(detail=True)
     def telemetry(self, request, pk=None):
@@ -122,3 +156,15 @@ class DashboardViewSet(CompanyScopedQuerysetMixin, viewsets.ViewSet):
             "distance_today_km": round(agg["dist"] or 0, 1),
             "fuel_today_litres": round(agg["fuel"] or 0, 1),
         })
+
+
+class DriverViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
+    permission_classes = [IsOwnerOrAdmin]
+
+    def get_queryset(self):
+        return self.scoped(
+            Driver.objects.prefetch_related("vehicles", "attendance")
+        ).order_by("name")
+
+    def get_serializer_class(self):
+        return DriverDetailSerializer if self.action == "retrieve" else DriverListSerializer

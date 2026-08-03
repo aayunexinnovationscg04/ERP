@@ -30,10 +30,15 @@ class DerivationTests(TestCase):
         self.vehicle = Vehicle.objects.create(
             company=self.company, registration_number="R1", device=self.device)
 
-    def _emit(self, **fields):
+    def _emit(self, received_at=None, **fields):
         f = dict(has_gps_fix=True, latitude=21.1, longitude=81.6, recording=True)
         f.update(fields)
         t = Telemetry.objects.create(device=self.device, vehicle=self.vehicle, **f)
+        if received_at is not None:
+            # received_at is auto_now_add=True, which ignores any value passed to
+            # create() on INSERT -- patch it with a real UPDATE instead.
+            Telemetry.objects.filter(pk=t.pk).update(received_at=received_at)
+            t.refresh_from_db()
         process_telemetry(t)
         return t
 
@@ -44,10 +49,16 @@ class DerivationTests(TestCase):
         self.assertEqual(Alert.objects.filter(type=Alert.Type.OVERSPEED).count(), 1)
 
     def test_trip_opens_and_closes(self):
-        self._emit(speed_kmph=30, latitude=21.10, longitude=81.60)
-        self._emit(speed_kmph=30, latitude=21.11, longitude=81.60)
+        # Real device pings land ~60-100s apart (see PHASE1_SPEC); space these the same
+        # way so the GPS-jitter plausibility guard in _accumulate_trip doesn't reject a
+        # perfectly normal ~1.1km hop as an impossible-speed outlier.
+        now = timezone.now()
+        self._emit(speed_kmph=30, latitude=21.10, longitude=81.60, received_at=now)
+        self._emit(speed_kmph=30, latitude=21.11, longitude=81.60,
+                   received_at=now + timezone.timedelta(seconds=90))
         self.assertEqual(Trip.objects.filter(status="active").count(), 1)
-        self._emit(speed_kmph=0, recording=False)  # recording off closes trip
+        self._emit(speed_kmph=0, recording=False,
+                   received_at=now + timezone.timedelta(seconds=180))  # recording off closes trip
         self.assertEqual(Trip.objects.filter(status="active").count(), 0)
         trip = Trip.objects.first()
         self.assertGreater(trip.distance_km, 0.9)   # ~1.1 km travelled

@@ -108,6 +108,7 @@ import L from 'leaflet'
 import { Plus, X, Save, MapPin, Trash2, Eye, EyeOff, Lock } from 'lucide-vue-next'
 import { getGeofences, createGeofence, updateGeofence, deleteGeofence } from '../api'
 import { auth } from '../auth'
+import { TILE_URL, TILE_ATTRIBUTION, TILE_SUBDOMAINS } from '../tiles'
 import { toast } from '../toast'
 
 const canWrite = computed(() => auth.user?.may_write !== false)
@@ -256,9 +257,7 @@ async function load() {
 function initMap() {
   if (map || !mapEl.value) return
   map = L.map(mapEl.value, { zoomControl: true }).setView([21.145, 81.664], 12)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd', maxZoom: 20, attribution: '© OpenStreetMap © CARTO',
-  }).addTo(map)
+  L.tileLayer(TILE_URL, { subdomains: TILE_SUBDOMAINS, maxZoom: 20, attribution: TILE_ATTRIBUTION }).addTo(map)
   zoneLayer = L.layerGroup().addTo(map)
   draftLayer = L.layerGroup().addTo(map)
   map.on('click', (e) => {
