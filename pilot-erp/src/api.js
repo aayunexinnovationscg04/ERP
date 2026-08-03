@@ -36,14 +36,14 @@ api.interceptors.response.use(
 
 export default api
 
-// --- endpoint helpers (driver-scoped) ---
+// --- endpoint helpers (pilot-scoped) ---
 export const login = (username, password) =>
   api.post('/auth/login', { username, password }).then((r) => r.data)
 export const getMe = () => api.get('/auth/me').then((r) => r.data)
-export const getSummary = () => api.get('/driver/summary').then((r) => r.data)
-export const getMyVehicle = () => api.get('/driver/vehicle').then((r) => r.data)
+export const getSummary = () => api.get('/pilot/summary').then((r) => r.data)
+export const getMyVehicle = () => api.get('/pilot/vehicle').then((r) => r.data)
 export const getMyTrack = (limit = 500) =>
-  api.get('/driver/vehicle/telemetry', { params: { limit } }).then((r) => r.data)
-export const getMyTrips = () => api.get('/driver/trips').then((r) => r.data)
+  api.get('/pilot/vehicle/telemetry', { params: { limit } }).then((r) => r.data)
+export const getMyTrips = () => api.get('/pilot/trips').then((r) => r.data)
 export const getMyAlerts = (params = {}) =>
-  api.get('/driver/alerts', { params }).then((r) => r.data)
+  api.get('/pilot/alerts', { params }).then((r) => r.data)

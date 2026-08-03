@@ -17,7 +17,9 @@
 
   <div v-else>
     <!-- status hero -->
-    <div class="card hero">
+    <motion.div class="card hero"
+      :initial="{ opacity: 0, y: reduced ? 0 : 10 }" :animate="{ opacity: 1, y: 0 }"
+      :transition="pageTransition(reduced)">
       <div class="row">
         <div>
           <div class="reg">{{ v.registration_number }}</div>
@@ -25,22 +27,38 @@
         </div>
         <div class="spacer"></div>
         <div style="text-align:right">
-          <span class="badge" :class="v.status">{{ v.status }}</span>
+          <span class="badge" :class="v.status"><span class="dot"></span>{{ v.status }}</span>
           <div style="margin-top:8px">
-            <span class="badge" :class="summary.on_trip ? 'on' : 'off'">
-              {{ summary.on_trip ? '● On trip' : 'Parked' }}
-            </span>
+            <AnimatePresence mode="wait">
+              <motion.span class="badge" :class="summary.on_trip ? 'on' : 'off'" :key="summary.on_trip ? 'on' : 'off'"
+                :initial="{ opacity: 0, scale: reduced ? 1 : 0.85 }" :animate="{ opacity: 1, scale: 1 }"
+                :exit="{ opacity: 0, scale: reduced ? 1 : 0.85 }" :transition="emphasisTransition(reduced)">
+                <span class="dot"></span>{{ summary.on_trip ? 'On trip' : 'Parked' }}
+              </motion.span>
+            </AnimatePresence>
           </div>
         </div>
       </div>
 
       <div class="chips">
-        <div class="chip"><div class="l">Speed</div><div class="v ico"><Gauge :size="18" /> {{ fmt(latest?.speed_kmph) }} <small class="muted">km/h</small></div></div>
-        <div class="chip"><div class="l">Distance today</div><div class="v ico"><Milestone :size="18" /> {{ summary.distance_today_km ?? 0 }} <small class="muted">km</small></div></div>
-        <div class="chip"><div class="l">Fuel cap</div><div class="v ico"><component :is="latest?.lock_active ? Lock : LockOpen" :size="18" /> {{ latest?.lock_active ? 'Locked' : 'Open' }}</div></div>
-        <div class="chip"><div class="l">GPS</div><div class="v ico"><Satellite :size="18" /> {{ latest?.has_gps_fix ? ((latest?.satellites ?? 0) + ' sats') : 'No fix' }}</div></div>
+        <div class="chip">
+          <span class="chip-ic"><Gauge :size="17" /></span>
+          <div class="chip-body"><div class="l">Speed</div><div class="v">{{ fmt(latest?.speed_kmph) }} <small class="muted">km/h</small></div></div>
+        </div>
+        <div class="chip">
+          <span class="chip-ic"><Milestone :size="17" /></span>
+          <div class="chip-body"><div class="l">Distance today</div><div class="v">{{ summary.distance_today_km ?? 0 }} <small class="muted">km</small></div></div>
+        </div>
+        <div class="chip">
+          <span class="chip-ic"><component :is="latest?.lock_active ? Lock : LockOpen" :size="17" /></span>
+          <div class="chip-body"><div class="l">Fuel cap</div><div class="v">{{ latest?.lock_active ? 'Locked' : 'Open' }}</div></div>
+        </div>
+        <div class="chip">
+          <span class="chip-ic"><Satellite :size="17" /></span>
+          <div class="chip-body"><div class="l">GPS</div><div class="v">{{ latest?.has_gps_fix ? ((latest?.satellites ?? 0) + ' sats') : 'No fix' }}</div></div>
+        </div>
       </div>
-    </div>
+    </motion.div>
 
     <!-- speed data viz -->
     <div v-if="spark" class="card viz-card">
@@ -69,11 +87,20 @@
       </div>
     </div>
 
-    <div v-if="summary.open_alerts" class="card item" style="border-color:var(--crit)">
-      <div><div class="t ico"><Bell :size="16" /> {{ summary.open_alerts }} open alert{{ summary.open_alerts > 1 ? 's' : '' }}</div>
-        <div class="d">Tap the Alerts tab to review</div></div>
-      <router-link to="/alerts" class="badge critical" style="align-self:center">View</router-link>
-    </div>
+    <AnimatePresence>
+      <motion.div v-if="summary.open_alerts" key="alert-banner" class="card item" style="border-color:var(--crit)"
+        :initial="{ opacity: 0, y: reduced ? 0 : -8, scale: reduced ? 1 : 0.98 }" :animate="{ opacity: 1, y: 0, scale: 1 }"
+        :exit="{ opacity: 0, scale: reduced ? 1 : 0.98 }" :transition="emphasisTransition(reduced)">
+        <div class="item-row">
+          <span class="item-ic critical"><Bell :size="17" /></span>
+          <div>
+            <div class="t">{{ summary.open_alerts }} open alert{{ summary.open_alerts > 1 ? 's' : '' }}</div>
+            <div class="d">Tap the Alerts tab to review</div>
+          </div>
+        </div>
+        <router-link to="/alerts" class="badge critical" style="align-self:center">View</router-link>
+      </motion.div>
+    </AnimatePresence>
 
     <div class="section-title">Live location &amp; today's route</div>
     <FleetMap :markers="markers" :track="track" />
@@ -86,10 +113,13 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { motion, AnimatePresence } from 'motion-v'
 import { Truck, Gauge, Milestone, Lock, LockOpen, Satellite, Bell } from 'lucide-vue-next'
 import FleetMap from '../components/FleetMap.vue'
 import { getSummary, getMyTrack } from '../api'
+import { usePrefersReducedMotion, pageTransition, emphasisTransition } from '../motion'
 
+const reduced = usePrefersReducedMotion()
 const loading = ref(true)
 const summary = ref({})
 const track = ref([])
