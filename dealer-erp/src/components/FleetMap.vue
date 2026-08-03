@@ -1,10 +1,17 @@
 <template>
-  <div ref="el" class="map"></div>
+  <div class="map-wrap">
+    <div ref="el" class="map"></div>
+    <a v-if="googleMapsUrl" :href="googleMapsUrl" target="_blank" rel="noopener"
+      class="gmaps-btn" title="Open in Google Maps">
+      <ExternalLink :size="14" /> <span>Google Maps</span>
+    </a>
+  </div>
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import L from 'leaflet'
+import { ExternalLink } from 'lucide-vue-next'
 import { TILE_URL, TILE_ATTRIBUTION, TILE_SUBDOMAINS } from '../tiles'
 
 const props = defineProps({
@@ -12,6 +19,17 @@ const props = defineProps({
   track: { type: Array, default: () => [] },    // [[lat,lng], ...]
 })
 const emit = defineEmits(['select'])
+
+// Universal Google Maps link (opens the native app on phone, maps.google.com
+// on desktop - same URL works for both, no device detection needed). Prefers
+// the most recent track point (actual live GPS fix) over a marker's position,
+// falling back to the first marker for maps with no route history.
+const googleMapsUrl = computed(() => {
+  const last = props.track.length ? props.track[props.track.length - 1] : null
+  const [lat, lng] = last || (props.markers[0] ? [props.markers[0].lat, props.markers[0].lng] : [])
+  if (lat == null || lng == null) return null
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+})
 
 const el = ref(null)
 let map, markerLayer, trackLayer
