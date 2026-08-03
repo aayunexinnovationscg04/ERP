@@ -251,7 +251,12 @@ input[type=checkbox]:disabled { cursor: default; opacity: .55; }
   border-right: 1px solid var(--ink-border);
   padding: 1.35rem 1rem; display: flex; flex-direction: column;
   background-image: radial-gradient(120% 60% at 15% 0%, rgba(139,92,246,.10), transparent 60%);
-  overflow-y: auto;
+  /* .sidebar is also a CSS Grid item (child of .app) — grid items default to
+     min-height:auto same as flex items, which lets them grow past the grid
+     row's stretched height to fit content instead of scrolling internally.
+     min-height:0 here is what actually lets .nav's own overflow-y:auto work,
+     rather than the whole sidebar (and page) growing taller than the screen. */
+  min-height: 0;
 }
 .brand {
   font-size: 1.02rem; font-weight: 800; margin-bottom: 1.6rem;
@@ -275,7 +280,10 @@ input[type=checkbox]:disabled { cursor: default; opacity: .55; }
 .theme-toggle:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(139,92,246,.28); }
 
 /* ---- grouped nav: collapsible section clusters ---- */
-.nav { display: flex; flex-direction: column; gap: .1rem; }
+/* flex:1 + min-height:0 is what makes ONLY this region scroll when the icon
+   list is taller than the viewport — the sidebar frame itself stays pinned
+   to the screen (brand header above, controls+logout below never scroll away). */
+.nav { display: flex; flex-direction: column; gap: .1rem; flex: 1; min-height: 0; overflow-y: auto; }
 .nav-group { display: flex; flex-direction: column; }
 .nav-group-head {
   display: flex; align-items: center; gap: .55rem; width: 100%;
