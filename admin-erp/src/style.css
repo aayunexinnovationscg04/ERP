@@ -70,8 +70,11 @@
   --grp-5: #fb7185; --grp-5-soft: rgba(251, 113, 133, .13);
   --grp-6: #34d399; --grp-6-soft: rgba(52, 211, 153, .13);
 
-  /* type scale — confident, condensed tracking on headings, tabular numerals for data */
-  --font-ui: ui-sans-serif, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* type scale — confident, condensed tracking on headings, tabular numerals for data.
+     Inter Variable is self-hosted (@fontsource-variable/inter, imported in main.js)
+     so headlines actually render in Inter everywhere instead of silently falling
+     back to the OS system-ui face. */
+  --font-ui: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
   --fs-2xl: clamp(1.375rem, 1.1rem + .9vw, 1.75rem);
   --fs-xl: clamp(1.125rem, 1rem + .5vw, 1.35rem);
@@ -100,7 +103,9 @@ body {
   font-family: var(--font-ui);
   background: var(--bg); color: var(--text); font-size: 14.5px; line-height: 1.45;
   -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased;
+  font-optical-sizing: auto;
 }
+h1, h2, h3 { font-family: var(--font-ui); }
 a { color: var(--brand-bright); text-decoration: none; }
 .num, .tabular { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 
@@ -181,12 +186,28 @@ input[type=checkbox]:disabled { cursor: default; opacity: .55; }
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
   position: relative;
 }
-.nav a .ic { flex: none; }
+/* nav icon chip — same "colored chip" language as the Platform Health stat
+   tiles (.stat-icon), so nav glyphs carry equal visual weight instead of
+   floating as bare line-icons next to the text. Active item gets a brighter
+   tinted chip + a bolder stroke so it reads as meaningfully "on", not just
+   a different text color. */
+.nav a .ic {
+  flex: none; width: 28px; height: 28px; border-radius: var(--radius-xs);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.05); color: var(--ink-muted);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
 .nav a:hover { background: rgba(255,255,255,.06); color: var(--ink-text); }
+.nav a:hover .ic { background: rgba(255,255,255,.1); color: var(--ink-text); }
 .nav a:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(139,92,246,.28); }
 .nav a.router-link-active {
   background: var(--accent-grad); color: #fff; box-shadow: 0 4px 14px rgba(139,92,246,.32);
 }
+.nav a.router-link-active .ic {
+  background: rgba(255,255,255,.2); color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.24);
+}
+.nav a.router-link-active .ic svg.lucide { stroke-width: 2.6; }
 .logout-btn:hover { background: rgba(139,92,246,.16) !important; border-color: rgba(139,92,246,.35) !important; }
 .main { overflow: auto; padding: var(--content-pad-y) var(--content-pad-x); background: var(--bg); }
 
@@ -253,6 +274,24 @@ tr.group-row td {
   background: var(--grp-color-soft, var(--surface-2));
   border-left: 3px solid var(--grp-color, var(--border-strong));
 }
+/* small solid marker before the group label — same "dot" language as
+   .role-badge .dot-mini / .dot, so a group header reads as a considered
+   glyph rather than plain uppercase text (module groups are data-driven,
+   so a per-name icon isn't appropriate — a colored marker is). */
+tr.group-row .grp-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--grp-color, var(--muted)); margin-right: .55rem;
+  box-shadow: 0 0 0 3px var(--grp-color-soft, transparent);
+  vertical-align: middle;
+}
+
+/* table footer strip — gives a sparsely-populated table card a definite,
+   intentional close instead of trailing off into empty space below the row */
+.table-foot {
+  padding: .65rem .95rem; font-size: var(--fs-xs); font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2);
+  border-top: 1px solid var(--border);
+}
 
 /* role badges — each role gets its own hue: tinted glass fill + solid dot, not black outlines */
 .role-badge {
@@ -266,6 +305,25 @@ tr.group-row td {
 .role-badge.dealer { background: var(--role-dealer-soft); color: var(--role-dealer); border-color: rgba(245,158,11,.35); }
 .role-badge.manager { background: var(--role-manager-soft); color: var(--role-manager); border-color: rgba(45,212,191,.35); }
 .role-badge.pilot { background: var(--role-pilot-soft); color: var(--role-pilot); border-color: rgba(56,189,248,.35); }
+
+/* "action pill" — outlined ghost-button treatment for a row-level navigation
+   link (e.g. Users table "Tabs & overrides") so it carries the same visual
+   weight as the role badges / toggle switches beside it, instead of reading
+   as bare underlined text — the pill radius matches .role-badge / .toggle,
+   the brand-tinted icon gives it a clear affordance as an action, not data. */
+.tabs-link {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .36rem .78rem; border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong); background: var(--surface-3);
+  color: var(--text); font-size: var(--fs-xs); font-weight: 700;
+  letter-spacing: .02em; white-space: nowrap;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease),
+              color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.tabs-link svg { color: var(--brand-bright); flex: none; }
+.tabs-link:hover { background: var(--brand-soft); border-color: rgba(139,92,246,.45); color: var(--ink-text); transform: translateY(-1px); }
+.tabs-link:active { transform: translateY(0) scale(.98); }
+.tabs-link:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); }
 
 /* generic badges — semantic status colors, glass-tinted for dark surfaces */
 .badge { padding: 3px 11px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 700;
@@ -409,6 +467,22 @@ tr.group-row td {
 /* ---- inline icon + text alignment ---- */
 .ico { display: inline-flex; align-items: center; gap: 7px; }
 .brand svg, .topbar svg, .badge svg { flex: none; }
+
+/* ---- icon weight system ----
+   lucide's default 2px stroke reads thin/generic at small sizes, especially
+   against this dark, saturated "control tower" palette. Bump every icon under
+   20px up to 2.25 so glyphs read with more precision and confidence — this is
+   an ops console, not a marketing site. Attribute-selected by the rendered
+   width (== the :size prop) rather than a blanket rule so we don't have to
+   touch every template call site individually. The one pre-existing explicit
+   stroke-width (the matrix-checkbox tick, set to 3 for a bold confirm mark)
+   is preserved via a higher-specificity override below. */
+svg.lucide[width="12"], svg.lucide[width="13"], svg.lucide[width="14"],
+svg.lucide[width="15"], svg.lucide[width="16"], svg.lucide[width="17"],
+svg.lucide[width="18"], svg.lucide[width="19"] {
+  stroke-width: 2.25;
+}
+.mcheck .tick svg.lucide { stroke-width: 3; }
 
 /* ---- skeleton loading ---- */
 @keyframes shimmer { 100% { transform: translateX(100%); } }

@@ -15,7 +15,7 @@
 
   <AnimatePresence>
     <motion.div
-      v-if="showCreate" class="card" style="padding:16px;margin-bottom:18px"
+      v-if="showCreate" class="card users-card" style="padding:16px;margin-bottom:18px"
       :initial="{ opacity: 0, height: 0 }" :animate="{ opacity: 1, height: 'auto' }" :exit="{ opacity: 0, height: 0 }"
       :transition="{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }"
     >
@@ -40,7 +40,7 @@
     </motion.div>
   </AnimatePresence>
 
-  <div class="card" style="padding:6px 0">
+  <div class="card users-card" style="padding:6px 0">
     <table>
       <thead><tr><th>Username</th><th>Role</th><th>Company</th><th>Active</th><th>Access</th></tr></thead>
       <tbody v-if="loading">
@@ -72,17 +72,18 @@
           <td>
             <ToggleSwitch :model-value="u.is_active" @change="(v) => patch(u, { is_active: v })" />
           </td>
-          <td><router-link :to="`/users/${u.id}/permissions`" class="ico">Tabs &amp; overrides <ChevronRight :size="14" /></router-link></td>
+          <td><router-link :to="`/users/${u.id}/permissions`" class="tabs-link"><SlidersHorizontal :size="13" /> Tabs &amp; overrides</router-link></td>
         </motion.tr>
       </tbody>
     </table>
+    <div v-if="!loading" class="table-foot">{{ users.length }} {{ users.length === 1 ? 'user' : 'users' }} total</div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { motion, AnimatePresence } from 'motion-v'
-import { Plus, ChevronRight } from 'lucide-vue-next'
+import { Plus, SlidersHorizontal } from 'lucide-vue-next'
 import { getUsers, createUser, updateUser, getCompanies } from '../api'
 import { toast } from '../toast'
 import ToggleSwitch from '../components/ToggleSwitch.vue'
@@ -126,6 +127,10 @@ onMounted(load)
 </script>
 
 <style scoped>
+/* cap the table card's width so a handful of demo rows reads as a
+   deliberately-sized panel rather than a mostly-empty full-bleed table
+   stretched across the whole content column */
+.users-card { max-width: 980px; }
 .formgrid { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 10px; }
 select { font: inherit; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); padding: 9px 10px; border-radius: 8px; }
 .role-select { font-weight: 700; font-size: 12.5px; }

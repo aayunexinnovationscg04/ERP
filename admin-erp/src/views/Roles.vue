@@ -32,7 +32,7 @@
       </thead>
       <tbody>
         <template v-for="g in groups" :key="g">
-          <tr class="group-row" :style="groupStyle(g)"><td :colspan="editableRoles.length + 2">{{ g }}</td></tr>
+          <tr class="group-row" :style="groupStyle(g)"><td :colspan="editableRoles.length + 2"><span class="grp-dot"></span>{{ g }}</td></tr>
           <motion.tr
             v-for="(m, idx) in modulesByGroup[g]" :key="m.key"
             :initial="{ opacity: 0, y: 4 }" :animate="{ opacity: 1, y: 0 }"

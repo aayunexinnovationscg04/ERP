@@ -16,15 +16,11 @@
         </div>
       </div>
       <nav class="nav" @click="menuOpen = false">
-        <router-link to="/users"><Users :size="18" class="ic" /> Users</router-link>
-        <router-link to="/roles"><KeyRound :size="18" class="ic" /> Role Management</router-link>
-        <router-link to="/platform"><Activity :size="18" class="ic" /> Platform</router-link>
+        <router-link to="/users"><span class="ic"><Users :size="18" /></span> Users</router-link>
+        <router-link to="/roles"><span class="ic"><KeyRound :size="18" /></span> Role Management</router-link>
+        <router-link to="/platform"><span class="ic"><Activity :size="18" /></span> Platform</router-link>
       </nav>
       <div style="flex:1"></div>
-      <div class="ico" style="font-size:12px;color:var(--ink-muted)">
-        <span style="width:7px;height:7px;border-radius:50%;background:var(--brand-bright);flex:none;box-shadow:0 0 0 3px rgba(139,92,246,.25)"></span>
-        {{ auth.user?.username }} · admin
-      </div>
       <button class="logout-btn" style="margin-top:12px;background:rgba(255,255,255,.06);border-color:var(--ink-border);color:var(--ink-text)" @click="logout">Log out</button>
     </aside>
     <main class="main">
