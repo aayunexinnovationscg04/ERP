@@ -23,13 +23,6 @@
     <aside class="sidebar" :class="{ open: menuOpen }">
       <div class="side-head">
         <div class="brand side-brand"><span class="logo-chip"><img :src="logo" alt="" class="side-brand-logo" /></span> <span class="label">Fuel Guard X</span></div>
-        <button class="theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
-          <Sun v-if="theme === 'dark'" :size="16" />
-          <Moon v-else :size="16" />
-        </button>
-        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
-        </button>
       </div>
       <nav class="nav" @click="menuOpen = false">
         <div class="nav-group" v-for="g in NAV_GROUPS" :key="g.id">
@@ -48,6 +41,15 @@
         </div>
       </nav>
       <div class="spacer" style="flex:1"></div>
+      <div class="sidebar-controls">
+        <button class="theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+          <Sun v-if="theme === 'dark'" :size="16" />
+          <Moon v-else :size="16" />
+        </button>
+        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
+        </button>
+      </div>
       <button class="logout-btn" style="margin-top:12px" @click="logout" title="Log out">
         <PowerOff :size="16" class="ic" /><span class="label">Log out</span>
       </button>
