@@ -193,6 +193,10 @@ input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px v
 }
 .collapse-btn:hover, .theme-toggle:hover { background: var(--surface-2); color: var(--text); }
 .theme-toggle:active { transform: scale(.92); }
+.sidebar-controls { display: flex; align-items: center; gap: 4px; padding: 0 2px; }
+.sidebar-controls .theme-toggle, .sidebar-controls .collapse-btn {
+  width: 30px; height: 30px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
 
 .nav { display: flex; flex-direction: column; gap: 3px; }
 .nav a {
@@ -255,6 +259,7 @@ a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); border
   .app.collapsed .label { display: none; }
   .app.collapsed .nav a { justify-content: center; padding: 12px; }
   .app.collapsed .logout-btn { justify-content: center; padding: 12px; }
+  .app.collapsed .sidebar-controls { flex-direction: column; }
   /* collapsed rail is icon-only: grouping reads as clutter at that width, so
      headers/chevrons/dividers disappear and every item's icon just stacks */
   .app.collapsed .nav-group-head { display: none; }

@@ -23,15 +23,6 @@
     <aside class="sidebar">
       <div class="side-head">
         <div class="brand side-brand"><img :src="logo" alt="" class="side-brand-logo" /> <span class="label">Fuel Guard X</span></div>
-        <div class="side-head-actions">
-          <button class="theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
-            <Sun v-if="theme === 'dark'" :size="16" :stroke-width="2.25" />
-            <Moon v-else :size="16" :stroke-width="2.25" />
-          </button>
-          <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-            <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" :stroke-width="2.25" />
-          </button>
-        </div>
       </div>
 
       <nav class="nav nav-grouped">
@@ -52,6 +43,15 @@
       </nav>
 
       <div class="spacer" style="flex:1"></div>
+      <div class="sidebar-controls">
+        <button class="theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+          <Sun v-if="theme === 'dark'" :size="16" :stroke-width="2.25" />
+          <Moon v-else :size="16" :stroke-width="2.25" />
+        </button>
+        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" :stroke-width="2.25" />
+        </button>
+      </div>
       <button class="logout-btn" style="margin-top:12px" @click="logout" title="Log out">
         <PowerOff :size="16" :stroke-width="2.25" class="ic" /><span class="label">Log out</span>
       </button>
@@ -85,7 +85,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { motion, AnimatePresence } from 'motion-v'
 import {
@@ -135,22 +135,29 @@ const navGroups = [
 ]
 
 const NAV_GROUPS_KEY = 'fgx_pilot_nav_groups'
-function loadGroupState() {
-  try { return JSON.parse(localStorage.getItem(NAV_GROUPS_KEY) || '{}') } catch (e) { return {} }
-}
-const groupState = reactive(loadGroupState())
-watch(groupState, (v) => localStorage.setItem(NAV_GROUPS_KEY, JSON.stringify(v)), { deep: true })
-
 function groupHasActiveRoute(g) {
   return g.items.some((item) => route.path === item.to)
 }
-// default expanded; a group holding the active route always stays expanded
-// regardless of stored/toggled state
+
+// Accordion: at most ONE group open at a time. Navigating to a page
+// auto-opens its group (so the active link is never hidden on arrival),
+// but afterward the toggle is a real toggle — clicking an open group
+// (including the active one) closes it, and it only re-opens on the next
+// navigation into that section.
+const initialGroup = navGroups.find(groupHasActiveRoute)?.key
+  ?? localStorage.getItem(NAV_GROUPS_KEY)
+  ?? navGroups[0].key
+const openGroupKey = ref(initialGroup)
+watch(openGroupKey, (v) => localStorage.setItem(NAV_GROUPS_KEY, v || ''))
+watch(() => route.path, () => {
+  const g = navGroups.find(groupHasActiveRoute)
+  if (g) openGroupKey.value = g.key
+})
+
 function isGroupOpen(g) {
-  if (groupHasActiveRoute(g)) return true
-  return groupState[g.key] !== false
+  return openGroupKey.value === g.key
 }
 function toggleGroup(g) {
-  groupState[g.key] = !isGroupOpen(g)
+  openGroupKey.value = openGroupKey.value === g.key ? null : g.key
 }
 </script>
