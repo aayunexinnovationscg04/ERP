@@ -13,9 +13,9 @@
         <div class="bs-portal">Pilot Portal</div>
         <p class="bs-tag">Your assigned truck, live location, trips and safety alerts — right in your pocket.</p>
         <ul class="bs-list">
-          <li><span class="bs-ic"><Check :size="13" /></span> Live truck location &amp; today's route</li>
-          <li><span class="bs-ic"><Check :size="13" /></span> Trip history at a glance</li>
-          <li><span class="bs-ic"><Check :size="13" /></span> Safety &amp; security alerts</li>
+          <li><span class="bs-ic"><Check :size="13" :stroke-width="2.75" /></span> Live truck location &amp; today's route</li>
+          <li><span class="bs-ic"><Check :size="13" :stroke-width="2.75" /></span> Trip history at a glance</li>
+          <li><span class="bs-ic"><Check :size="13" :stroke-width="2.75" /></span> Safety &amp; security alerts</li>
         </ul>
       </motion.div>
     </section>
@@ -32,21 +32,21 @@
         <form @submit.prevent="submit">
           <label>Username</label>
           <div class="field">
-            <User :size="16" class="field-ic" />
+            <User :size="16" :stroke-width="2.25" class="field-ic" />
             <input v-model="username" autocomplete="username" autocapitalize="none" inputmode="text" />
           </div>
           <label>Password</label>
           <div class="field">
-            <Lock :size="16" class="field-ic" />
+            <Lock :size="16" :stroke-width="2.25" class="field-ic" />
             <input v-model="password" :type="showPw ? 'text' : 'password'" autocomplete="current-password" />
             <button type="button" class="field-toggle" tabindex="-1" @click="showPw = !showPw" :aria-label="showPw ? 'Hide password' : 'Show password'">
-              <component :is="showPw ? EyeOff : Eye" :size="16" />
+              <component :is="showPw ? EyeOff : Eye" :size="16" :stroke-width="2.25" />
             </button>
           </div>
           <motion.button class="primary" type="submit" :disabled="loading"
             :whileTap="reduced ? {} : { scale: 0.98 }">
             {{ loading ? 'Signing in…' : 'Sign in' }}
-            <ArrowRight v-if="!loading" :size="16" />
+            <ArrowRight v-if="!loading" :size="16" :stroke-width="2.25" />
           </motion.button>
           <AnimatePresence>
             <motion.div v-if="error" class="err"

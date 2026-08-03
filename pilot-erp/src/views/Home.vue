@@ -42,19 +42,19 @@
 
       <div class="chips">
         <div class="chip">
-          <span class="chip-ic blue"><Gauge :size="17" /></span>
+          <span class="chip-ic blue"><Gauge :size="17" :stroke-width="2.25" /></span>
           <div class="chip-body"><div class="l">Speed</div><div class="v">{{ fmt(latest?.speed_kmph) }} <small class="muted">km/h</small></div></div>
         </div>
         <div class="chip">
-          <span class="chip-ic violet"><Milestone :size="17" /></span>
+          <span class="chip-ic violet"><Milestone :size="17" :stroke-width="2.25" /></span>
           <div class="chip-body"><div class="l">Distance today</div><div class="v">{{ summary.distance_today_km ?? 0 }} <small class="muted">km</small></div></div>
         </div>
         <div class="chip">
-          <span class="chip-ic" :class="latest?.lock_active ? 'emerald' : 'amber'"><component :is="latest?.lock_active ? Lock : LockOpen" :size="17" /></span>
+          <span class="chip-ic" :class="latest?.lock_active ? 'emerald' : 'amber'"><component :is="latest?.lock_active ? Lock : LockOpen" :size="17" :stroke-width="2.25" /></span>
           <div class="chip-body"><div class="l">Fuel cap</div><div class="v">{{ latest?.lock_active ? 'Locked' : 'Open' }}</div></div>
         </div>
         <div class="chip">
-          <span class="chip-ic cyan"><Satellite :size="17" /></span>
+          <span class="chip-ic cyan"><Satellite :size="17" :stroke-width="2.25" /></span>
           <div class="chip-body"><div class="l">GPS</div><div class="v">{{ latest?.has_gps_fix ? ((latest?.satellites ?? 0) + ' sats') : 'No fix' }}</div></div>
         </div>
       </div>
@@ -92,7 +92,7 @@
         :initial="{ opacity: 0, y: reduced ? 0 : -8, scale: reduced ? 1 : 0.98 }" :animate="{ opacity: 1, y: 0, scale: 1 }"
         :exit="{ opacity: 0, scale: reduced ? 1 : 0.98 }" :transition="emphasisTransition(reduced)">
         <div class="item-row">
-          <span class="item-ic critical"><Bell :size="17" /></span>
+          <span class="item-ic critical"><Bell :size="17" :stroke-width="2.25" /></span>
           <div>
             <div class="t">{{ summary.open_alerts }} open alert{{ summary.open_alerts > 1 ? 's' : '' }}</div>
             <div class="d">Tap the Alerts tab to review</div>

@@ -16,7 +16,9 @@
       :initial="{ opacity: 0, y: reduced ? 0 : 8 }" :animate="{ opacity: 1, y: 0 }"
       :transition="{ duration: reduced ? 0 : 0.22, delay: reduced ? 0 : Math.min(i, 8) * 0.03, ease: EASE }">
       <div class="item-row">
-        <span class="item-ic" :class="severityClass(a.severity) || 'info'"><TriangleAlert :size="17" /></span>
+        <span class="item-ic" :class="severityClass(a.severity) || 'info'">
+          <component :is="severityIcon(a.severity)" :size="17" :stroke-width="2.25" />
+        </span>
         <div>
           <div class="t">{{ a.title || a.type }}</div>
           <div class="d">{{ a.message }}</div>
@@ -34,7 +36,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { motion } from 'motion-v'
-import { CircleCheck, TriangleAlert } from 'lucide-vue-next'
+import { CircleCheck, TriangleAlert, ShieldAlert, Info } from 'lucide-vue-next'
 import { getMyAlerts } from '../api'
 import { usePrefersReducedMotion, EASE } from '../motion'
 
@@ -47,6 +49,14 @@ function severityClass(sev) {
   if (sev === 'critical') return 'critical'
   if (sev === 'warning') return 'warning'
   return ''
+}
+// severity now drives the icon glyph too, not just its color — so a critical
+// alert and an informational one look genuinely different at a glance, the
+// same fix philosophy applied to the trips list
+function severityIcon(sev) {
+  if (sev === 'critical') return ShieldAlert
+  if (sev === 'warning') return TriangleAlert
+  return Info
 }
 
 onMounted(async () => {

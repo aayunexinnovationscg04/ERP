@@ -15,18 +15,17 @@
       <div class="side-head">
         <div class="brand side-brand"><img :src="logo" alt="" class="side-brand-logo" /> <span class="label">Fuel Guard X</span></div>
         <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
+          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" :stroke-width="2.25" />
         </button>
       </div>
       <nav class="nav">
-        <router-link to="/" title="My Truck"><Truck :size="18" class="ic" /><span class="label">My Truck</span></router-link>
-        <router-link to="/trips" title="Trips"><Route :size="18" class="ic" /><span class="label">Trips</span></router-link>
-        <router-link to="/alerts" title="Alerts"><Bell :size="18" class="ic" /><span class="label">Alerts</span></router-link>
+        <router-link to="/" title="My Truck"><Truck :size="18" :stroke-width="2.25" class="ic" /><span class="label">My Truck</span></router-link>
+        <router-link to="/trips" title="Trips"><Route :size="18" :stroke-width="2.25" class="ic" /><span class="label">Trips</span></router-link>
+        <router-link to="/alerts" title="Alerts"><Bell :size="18" :stroke-width="2.25" class="ic" /><span class="label">Alerts</span></router-link>
       </nav>
       <div class="spacer" style="flex:1"></div>
-      <div class="muted label side-user" style="font-size:12px">{{ auth.user?.username }} · pilot</div>
       <button class="logout-btn" style="margin-top:12px" @click="logout" title="Log out">
-        <PowerOff :size="16" class="ic" /><span class="label">Log out</span>
+        <PowerOff :size="16" :stroke-width="2.25" class="ic" /><span class="label">Log out</span>
       </button>
     </aside>
 
@@ -46,10 +45,10 @@
 
     <!-- phone-only bottom tab bar: thumb-reachable primary nav + logout -->
     <nav class="tabbar">
-      <router-link to="/" title="My Truck"><span class="tab-ic"><Truck :size="20" /></span>My Truck</router-link>
-      <router-link to="/trips" title="Trips"><span class="tab-ic"><Route :size="20" /></span>Trips</router-link>
-      <router-link to="/alerts" title="Alerts"><span class="tab-ic"><Bell :size="20" /></span>Alerts</router-link>
-      <a href="#" title="Log out" @click.prevent="logout"><span class="tab-ic"><PowerOff :size="20" /></span>Log out</a>
+      <router-link to="/" title="My Truck"><span class="tab-ic"><Truck :size="20" :stroke-width="2.25" /></span>My Truck</router-link>
+      <router-link to="/trips" title="Trips"><span class="tab-ic"><Route :size="20" :stroke-width="2.25" /></span>Trips</router-link>
+      <router-link to="/alerts" title="Alerts"><span class="tab-ic"><Bell :size="20" :stroke-width="2.25" /></span>Alerts</router-link>
+      <a href="#" title="Log out" @click.prevent="logout"><span class="tab-ic"><PowerOff :size="20" :stroke-width="2.25" /></span>Log out</a>
     </nav>
   </div>
 </template>

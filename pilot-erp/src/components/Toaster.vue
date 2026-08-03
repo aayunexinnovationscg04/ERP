@@ -2,7 +2,7 @@
   <div class="toaster" aria-live="polite">
     <transition-group name="toast">
       <div v-for="t in toasts" :key="t.id" class="toast" :class="t.type" @click="dismiss(t.id)">
-        <component :is="icon(t.type)" :size="18" class="toast-ic" />
+        <component :is="icon(t.type)" :size="18" :stroke-width="2.25" class="toast-ic" />
         <span class="toast-msg">{{ t.message }}</span>
       </div>
     </transition-group>
