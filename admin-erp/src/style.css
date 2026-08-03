@@ -322,7 +322,32 @@ input[type=checkbox]:disabled { cursor: default; opacity: .55; }
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.24);
 }
 .nav a.router-link-active .ic svg.lucide { stroke-width: 2.6; }
+.logout-btn { display: flex; align-items: center; gap: 10px; justify-content: flex-start; }
 .logout-btn:hover { background: rgba(139,92,246,.16) !important; border-color: rgba(139,92,246,.35) !important; }
+.sidebar-controls { display: flex; align-items: center; gap: 4px; padding: 0 2px; }
+.sidebar-controls .theme-toggle, .sidebar-controls .collapse-btn {
+  width: 30px; height: 30px; border: 1px solid var(--ink-border); border-radius: var(--radius-xs);
+  margin-left: 0;
+}
+.collapse-btn {
+  flex: none; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.05); color: var(--ink-muted);
+}
+.collapse-btn:hover { background: rgba(139,92,246,.16); color: var(--ink-text); border-color: rgba(139,92,246,.35); }
+
+/* ---- collapsed (icon-only) sidebar — desktop only, mobile's own media
+   query below overrides .app's grid-template-columns regardless ---- */
+.app.collapsed { grid-template-columns: 76px 1fr; }
+.app.collapsed .sidebar { padding: 1.35rem .55rem; }
+.app.collapsed .brand { justify-content: center; }
+.app.collapsed .brand-text { display: none; }
+.app.collapsed .label { display: none; }
+.app.collapsed .nav-group-head { display: none; }
+.app.collapsed .nav-divider { display: none; }
+.app.collapsed .nav-group-items { display: flex !important; }
+.app.collapsed .nav a { justify-content: center; padding: .62rem; }
+.app.collapsed .logout-btn { justify-content: center; padding: 10px; }
+.app.collapsed .sidebar-controls { flex-direction: column; }
 .main { overflow: auto; padding: var(--content-pad-y) var(--content-pad-x); background: var(--bg); }
 
 .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 1.35rem; flex-wrap: wrap; }

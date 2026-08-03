@@ -1,7 +1,7 @@
 <template>
   <Toaster />
   <div v-if="isLogin"><router-view /></div>
-  <div v-else class="app">
+  <div v-else class="app" :class="{ collapsed }">
     <div class="mobilebar">
       <button class="hamburger" @click="menuOpen = true" aria-label="Open menu"><Menu :size="22" /></button>
       <div class="brand"><img class="brand-logo" src="./assets/logo.png" alt="" /> <span class="brand-title">Admin</span></div>
@@ -14,14 +14,6 @@
           <span class="brand-title">Control Tower</span>
           <span class="brand-sub">Admin ERP</span>
         </div>
-        <button
-          type="button" class="theme-toggle" @click="toggleTheme"
-          :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
-          :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
-        >
-          <Sun v-if="theme === 'dark'" :size="18" />
-          <Moon v-else :size="18" />
-        </button>
       </div>
       <nav class="nav">
         <template v-for="(g, gi) in navGroups" :key="g.key">
@@ -35,8 +27,8 @@
               <span class="chev"><ChevronDown :size="14" /></span>
             </button>
             <div class="nav-group-items" v-show="isExpanded(g)">
-              <router-link v-for="item in g.items" :key="item.to" :to="item.to" @click="menuOpen = false">
-                <span class="ic"><component :is="item.icon" :size="18" /></span> {{ item.label }}
+              <router-link v-for="item in g.items" :key="item.to" :to="item.to" :title="item.label" @click="menuOpen = false">
+                <span class="ic"><component :is="item.icon" :size="18" /></span> <span class="label">{{ item.label }}</span>
               </router-link>
             </div>
           </div>
@@ -44,7 +36,22 @@
         </template>
       </nav>
       <div style="flex:1"></div>
-      <button class="logout-btn" style="margin-top:12px;background:rgba(255,255,255,.06);border-color:var(--ink-border);color:var(--ink-text)" @click="logout">Log out</button>
+      <div class="sidebar-controls">
+        <button
+          type="button" class="theme-toggle" @click="toggleTheme"
+          :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+          :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+        >
+          <Sun v-if="theme === 'dark'" :size="16" />
+          <Moon v-else :size="16" />
+        </button>
+        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
+        </button>
+      </div>
+      <button class="logout-btn" style="margin-top:12px;background:rgba(255,255,255,.06);border-color:var(--ink-border);color:var(--ink-text)" @click="logout" title="Log out">
+        <PowerOff :size="16" class="ic" /><span class="label">Log out</span>
+      </button>
     </aside>
     <main class="main">
       <AnimatePresence mode="wait">
@@ -67,7 +74,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { motion, AnimatePresence } from 'motion-v'
 import {
-  Menu, Users, KeyRound, Activity, Sun, Moon, ChevronDown,
+  Menu, Users, KeyRound, Activity, Sun, Moon, ChevronDown, ChevronsLeft, ChevronsRight, PowerOff,
   Building2, BarChart, Truck, Radar, Cpu, Server, ScrollText,
   ShieldAlert, Flame, ChartLine,
 } from 'lucide-vue-next'
@@ -77,6 +84,8 @@ import Toaster from './components/Toaster.vue'
 const route = useRoute(); const router = useRouter()
 const isLogin = computed(() => route.path === '/login')
 const menuOpen = ref(false)
+const collapsed = ref(localStorage.getItem('fgx-admin-sidebar-collapsed') === '1')
+watch(collapsed, (v) => localStorage.setItem('fgx-admin-sidebar-collapsed', v ? '1' : '0'))
 const { theme, toggleTheme } = useTheme()
 const reduced = typeof window !== 'undefined' && window.matchMedia
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
