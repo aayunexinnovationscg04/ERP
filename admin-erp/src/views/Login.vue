@@ -147,7 +147,13 @@ async function submit() {
 
 .field { position: relative; display: flex; align-items: center; }
 .field-ic { position: absolute; left: 14px; color: var(--muted); pointer-events: none; z-index: 1; }
-.field input { padding-left: 40px; padding-right: 40px; }
+/* !important: the global `input:not([type=checkbox]):not([type=radio])` reset
+   in style.css ties this rule's specificity exactly (two classes+attrs vs.
+   this scoped selector's class+attr+element), so which one wins depends on
+   build-time CSS order rather than intent — typed text was landing directly
+   under the icons. This is the one place in the app that needs an override
+   escape hatch, since the icon layout is meaningless without it. */
+.field input { padding-left: 40px !important; padding-right: 40px !important; }
 .field-toggle {
   position: absolute; right: 5px; width: 32px; height: 32px; padding: 0; border: none;
   background: transparent; color: var(--muted); display: grid; place-items: center; border-radius: 8px;
