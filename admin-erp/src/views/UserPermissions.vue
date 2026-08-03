@@ -93,5 +93,5 @@ onMounted(load)
 </script>
 
 <style scoped>
-select { font: inherit; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: 8px; }
+select { font: inherit; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: 8px; }
 </style>

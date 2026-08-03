@@ -8,9 +8,9 @@
   </div>
 
   <div class="chiprow" v-if="!loading">
-    <div class="chip"><span class="chip-n num">{{ users.length }}</span><span class="chip-l">Total users</span></div>
-    <div class="chip"><span class="chip-n num">{{ activeCount }}</span><span class="chip-l">Active now</span></div>
-    <div class="chip"><span class="chip-n num">{{ roleCounts.length }}</span><span class="chip-l">Roles in use</span></div>
+    <div class="chip" style="border-top-color:var(--brand)"><span class="chip-n num">{{ users.length }}</span><span class="chip-l">Total users</span></div>
+    <div class="chip" style="border-top-color:var(--green)"><span class="chip-n num">{{ activeCount }}</span><span class="chip-l">Active now</span></div>
+    <div class="chip" style="border-top-color:var(--role-manager)"><span class="chip-n num">{{ roleCounts.length }}</span><span class="chip-l">Roles in use</span></div>
   </div>
 
   <AnimatePresence>
@@ -127,8 +127,11 @@ onMounted(load)
 
 <style scoped>
 .formgrid { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 10px; }
-select { font: inherit; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 9px 10px; border-radius: 8px; }
+select { font: inherit; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); padding: 9px 10px; border-radius: 8px; }
 .role-select { font-weight: 700; font-size: 12.5px; }
-.role-select.r-admin { background: var(--brand-strong); color: #fff; border-color: transparent; }
+.role-select.r-admin { background: var(--role-admin-soft); color: var(--role-admin); border-color: rgba(139,92,246,.35); }
+.role-select.r-dealer { background: var(--role-dealer-soft); color: var(--role-dealer); border-color: rgba(245,158,11,.35); }
+.role-select.r-manager { background: var(--role-manager-soft); color: var(--role-manager); border-color: rgba(45,212,191,.35); }
+.role-select.r-pilot { background: var(--role-pilot-soft); color: var(--role-pilot); border-color: rgba(56,189,248,.35); }
 @media (max-width: 800px) { .formgrid { grid-template-columns: 1fr 1fr; } }
 </style>

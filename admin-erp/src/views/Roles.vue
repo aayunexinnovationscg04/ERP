@@ -26,13 +26,13 @@
       <thead>
         <tr>
           <th>Module / Tab</th>
-          <th v-for="r in editableRoles" :key="r" style="text-align:center">{{ roleLabel(r) }}</th>
-          <th style="text-align:center" class="muted">Admin</th>
+          <th v-for="r in editableRoles" :key="r" style="text-align:center" :style="{ color: roleColor(r) }">{{ roleLabel(r) }}</th>
+          <th style="text-align:center" :style="{ color: roleColor('admin') }">Admin</th>
         </tr>
       </thead>
       <tbody>
         <template v-for="g in groups" :key="g">
-          <tr class="group-row"><td :colspan="editableRoles.length + 2">{{ g }}</td></tr>
+          <tr class="group-row" :style="groupStyle(g)"><td :colspan="editableRoles.length + 2">{{ g }}</td></tr>
           <motion.tr
             v-for="(m, idx) in modulesByGroup[g]" :key="m.key"
             :initial="{ opacity: 0, y: 4 }" :animate="{ opacity: 1, y: 0 }"
@@ -40,9 +40,9 @@
           >
             <td>{{ m.label }} <span class="muted" style="font-size:11px">{{ m.key }}</span></td>
             <td v-for="r in editableRoles" :key="r" style="text-align:center">
-              <MatrixCheckbox v-model="matrix[r][m.key]" />
+              <MatrixCheckbox v-model="matrix[r][m.key]" :color="roleColor(r)" :color-soft="roleColorSoft(r)" />
             </td>
-            <td style="text-align:center"><MatrixCheckbox :model-value="true" disabled /></td>
+            <td style="text-align:center"><MatrixCheckbox :model-value="true" disabled :color="roleColor('admin')" :color-soft="roleColorSoft('admin')" /></td>
           </motion.tr>
         </template>
       </tbody>
@@ -65,10 +65,29 @@ const editableRoles = ['dealer', 'manager', 'pilot']
 const roleLabels = { dealer: 'Dealer', manager: 'Manager', pilot: 'Pilot' }
 function roleLabel(r) { return roleLabels[r] || r }
 
+// each role gets its own hue so checked cells show a role-tinted "fingerprint"
+// instead of identical black squares everywhere
+const roleColors = {
+  admin: ['var(--role-admin)', 'var(--role-admin-soft)'],
+  dealer: ['var(--role-dealer)', 'var(--role-dealer-soft)'],
+  manager: ['var(--role-manager)', 'var(--role-manager-soft)'],
+  pilot: ['var(--role-pilot)', 'var(--role-pilot-soft)'],
+}
+function roleColor(r) { return roleColors[r]?.[0] }
+function roleColorSoft(r) { return roleColors[r]?.[1] }
+
 const groups = computed(() => [...new Set(modules.value.map((m) => m.group))])
 const modulesByGroup = computed(() => {
   const o = {}; modules.value.forEach((m) => { (o[m.group] ||= []).push(m) }); return o
 })
+// cycle module groups through a fixed 6-hue accent palette so each group is
+// visually distinct at a glance in the matrix — data-driven, not hardcoded names
+const groupPalette = ['--grp-1', '--grp-2', '--grp-3', '--grp-4', '--grp-5', '--grp-6']
+function groupStyle(g) {
+  const idx = groups.value.indexOf(g) % groupPalette.length
+  const v = groupPalette[idx]
+  return { '--grp-color': `var(${v})`, '--grp-color-soft': `var(${v}-soft)` }
+}
 
 async function load() {
   try {

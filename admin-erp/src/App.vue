@@ -21,8 +21,11 @@
         <router-link to="/platform"><Activity :size="18" class="ic" /> Platform</router-link>
       </nav>
       <div style="flex:1"></div>
-      <div class="ink-muted" style="font-size:12px;color:var(--ink-muted)">{{ auth.user?.username }} · admin</div>
-      <button style="margin-top:12px;background:rgba(255,255,255,.06);border-color:var(--ink-border);color:var(--ink-text)" @click="logout">Log out</button>
+      <div class="ico" style="font-size:12px;color:var(--ink-muted)">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--brand-bright);flex:none;box-shadow:0 0 0 3px rgba(139,92,246,.25)"></span>
+        {{ auth.user?.username }} · admin
+      </div>
+      <button class="logout-btn" style="margin-top:12px;background:rgba(255,255,255,.06);border-color:var(--ink-border);color:var(--ink-text)" @click="logout">Log out</button>
     </aside>
     <main class="main">
       <AnimatePresence mode="wait">

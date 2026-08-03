@@ -1,6 +1,7 @@
 <template>
   <button
     type="button" class="mcheck" :class="{ checked: modelValue }" :disabled="disabled"
+    :style="colorStyle"
     role="checkbox" :aria-checked="modelValue" @click="toggle"
   >
     <AnimatePresence>
@@ -16,11 +17,21 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { motion, AnimatePresence } from 'motion-v'
 import { Check } from 'lucide-vue-next'
 
-const props = defineProps({ modelValue: Boolean, disabled: Boolean })
+// `color` lets a matrix cell render in a specific role's hue (e.g. amber for
+// Dealer, teal for Manager, sky blue for Pilot) instead of one flat brand
+// color everywhere — pass a CSS color/var, e.g. "var(--role-dealer)".
+const props = defineProps({ modelValue: Boolean, disabled: Boolean, color: String, colorSoft: String })
 const emit = defineEmits(['update:modelValue', 'change'])
+const colorStyle = computed(() => {
+  const s = {}
+  if (props.color) s['--mcheck-color'] = props.color
+  if (props.colorSoft) s['--mcheck-color-soft'] = props.colorSoft
+  return s
+})
 
 const reduced = typeof window !== 'undefined' && window.matchMedia
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches

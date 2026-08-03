@@ -62,28 +62,35 @@
     <div class="card stat" v-for="n in 8" :key="n"><div class="skel skel-line lg"></div><div class="skel skel-line sm"></div></div>
   </div>
   <div v-else-if="h" class="stats">
-    <div class="card stat">
+    <div class="card stat" :style="statStyle('violet')">
+      <span class="stat-icon"><Building2 :size="16" /></span>
       <div class="n">{{ fmt(c.companies) }}</div><div class="l">Companies</div>
     </div>
-    <div class="card stat">
+    <div class="card stat" :style="statStyle('teal')">
+      <span class="stat-icon"><Users2 :size="16" /></span>
       <div class="n">{{ fmt(c.users) }}</div><div class="l">Users</div>
       <div class="sub">{{ roleBreakdown }}</div>
     </div>
-    <div class="card stat">
+    <div class="card stat" :style="statStyle(devMeter.pct >= 60 ? 'green' : 'amber')">
+      <span class="stat-icon"><Wifi :size="16" /></span>
       <div class="n">{{ fmt(c.devices_online) }} <span class="muted" style="font-size:16px">/ {{ fmt(c.devices_total) }}</span></div>
       <div class="l">Devices online</div>
     </div>
-    <div class="card stat">
+    <div class="card stat" :style="statStyle('sky')">
+      <span class="stat-icon"><Truck :size="16" /></span>
       <div class="n">{{ fmt(c.vehicles) }}</div><div class="l">Vehicles</div>
     </div>
-    <div class="card stat">
+    <div class="card stat" :style="statStyle('teal')">
+      <span class="stat-icon"><Gauge :size="16" /></span>
       <div class="n">{{ fmt(c.telemetry_total) }}</div><div class="l">Telemetry records</div>
     </div>
-    <div class="card stat">
+    <div class="card stat" :style="statStyle('indigo')">
+      <span class="stat-icon"><Route :size="16" /></span>
       <div class="n">{{ fmt(c.trips_active) }} <span class="muted" style="font-size:16px">/ {{ fmt(c.trips_total) }}</span></div>
       <div class="l">Active trips</div>
     </div>
-    <div class="card stat">
+    <div class="card stat" :style="statStyle(c.open_alerts > 0 ? 'rose' : 'green')">
+      <span class="stat-icon"><TriangleAlert :size="16" /></span>
       <div class="n">{{ fmt(c.open_alerts) }}</div><div class="l">Open alerts</div>
     </div>
   </div>
@@ -100,15 +107,15 @@
     </div>
   </div>
   <div v-else-if="h" class="grid-2" style="margin-top:20px">
-    <!-- users by role: horizontal bars, near-black on a muted track -->
+    <!-- users by role: horizontal bars, each tinted to that role's badge color -->
     <div class="card" style="padding:16px">
       <p class="section-title" style="margin-bottom:14px">Users by role</p>
       <div v-if="hasRoleData" class="barchart">
         <div class="brow" v-for="d in roleData" :key="d.key">
-          <span class="blabel">{{ d.label }}</span>
+          <span class="blabel" :style="{ color: roleVar(d.key) }">{{ d.label }}</span>
           <svg class="btrack" width="100%" height="12" role="img" :aria-label="`${d.label}: ${d.count} ${d.count === 1 ? 'user' : 'users'}`">
-            <rect width="100%" height="12" rx="3" fill="var(--surface-2)" />
-            <rect :width="barPct(d.count) + '%'" height="12" rx="3" fill="var(--brand)" />
+            <rect width="100%" height="12" rx="3" fill="var(--surface-3)" />
+            <rect :width="barPct(d.count) + '%'" height="12" rx="3" :fill="roleVar(d.key)" />
           </svg>
           <span class="bval">{{ d.count }}</span>
         </div>
@@ -116,9 +123,19 @@
       <div v-else class="empty">No users yet</div>
     </div>
 
-    <!-- utilization: progress meters (filled = online / active) -->
+    <!-- utilization: progress meters (filled = online / active), glowing gradient fills -->
     <div class="card" style="padding:16px">
       <p class="section-title" style="margin-bottom:14px">Utilization</p>
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+          <linearGradient id="grad-sky" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#38bdf8" /><stop offset="100%" stop-color="#0ea5e9" />
+          </linearGradient>
+          <linearGradient id="grad-indigo" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#a5b4fc" /><stop offset="100%" stop-color="#6366f1" />
+          </linearGradient>
+        </defs>
+      </svg>
       <div class="meter">
         <div class="mhead">
           <span class="mlabel">Devices online</span>
@@ -127,8 +144,8 @@
         </div>
         <svg class="btrack" width="100%" height="12" role="img"
              :aria-label="`Devices online ${devMeter.online} of ${devMeter.total}`">
-          <rect width="100%" height="12" rx="3" fill="var(--surface-2)" />
-          <rect :width="devMeter.pct + '%'" height="12" rx="3" fill="var(--brand)" />
+          <rect width="100%" height="12" rx="3" fill="var(--surface-3)" />
+          <rect :width="devMeter.pct + '%'" height="12" rx="3" fill="url(#grad-sky)" />
         </svg>
         <div class="msub muted">{{ devMeter.total ? devMeter.pct + '% online' : 'No devices registered' }}</div>
       </div>
@@ -140,8 +157,8 @@
         </div>
         <svg class="btrack" width="100%" height="12" role="img"
              :aria-label="`Active trips ${tripMeter.active} of ${tripMeter.total}`">
-          <rect width="100%" height="12" rx="3" fill="var(--surface-2)" />
-          <rect :width="tripMeter.pct + '%'" height="12" rx="3" fill="var(--brand)" />
+          <rect width="100%" height="12" rx="3" fill="var(--surface-3)" />
+          <rect :width="tripMeter.pct + '%'" height="12" rx="3" fill="url(#grad-indigo)" />
         </svg>
         <div class="msub muted">{{ tripMeter.total ? tripMeter.pct + '% active' : 'No trips recorded' }}</div>
       </div>
@@ -154,8 +171,29 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { Activity, Database, Radio, Clock, CircleCheck, CircleAlert } from 'lucide-vue-next'
+import {
+  Activity, Database, Radio, Clock, CircleCheck, CircleAlert,
+  Building2, Users2, Wifi, Truck, Gauge, Route, TriangleAlert,
+} from 'lucide-vue-next'
 import { getHealth } from '../api'
+
+// stat tile accent colors — each tile's meaning gets its own hue instead of
+// plain numbers in identical boxes
+const statColors = {
+  violet: ['#8b5cf6', 'rgba(139,92,246,.16)'],
+  teal: ['#2dd4bf', 'rgba(45,212,191,.16)'],
+  sky: ['#38bdf8', 'rgba(56,189,248,.16)'],
+  indigo: ['#818cf8', 'rgba(129,140,248,.16)'],
+  green: ['#22c55e', 'rgba(34,197,94,.16)'],
+  amber: ['#f59e0b', 'rgba(245,158,11,.16)'],
+  rose: ['#f43f5e', 'rgba(244,63,94,.16)'],
+}
+function statStyle(name) {
+  const [c, soft] = statColors[name] || statColors.violet
+  return { '--stat-color': c, '--stat-color-soft': soft }
+}
+const roleVarMap = { admin: 'var(--role-admin)', dealer: 'var(--role-dealer)', manager: 'var(--role-manager)', pilot: 'var(--role-pilot)' }
+function roleVar(key) { return roleVarMap[key] || 'var(--brand)' }
 
 const h = ref(null)
 const loading = ref(true)
