@@ -49,7 +49,7 @@
           <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
         </button>
       </div>
-      <button class="logout-btn" style="margin-top:12px;background:rgba(255,255,255,.06);border-color:var(--ink-border);color:var(--ink-text)" @click="logout" title="Log out">
+      <button class="logout-btn" style="margin-top:12px" @click="logout" title="Log out">
         <PowerOff :size="16" class="ic" /><span class="label">Log out</span>
       </button>
     </aside>

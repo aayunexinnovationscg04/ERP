@@ -9,7 +9,7 @@
         :animate="{ opacity: 1, y: 0 }"
         :transition="{ duration: reduced ? 0 : 0.5, ease: EASE }">
         <div class="bs-live"><span class="live-dot"></span> Live tracking, always on</div>
-        <div class="bs-logo"><span class="bs-logo-badge"><img :src="logo" alt="" /></span> Fuel Guard X</div>
+        <div class="bs-logo"><span class="bs-logo-badge"><img :src="logo" alt="" /></span> Aayunex Innovations</div>
         <div class="bs-portal">Pilot Portal</div>
         <p class="bs-tag">Your assigned truck, live location, trips and safety alerts — right in your pocket.</p>
         <ul class="bs-list">
@@ -28,7 +28,7 @@
         :transition="{ duration: reduced ? 0 : 0.5, delay: reduced ? 0 : 0.08, ease: EASE }">
         <div class="form-badge"><img :src="logo" alt="" /></div>
         <h2>Sign in</h2>
-        <p class="sub">Pilot access to Fuel Guard X</p>
+        <p class="sub">Pilot access to Aayunex Innovations</p>
         <form @submit.prevent="submit">
           <label>Username</label>
           <div class="field">

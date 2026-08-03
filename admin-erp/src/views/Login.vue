@@ -5,7 +5,7 @@
       <ParticleField class="bs-particles" />
       <div class="bs-pattern" aria-hidden="true"></div>
       <div class="bs-content">
-        <div class="bs-logo"><span class="bs-logo-badge"><img src="../assets/logo.png" alt="" /></span> Fuel Guard X</div>
+        <div class="bs-logo"><span class="bs-logo-badge"><img src="../assets/logo.png" alt="" /></span> Aayunex Innovations</div>
         <div class="bs-portal">Admin Console</div>
         <p class="bs-tag">Manage companies, users, roles and tab-level access across the platform.</p>
         <ul class="bs-list">

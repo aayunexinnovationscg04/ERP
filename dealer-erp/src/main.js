@@ -3,9 +3,9 @@ import router from './router'
 import App from './App.vue'
 import './style.css'
 import 'leaflet/dist/leaflet.css'
-// Self-hosted variable font for headlines/numerals — no external font CDN,
+// Self-hosted variable font (matches Pilot/Admin) — no external font CDN,
 // so there's no third-party network request or FOUC risk in production.
-import '@fontsource-variable/space-grotesk/wght.css'
+import '@fontsource-variable/inter/wght.css'
 
 // Fix Leaflet's default marker icon paths under a bundler.
 import L from 'leaflet'

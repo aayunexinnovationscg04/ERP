@@ -322,8 +322,11 @@ input[type=checkbox]:disabled { cursor: default; opacity: .55; }
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.24);
 }
 .nav a.router-link-active .ic svg.lucide { stroke-width: 2.6; }
-.logout-btn { display: flex; align-items: center; gap: 10px; justify-content: flex-start; }
-.logout-btn:hover { background: rgba(139,92,246,.16) !important; border-color: rgba(139,92,246,.35) !important; }
+.logout-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%; justify-content: flex-start;
+  color: var(--crit); border-color: transparent; background: var(--crit-soft);
+}
+.logout-btn:hover { background: rgba(244, 63, 94, .24); }
 .sidebar-controls { display: flex; align-items: center; gap: 4px; padding: 0 2px; }
 .sidebar-controls .theme-toggle, .sidebar-controls .collapse-btn {
   width: 30px; height: 30px; border: 1px solid var(--ink-border); border-radius: var(--radius-xs);

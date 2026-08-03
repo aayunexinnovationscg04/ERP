@@ -8,7 +8,7 @@
         :initial="{ opacity: 0, y: 14 }" :animate="{ opacity: 1, y: 0 }" :transition="{ duration: .45, ease: [.4, 0, .2, 1] }">
         <div class="bs-logo">
           <span class="bs-logo-badge"><img :src="logo" alt="" /></span>
-          <span class="bs-logo-text"><strong>AAYUNEX INNOVATIONS</strong><small>Fuel Guard X</small></span>
+          <span class="bs-logo-text"><strong>AAYUNEX INNOVATIONS</strong></span>
         </div>
         <div class="bs-portal">Dealer Portal</div>
         <p class="bs-tag">Track your whole fleet — vehicles, fuel, pilots and alerts — in real time.</p>
@@ -29,7 +29,7 @@
         :initial="{ opacity: 0, y: 10 }" :animate="{ opacity: 1, y: 0 }" :transition="{ duration: .4, delay: .1, ease: [.4, 0, .2, 1] }">
         <div class="form-badge"><img :src="logo" alt="" /></div>
         <h2>Sign in</h2>
-        <p class="sub">Dealer / company access to Fuel Guard X</p>
+        <p class="sub">Dealer / company access to Aayunex Innovations</p>
         <form @submit.prevent="submit">
           <label>Username</label>
           <div class="field">
