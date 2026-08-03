@@ -29,19 +29,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 <style scoped>
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 100;
-  background: rgba(28, 20, 8, .42);
+  background: rgba(4, 5, 9, .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   display: grid; place-items: center; padding: 20px;
 }
 .modal-box {
   width: 100%; max-width: 380px; max-height: 90vh; overflow: auto;
-  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
+  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-strong);
 }
 .modal-head {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 16px 18px; border-bottom: 1px solid var(--border);
 }
-.modal-head h3 { margin: 0; font-size: 15.5px; }
+.modal-head h3 { margin: 0; font-size: 15.5px; color: var(--ink-strong); }
 .modal-close {
   flex: none; width: 28px; height: 28px; padding: 0; border: none; background: none;
   color: var(--muted); display: grid; place-items: center; border-radius: 7px;

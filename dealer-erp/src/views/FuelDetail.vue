@@ -18,7 +18,7 @@
     <p class="section-title">Fuel Monitoring</p>
     <div class="card fuel-highlight">
       <div class="fh-main">
-        <Fuel :size="26" class="fh-ic" />
+        <span class="icon-chip violet fh-ic"><Fuel :size="22" /></span>
         <div>
           <div class="fh-value">{{ fmt(latest?.total_litres) }} <span class="fh-unit">L</span></div>
           <div class="muted" style="font-size:13px">Current fuel level · updated {{ ago(latest?.received_at) }}</div>
@@ -35,7 +35,7 @@
       <table>
         <thead><tr><th>When</th><th>Amount</th><th>Note</th></tr></thead>
         <tbody>
-          <tr v-for="a in refills" :key="a.id">
+          <tr v-for="a in refills" :key="a.id" class="active">
             <td>{{ new Date(a.created_at).toLocaleString() }}</td>
             <td class="ico"><Plus :size="13" style="color:var(--green)" /> {{ fmt(a.meta?.delta_litres) }} L</td>
             <td class="muted">{{ a.message }}</td>
@@ -50,7 +50,7 @@
       <table>
         <thead><tr><th>When</th><th>Amount lost</th><th>Status</th></tr></thead>
         <tbody>
-          <tr v-for="a in thefts" :key="a.id">
+          <tr v-for="a in thefts" :key="a.id" :class="a.status === 'open' ? 'critical' : 'offline'">
             <td>{{ new Date(a.created_at).toLocaleString() }}</td>
             <td class="ico"><Minus :size="13" style="color:var(--crit)" /> {{ fmt(Math.abs(a.meta?.delta_litres)) }} L</td>
             <td><span class="badge" :class="a.status === 'open' ? 'critical' : 'offline'">{{ a.status }}</span></td>
@@ -86,13 +86,13 @@
              role="img" aria-label="Fuel level trend over recent telemetry">
           <line :x1="0" :y1="trend.base" :x2="trend.width" :y2="trend.base"
                 stroke="var(--border)" stroke-width="1" vector-effect="non-scaling-stroke" />
-          <polyline :points="trend.area" fill="var(--brand)" fill-opacity="0.10" stroke="none" />
-          <polyline :points="trend.line" fill="none" stroke="var(--brand)" stroke-width="1.5"
+          <polyline :points="trend.area" fill="var(--violet)" fill-opacity="0.14" stroke="none" />
+          <polyline :points="trend.line" fill="none" stroke="var(--violet)" stroke-width="1.5"
                     stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
         </svg>
         <div class="row" style="justify-content:space-between;margin-top:6px">
-          <span class="muted" style="font-size:12px">Oldest <b style="color:var(--text)">{{ fmt(litresSeries[0]) }}</b> L</span>
-          <span class="muted" style="font-size:12px">Latest <b style="color:var(--text)">{{ fmt(litresSeries[litresSeries.length - 1]) }}</b> L</span>
+          <span class="muted" style="font-size:12px">Oldest <b style="color:var(--ink-strong)">{{ fmt(litresSeries[0]) }}</b> L</span>
+          <span class="muted" style="font-size:12px">Latest <b style="color:var(--ink-strong)">{{ fmt(litresSeries[litresSeries.length - 1]) }}</b> L</span>
         </div>
       </template>
       <p v-else class="muted" style="margin:0">Not enough telemetry yet to chart a trend.</p>
@@ -155,15 +155,15 @@ onMounted(load)
 }
 .back-btn:hover { background: var(--surface-2); }
 
-.fuel-highlight { padding: 18px 20px; background: var(--brand-soft); border-color: var(--brand-ring); }
+.fuel-highlight { padding: 18px 20px; background: linear-gradient(150deg, var(--violet-soft), var(--surface) 60%); border-color: rgba(139,92,246,.32); }
 .fh-main { display: flex; align-items: center; gap: 14px; }
-.fh-ic { color: var(--brand); flex: none; }
-.fh-value { font-size: 30px; font-weight: 800; letter-spacing: -.01em; }
+.fh-ic { flex: none; }
+.fh-value { font-size: 30px; font-weight: 800; letter-spacing: -.01em; color: var(--ink-strong); }
 .fh-unit { font-size: 16px; font-weight: 600; color: var(--muted); }
 
 .fh-bar-wrap { margin-top: 14px; }
-.fh-bar { height: 8px; border-radius: 999px; background: var(--surface); overflow: hidden; margin-bottom: 6px; }
-.fh-bar-fill { height: 100%; background: var(--accent-grad); border-radius: 999px; }
+.fh-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-bottom: 6px; }
+.fh-bar-fill { height: 100%; background: linear-gradient(90deg, #7c5cf0, var(--violet) 60%, #d8c8ff); border-radius: 999px; }
 
 .kvs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
 .kvs div { display: flex; flex-direction: column; }

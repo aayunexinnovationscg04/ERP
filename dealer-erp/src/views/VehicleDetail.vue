@@ -53,7 +53,7 @@
       <div class="card" style="padding:14px 16px;margin-top:14px">
         <p class="section-title" style="margin-top:0">Documents</p>
         <div v-if="v?.documents?.length" class="doc-list">
-          <div class="doc-row" v-for="d in v.documents" :key="d.id">
+          <div class="doc-row" :class="expiryBadge[d.expiry_status]" v-for="d in v.documents" :key="d.id">
             <span>{{ d.doc_type_label }}<span v-if="d.number" class="muted"> · {{ d.number }}</span></span>
             <span class="muted doc-exp" v-if="d.expiry_date">{{ d.expiry_date }}</span>
             <span class="badge" :class="expiryBadge[d.expiry_status]">{{ expiryLabel[d.expiry_status] }}</span>
@@ -85,13 +85,13 @@
              role="img" :aria-label="`Speed trend over recent telemetry — current ${fmt(curSpeed, 0)} km/h, max ${fmt(maxSpeed, 0)} km/h`">
           <line :x1="0" :y1="spark.base" :x2="spark.W" :y2="spark.base"
                 stroke="var(--border)" stroke-width="1" vector-effect="non-scaling-stroke" />
-          <polyline :points="spark.area" fill="var(--brand)" fill-opacity="0.10" stroke="none" />
-          <polyline :points="spark.line" fill="none" stroke="var(--brand)" stroke-width="1.5"
+          <polyline :points="spark.area" fill="var(--blue)" fill-opacity="0.14" stroke="none" />
+          <polyline :points="spark.line" fill="none" stroke="var(--blue)" stroke-width="1.5"
                     stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
         </svg>
         <div class="row" style="justify-content:space-between;margin-top:6px">
-          <span class="muted" style="font-size:12px">Current <b style="color:var(--text)">{{ fmt(curSpeed, 0) }}</b> km/h</span>
-          <span class="muted" style="font-size:12px">Max <b style="color:var(--text)">{{ fmt(maxSpeed, 0) }}</b> km/h</span>
+          <span class="muted" style="font-size:12px">Current <b style="color:var(--ink-strong)">{{ fmt(curSpeed, 0) }}</b> km/h</span>
+          <span class="muted" style="font-size:12px">Max <b style="color:var(--ink-strong)">{{ fmt(maxSpeed, 0) }}</b> km/h</span>
         </div>
       </div>
 
@@ -126,7 +126,7 @@
     <table>
       <thead><tr><th>Started</th><th>Dist</th><th>Max</th><th>Status</th></tr></thead>
       <tbody>
-        <tr v-for="t in trips" :key="t.id">
+        <tr v-for="t in trips" :key="t.id" :class="t.status==='active'?'active':'offline'">
           <td>{{ new Date(t.started_at).toLocaleString() }}</td>
           <td>{{ fmt(t.distance_km) }} km</td>
           <td>{{ fmt(t.max_speed_kmph, 0) }}</td>
@@ -218,7 +218,7 @@ onBeforeUnmount(() => clearInterval(timer))
 
 .kvs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
 .kvs div { display: flex; flex-direction: column; }
-.kvs b { font-size: 16px; margin-top: 2px; }
+.kvs b { font-size: 16px; margin-top: 2px; color: var(--ink-strong); }
 
 .pilot-row {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
@@ -226,7 +226,14 @@ onBeforeUnmount(() => clearInterval(timer))
 }
 
 .doc-list { display: grid; gap: 10px; }
-.doc-row { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.doc-row {
+  display: flex; align-items: center; gap: 10px; font-size: 14px;
+  padding: 8px 10px; border-radius: var(--radius-sm); background: var(--surface-2);
+}
+.doc-row.active   { box-shadow: inset 3px 0 0 var(--green); }
+.doc-row.idle     { box-shadow: inset 3px 0 0 var(--amber); }
+.doc-row.critical { box-shadow: inset 3px 0 0 var(--crit); }
+.doc-row.offline  { box-shadow: inset 3px 0 0 var(--gray); }
 .doc-row > span:first-child { flex: 1; min-width: 0; }
 .doc-exp { font-size: 12.5px; }
 

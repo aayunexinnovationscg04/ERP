@@ -1,31 +1,57 @@
 /* ============================================================================
-   Fuel Guard X — Dealer ERP theme  ·  identity: ORANGE
+   Fuel Guard X — Dealer ERP theme  ·  "Obsidian Flux"
+   Deep blue-black base surfaces, orange as the one true brand hue, and a real
+   multi-hue jewel-tone system (blue/violet/emerald/amber/rose/cyan/teal) doing
+   the actual work of status, category and data-viz color — not orange-on-white
+   with one accent repeated everywhere.
    Desktop sidebar layout, mobile-friendly. Smooth, restrained motion
    (Emil-Kowalski-style): short durations, one easing curve, subtle transforms,
-   no bounce. Mirrors the Pilot app design system.
+   no bounce.
    ========================================================================== */
 :root {
-  /* brand */
-  --brand: #ea580c;
-  --brand-strong: #c2410c;
-  --brand-ink: #ffffff;
-  --brand-soft: #fff1e8;
-  --brand-ring: rgba(234, 88, 12, .28);
-  --accent-grad: linear-gradient(135deg, #fb923c 0%, #ea580c 55%, #c2410c 100%);
-  --accent-glow: radial-gradient(circle, rgba(251,146,60,.55), rgba(234,88,12,0) 72%);
+  /* brand — orange stays the ONE brand hue: logo, primary actions, active nav,
+     login hero, focus rings. Brightened a touch vs. the old light-mode value
+     so it still reads hot against near-black surfaces. */
+  --brand: #fb8a2e;
+  --brand-strong: #f2660d;
+  --brand-dim: #c2410c;
+  --brand-ink: #1a0900;
+  --brand-soft: rgba(251, 138, 46, .14);
+  --brand-ring: rgba(251, 138, 46, .38);
+  --accent-grad: linear-gradient(135deg, #ffb066 0%, #fb8a2e 45%, #ea580c 100%);
+  --accent-glow: radial-gradient(circle, rgba(251, 138, 46, .5), rgba(251, 138, 46, 0) 72%);
 
-  /* neutrals (warm off-white) */
-  --bg: #faf7f4;
-  --surface: #ffffff;
-  --surface-2: #f4efe9;
-  --border: #ece4dc;
-  --text: #1c1408;
-  --ink-strong: #140d04;
-  --muted: #7a6c5d;
+  /* neutrals — deep, faintly blue-violet-tinted charcoal. Never pure black,
+     never gray-beige: this is the "atmospheric dark" base, layered in tonal
+     steps rather than drop shadows. */
+  --bg: #090a10;
+  --bg-grad: radial-gradient(120% 70% at 50% -10%, #171226 0%, #0c0e15 45%, #090a10 100%);
+  --surface: #12131c;
+  --surface-2: #191b26;
+  --surface-3: #232537;
+  --field-bg: #0c0d14;
+  --border: rgba(255, 255, 255, .085);
+  --border-strong: rgba(255, 255, 255, .16);
+  --text: #eef0f7;
+  --ink-strong: #ffffff;
+  --muted: #8d92ab;
+  --muted-2: #5d6280;
 
-  /* semantic */
-  --green: #16a34a; --amber: #d97706; --red: #dc2626; --crit: #e11d48;
-  --green-soft: #e7f6ec; --amber-soft: #fdf1e1; --red-soft: #fdecec; --crit-soft: #fde8ee;
+  /* jewel-tone system — each hue owns a job: blue = fleet/data, violet = fuel,
+     emerald = healthy/active, amber = idle/warning, rose = critical/theft,
+     cyan = location, teal = pilots/people. Every one gets a bright text tone
+     for dark surfaces plus a soft translucent fill for badges/chips/glows. */
+  --blue: #4da3ff;        --blue-soft: rgba(59, 130, 246, .16);
+  --violet: #b18bff;      --violet-soft: rgba(139, 92, 246, .18);
+  --green: #3ddc97;       --green-soft: rgba(16, 185, 129, .18);
+  --amber: #fbbf24;       --amber-soft: rgba(245, 158, 11, .18);
+  --crit: #fb7185;        --crit-soft: rgba(244, 63, 94, .18);
+  --gray: #93a0bd;        --gray-soft: rgba(120, 133, 163, .16);
+  --cyan: #38d4e8;        --cyan-soft: rgba(34, 211, 238, .16);
+  --teal: #2fdcc4;        --teal-soft: rgba(45, 212, 191, .16);
+
+  /* legacy aliases some inline styles reference directly */
+  --red: var(--crit); --red-soft: var(--crit-soft);
 
   /* type */
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -33,10 +59,10 @@
 
   /* form */
   --radius: 16px; --radius-sm: 11px; --radius-pill: 999px;
-  --shadow-sm: 0 1px 2px rgba(28,20,8,.05), 0 1px 3px rgba(28,20,8,.08);
-  --shadow-md: 0 6px 18px rgba(28,20,8,.09);
-  --shadow-lg: 0 18px 44px rgba(28,20,8,.14);
-  --shadow-brand: 0 8px 20px rgba(234,88,12,.28);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35), 0 1px 3px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .03);
+  --shadow-md: 0 10px 26px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .04);
+  --shadow-lg: 0 22px 54px rgba(0, 0, 0, .58);
+  --shadow-brand: 0 10px 26px rgba(242, 102, 13, .35);
   --ease: cubic-bezier(.4, 0, .2, 1);
   --dur: .18s;
 }
@@ -44,7 +70,7 @@
 html, body, #app { height: 100%; margin: 0; }
 body {
   font-family: var(--font-body);
-  background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.45;
+  background: var(--bg-grad) fixed; color: var(--text); font-size: 15px; line-height: 1.45;
   -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased;
 }
 a { color: var(--brand); text-decoration: none; }
@@ -53,68 +79,78 @@ h1, .kpi .n, .fh-value, .bs-portal, .formcard h2, .pb-name, .fb-level b { font-f
 /* motion-respecting reset */
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
-/* ---- page transitions ---- */
-/* handled by motion-v's <AnimatePresence>/<motion.div> in App.vue now —
-   see the router-view wrapper there. */
-
 /* ---- controls ---- */
 button {
   font: inherit; font-weight: 600; cursor: pointer;
-  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
   padding: 10px 16px; border-radius: var(--radius-sm);
   transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
               background var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
-button:hover { background: var(--surface-2); }
+button:hover { background: var(--surface-3); border-color: var(--border-strong); }
 button:active { transform: scale(.98); }
 button:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); }
 button.primary {
   background: var(--accent-grad); color: var(--brand-ink); border-color: transparent;
-  box-shadow: var(--shadow-brand);
+  box-shadow: var(--shadow-brand); font-weight: 700;
 }
-button.primary:hover { background: var(--accent-grad); transform: translateY(-1px); }
+button.primary:hover { background: var(--accent-grad); transform: translateY(-1px); filter: brightness(1.06); }
 button.primary:active { transform: scale(.98); }
-button:disabled { opacity: .6; cursor: default; transform: none; box-shadow: none; }
+button:disabled { opacity: .5; cursor: default; transform: none; box-shadow: none; }
 
-input {
+input, select {
   font: inherit; width: 100%; color: var(--text);
-  background: var(--surface); border: 1px solid var(--border);
+  background: var(--field-bg); border: 1px solid var(--border);
   padding: 13px 14px; border-radius: var(--radius-sm);
   transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
-input::placeholder { color: var(--muted); }
-input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px var(--brand-ring); }
+input::placeholder { color: var(--muted-2); }
+input:focus, select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px var(--brand-ring); }
 
 .muted { color: var(--muted); }
 .card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 /* ---- desktop sidebar layout ---- */
-.app { display: grid; grid-template-columns: 232px 1fr; height: 100%; transition: grid-template-columns var(--dur) var(--ease); }
-.app.collapsed { grid-template-columns: 72px 1fr; }
+.app { display: grid; grid-template-columns: 236px 1fr; height: 100%; transition: grid-template-columns var(--dur) var(--ease); }
+.app.collapsed { grid-template-columns: 76px 1fr; }
 .sidebar {
-  background: var(--surface); border-right: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface) 0%, #0f1018 100%);
+  border-right: 1px solid var(--border);
   padding: 20px 16px; display: flex; flex-direction: column; gap: 2px;
   transition: padding var(--dur) var(--ease);
 }
 .side-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 22px; }
 .brand {
-  font-size: 18px; font-weight: 800;
-  display: flex; gap: 8px; align-items: center; letter-spacing: -.01em;
+  font-size: 17px; font-weight: 800; color: var(--ink-strong);
+  display: flex; gap: 10px; align-items: center; letter-spacing: -.01em;
 }
 .side-head .brand { margin-bottom: 0; min-width: 0; }
 .collapse-btn {
   flex: none; width: 26px; height: 26px; padding: 0; border: none; background: none;
   color: var(--muted); display: grid; place-items: center; border-radius: 7px;
 }
-.collapse-btn:hover { background: var(--surface-2); color: var(--text); }
+.collapse-btn:hover { background: var(--surface-3); color: var(--text); }
+
+/* logo "sticker" — the Aayunex mark ships on a solid white square; rather than
+   let that white box clash with the dark chrome, give it an intentional small
+   rounded tile (like an app icon) so it reads as a deliberate badge. */
+.logo-chip {
+  width: 30px; height: 30px; border-radius: 9px; flex: none; overflow: hidden;
+  display: grid; place-items: center; background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .35), 0 0 0 1px var(--border);
+}
+.logo-chip img { width: 100%; height: 100%; object-fit: cover; }
 
 /* Every row spans the full sidebar width with icon + label left-aligned —
    a uniform, structured list (same size/shape for every item) rather than a
-   pill that shrink-wraps to each label's own text width. */
+   pill that shrink-wraps to each label's own text width. Each item's icon
+   carries its own section hue at rest (a genuine multi-color sidebar, not a
+   monochrome list), and lights up to the brand-orange gradient pill only
+   when active. */
 .nav { display: flex; flex-direction: column; gap: 2px; }
 .nav a {
   display: flex; align-items: center; justify-content: flex-start; gap: 12px;
@@ -123,19 +159,27 @@ input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px v
   transition: background .25s var(--ease), color .25s var(--ease),
               box-shadow .25s var(--ease), transform .15s var(--ease);
 }
-.nav a:hover { background: var(--surface-2); color: var(--text); }
+.nav a:hover { background: var(--surface-3); color: var(--text); }
 .nav a:active { transform: scale(.97); }
+.nav a .ic { transition: color .2s var(--ease); }
+.nav a.nav-vehicles .ic  { color: var(--blue); }
+.nav a.nav-locations .ic { color: var(--cyan); }
+.nav a.nav-fuel .ic      { color: var(--violet); }
+.nav a.nav-pilots .ic    { color: var(--teal); }
+.nav a.nav-alerts .ic    { color: var(--crit); }
+.nav a.nav-geofences .ic { color: var(--amber); }
 .nav a.router-link-active {
   background: var(--accent-grad); color: var(--brand-ink);
   box-shadow: var(--shadow-brand);
 }
+.nav a.router-link-active .ic { color: var(--brand-ink); }
 .nav a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); }
 .main { overflow: auto; padding: 24px 28px; }
 .logout-btn {
   display: flex; align-items: center; gap: 10px; width: 100%; justify-content: flex-start;
-  color: var(--red); border-color: var(--red-soft);
+  color: var(--crit); border-color: transparent; background: var(--crit-soft);
 }
-.logout-btn:hover { background: var(--red-soft); border-color: var(--red); }
+.logout-btn:hover { background: rgba(244, 63, 94, .24); }
 
 /* collapsed rail: icon-only, centered — desktop only (mobile always shows full labels) */
 @media (min-width: 761px) {
@@ -153,67 +197,128 @@ input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px v
   width: 40px; height: 40px; padding: 0; display: grid; place-items: center; flex: none;
   border: none; background: none; border-radius: var(--radius-sm); color: var(--text);
 }
-.hamburger:hover { background: var(--surface-2); }
+.hamburger:hover { background: var(--surface-3); }
 .hamburger-ic { display: grid; place-items: center; grid-area: 1 / 1; }
-.side-brand-logo { width: 22px; height: 22px; object-fit: contain; flex: none; }
+.side-brand-logo { width: 100%; height: 100%; object-fit: cover; }
 
 /* ---- topbar / headings ---- */
-.topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 22px; }
-.topbar h1 { font-size: 22px; margin: 0; letter-spacing: -.02em; }
-h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -.02em; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+.topbar h1 { font-size: 23px; margin: 0; letter-spacing: -.02em; color: var(--ink-strong); }
+h1 { font-size: 23px; margin: 0 0 4px; letter-spacing: -.02em; color: var(--ink-strong); }
 h2 { font-size: 15px; margin: 0; }
 .section-title {
   font-size: 12px; text-transform: uppercase; color: var(--muted);
-  margin: 0 2px 10px; letter-spacing: .06em; font-weight: 700;
+  margin: 0 2px 10px; letter-spacing: .07em; font-weight: 700;
 }
 
 /* ---- KPI tiles ---- */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 22px; }
-.kpi { padding: 17px 19px; position: relative; overflow: hidden; }
-.kpi:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.kpi .n { font-size: clamp(24px, 3vw, 28px); font-weight: 700; letter-spacing: -.02em; position: relative; z-index: 1; }
+.kpi { padding: 18px 19px; position: relative; overflow: hidden; }
+.kpi:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--border-strong); }
+.kpi .n { font-size: clamp(24px, 3vw, 29px); font-weight: 700; letter-spacing: -.02em; position: relative; z-index: 1; color: var(--ink-strong); }
 .kpi .l { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; margin-top: 2px; position: relative; z-index: 1; }
 .kpi .ic { color: var(--brand); margin-bottom: 8px; position: relative; z-index: 1; }
-/* hero tile: subtle ambient glow behind the numeral — the one 3D-adjacent
-   depth accent this view gets (the other lives on the login screen as an
-   actual WebGL orb); this one stays a cheap radial-gradient, no JS cost. */
-.kpi.hero::before {
+/* hero tile: ambient glow behind the numeral. Each kpi additionally takes a
+   glow-<hue> modifier so the KPI row reads as a real multi-color instrument
+   panel (blue/green/amber/violet/crimson) instead of four identical white
+   boxes with one orange icon repeated four times. */
+.kpi.hero::before,
+.kpi[class*="glow-"]::before {
   content: ""; position: absolute; inset: -30%; z-index: 0;
-  background: var(--accent-glow); opacity: .5; pointer-events: none;
+  opacity: .55; pointer-events: none;
   animation: kpi-glow 5s ease-in-out infinite;
 }
-@keyframes kpi-glow { 0%, 100% { opacity: .35; transform: scale(1); } 50% { opacity: .55; transform: scale(1.08); } }
-@media (prefers-reduced-motion: reduce) { .kpi.hero::before { animation: none; } }
+.kpi.hero::before { background: var(--accent-glow); }
+.kpi.glow-blue::before   { background: radial-gradient(circle, rgba(77, 163, 255, .4), transparent 72%); }
+.kpi.glow-green::before  { background: radial-gradient(circle, rgba(61, 220, 151, .4), transparent 72%); }
+.kpi.glow-amber::before  { background: radial-gradient(circle, rgba(251, 191, 36, .38), transparent 72%); }
+.kpi.glow-violet::before { background: radial-gradient(circle, rgba(177, 139, 255, .4), transparent 72%); }
+.kpi.glow-crit::before   { background: radial-gradient(circle, rgba(251, 113, 133, .4), transparent 72%); }
+.kpi.glow-cyan::before   { background: radial-gradient(circle, rgba(56, 212, 232, .4), transparent 72%); }
+.kpi.glow-blue .ic   { color: var(--blue); }
+.kpi.glow-green .ic  { color: var(--green); }
+.kpi.glow-amber .ic  { color: var(--amber); }
+.kpi.glow-violet .ic { color: var(--violet); }
+.kpi.glow-crit .ic   { color: var(--crit); }
+.kpi.glow-cyan .ic   { color: var(--cyan); }
+@keyframes kpi-glow { 0%, 100% { opacity: .38; transform: scale(1); } 50% { opacity: .6; transform: scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { .kpi.hero::before, .kpi[class*="glow-"]::before { animation: none; } }
+
+/* generic small icon chip — a tinted rounded square behind a lucide icon,
+   used wherever a row/card needs a category identity (fuel, pilot, device…)
+   instead of a flat monochrome icon floating in space. */
+.icon-chip {
+  width: 34px; height: 34px; border-radius: 10px; display: inline-grid; place-items: center;
+  flex: none; background: var(--surface-3); vertical-align: middle;
+}
+.icon-chip.sm { width: 27px; height: 27px; border-radius: 8px; margin-right: 8px; }
+.icon-chip.blue   { background: var(--blue-soft);   color: var(--blue); }
+.icon-chip.violet { background: var(--violet-soft); color: var(--violet); }
+.icon-chip.green  { background: var(--green-soft);  color: var(--green); }
+.icon-chip.amber  { background: var(--amber-soft);  color: var(--amber); }
+.icon-chip.crit   { background: var(--crit-soft);   color: var(--crit); }
+.icon-chip.cyan   { background: var(--cyan-soft);   color: var(--cyan); }
+.icon-chip.teal   { background: var(--teal-soft);   color: var(--teal); }
+.icon-chip.gray   { background: var(--gray-soft);   color: var(--gray); }
 
 /* ---- status dots ---- */
-.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 7px; }
-.dot.green { background: var(--green); } .dot.amber { background: var(--amber); }
-.dot.red { background: var(--red); } .dot.gray { background: #94867a; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 7px; box-shadow: 0 0 0 3px currentColor; opacity: .95; filter: saturate(1.3); }
+.dot.green { background: var(--green); color: rgba(61, 220, 151, .18); }
+.dot.amber { background: var(--amber); color: rgba(251, 191, 36, .18); }
+.dot.red { background: var(--crit); color: rgba(251, 113, 133, .18); }
+.dot.gray { background: var(--gray); color: rgba(147, 160, 189, .14); }
 
 /* ---- table ---- */
 table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+th, td { text-align: left; padding: 13px 14px; border-bottom: 1px solid var(--border); }
 tr:last-child td { border-bottom: none; }
-th { color: var(--muted); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+th { color: var(--muted); font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; }
 tr.clickable { transition: background var(--dur) var(--ease), transform var(--dur) var(--ease); }
-tr.clickable:hover { background: var(--surface-2); cursor: pointer; transform: translateY(-1px); }
+tr.clickable:hover { background: var(--surface-2); cursor: pointer; }
+
+/* row-status accent — a colored left stripe on the row's first cell, echoing
+   the vehicle/alert's own status/severity color instead of a flat white row.
+   Applied via a class matching the status/severity string directly. */
+tr.active td:first-child, tr.on td:first-child { box-shadow: inset 3px 0 0 var(--green); }
+tr.idle td:first-child, tr.warning td:first-child { box-shadow: inset 3px 0 0 var(--amber); }
+tr.offline td:first-child, tr.off td:first-child, tr.maintenance td:first-child { box-shadow: inset 3px 0 0 var(--gray); }
+tr.critical td:first-child { box-shadow: inset 3px 0 0 var(--crit); }
+tr.info td:first-child { box-shadow: inset 3px 0 0 var(--blue); }
+tr[class] td:first-child { padding-left: 17px; }
 
 /* ---- badges ---- */
 .badge { padding: 4px 12px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 700;
   display: inline-block; line-height: 1.4; }
 .badge.active, .badge.on { background: var(--green-soft); color: var(--green); }
 .badge.idle, .badge.warning { background: var(--amber-soft); color: var(--amber); }
-.badge.offline, .badge.off, .badge.maintenance { background: var(--surface-2); color: var(--muted); }
+.badge.offline, .badge.off, .badge.maintenance { background: var(--gray-soft); color: var(--gray); }
 .badge.critical { background: var(--crit-soft); color: var(--crit); }
-.badge.info { background: var(--brand-soft); color: var(--brand-strong); }
+.badge.info { background: var(--blue-soft); color: var(--blue); }
 
 /* ---- map ---- */
 .map { height: 420px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+/* Free OSM raster tiles ship light-mode only (no dark tile server in scope —
+   see tiles.js). Classic CSS trick: invert + hue-rotate just the tile pane so
+   the basemap reads dark like the rest of the app, while leaving markers,
+   the live pulse dot, route polyline and popups (separate leaflet panes)
+   in their normal true colors. */
+.map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.93) contrast(.92) saturate(.75); }
 
 /* pulsing live vehicle marker */
-.live-dot{width:14px;height:14px;border-radius:50%;background:#ea580c;border:2px solid #fff;box-shadow:0 0 0 0 rgba(234,88,12,.5);animation:pulse 1.8s var(--ease) infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(234,88,12,.45)}70%{box-shadow:0 0 0 16px rgba(234,88,12,0)}100%{box-shadow:0 0 0 0 rgba(234,88,12,0)}}
-.leaflet-popup-content-wrapper{border-radius:12px}
+.live-dot{width:14px;height:14px;border-radius:50%;background:var(--brand);border:2px solid #fff;box-shadow:0 0 0 0 rgba(251,138,46,.5);animation:pulse 1.8s var(--ease) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(251,138,46,.5)}70%{box-shadow:0 0 0 16px rgba(251,138,46,0)}100%{box-shadow:0 0 0 0 rgba(251,138,46,0)}}
+.leaflet-popup-content-wrapper{border-radius:12px;background:var(--surface);color:var(--text)}
+.leaflet-popup-tip{background:var(--surface)}
+.leaflet-container{background:#0c0e15}
+/* Leaflet's stock zoom control ships as stark white squares — restyle to the
+   app's dark chrome so the map doesn't have an unstyled control floating on it. */
+.leaflet-bar, .leaflet-bar a {
+  background: var(--surface-2); border-color: var(--border) !important; color: var(--text);
+}
+.leaflet-bar a:hover { background: var(--surface-3); color: var(--brand); }
+.leaflet-bar a.leaflet-disabled { background: var(--surface-2); color: var(--muted-2); }
+.leaflet-control-attribution { background: rgba(9,10,16,.75) !important; color: var(--muted) !important; }
+.leaflet-control-attribution a { color: var(--muted) !important; }
 
 /* ---- inline SVG data-viz (sparkline / bars) ---- */
 .spark { width: 100%; height: 90px; display: block; }
@@ -226,10 +331,9 @@ tr.clickable:hover { background: var(--surface-2); cursor: pointer; transform: t
 .grid-2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 18px; }
 
 /* ---- login ---- */
-.loginwrap { display: grid; place-items: center; height: 100%; padding: 22px;
-  background: radial-gradient(120% 60% at 50% 0%, var(--brand-soft) 0%, var(--bg) 55%); }
+.loginwrap { display: grid; place-items: center; height: 100%; padding: 22px; background: var(--bg-grad); }
 .loginbox { width: 100%; max-width: 360px; padding: 30px; }
-.err { color: var(--red); margin-top: 12px; font-size: 13px; }
+.err { color: var(--crit); margin-top: 12px; font-size: 13px; }
 .empty { text-align: center; color: var(--muted); padding: 44px 20px; }
 .row { display: flex; gap: 10px; align-items: center; }
 .spacer { flex: 1; }
@@ -245,28 +349,31 @@ tr.clickable:hover { background: var(--surface-2); cursor: pointer; transform: t
      to fill the viewport regardless of its own max-height. */
   .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; height: 100%; }
 
-  /* slim sticky top app bar — hamburger only. No brand mark, no wordmark:
-     the page's own <h1> right below already names the screen, and the full
-     brand still shows once the drawer opens. Nothing to balance the hamburger
-     against, so no justify-content needed — just a tight, minimal bar. */
+  /* slim sticky top app bar — hamburger + wordmark chip, so the brand still
+     anchors every screen even with the drawer closed (unlike the old bar,
+     which was hamburger-only and felt bare). */
   .mobilebar {
-    display: flex; align-items: center;
+    display: flex; align-items: center; gap: 10px;
     position: sticky; top: 0; z-index: 30;
-    padding: 6px 10px;
+    padding: 8px 10px 8px 6px;
     background: var(--surface); border-bottom: 1px solid var(--border);
     box-shadow: var(--shadow-sm);
   }
+  .mobilebar .mb-brand { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 14.5px; color: var(--ink-strong); min-width: 0; }
+  .mobilebar .mb-brand .logo-chip { width: 26px; height: 26px; border-radius: 8px; }
+  .mobilebar .mb-brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* Vertical dropdown: the nav unfurls downward from the top bar and pushes
      the page content down, instead of sliding in over it from the side. */
   .sidebar {
     position: sticky; top: 52px; z-index: 30;
     border-right: none; border-bottom: 1px solid var(--border);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-lg);
     max-height: 0; overflow: hidden; padding: 0 16px;
     transition: max-height var(--dur) var(--ease), padding var(--dur) var(--ease);
+    background: var(--surface);
   }
-  .sidebar.open { max-height: 70vh; overflow-y: auto; padding: 12px 16px; }
+  .sidebar.open { max-height: 75vh; overflow-y: auto; padding: 14px 14px 16px; }
   /* Nothing useful in the drawer header on mobile: no wordmark (see above),
      and collapsing is a desktop-only affordance — cut the whole row rather
      than leave an orphan logo icon with nothing next to it. Username/role
@@ -274,13 +381,34 @@ tr.clickable:hover { background: var(--surface-2); cursor: pointer; transform: t
   .side-head, .side-user { display: none; }
   .collapse-btn { display: none; }
 
-  /* Landscape: nav items flow left-to-right and wrap, instead of stacking one
-     per row — the drawer takes noticeably less vertical space this way. Chips
-     shrink back to their own label width here (unlike the desktop full-width
-     rows) since a wrapping row needs items sized to their content. */
-  .nav { flex-direction: row; flex-wrap: wrap; justify-content: center; }
-  .nav a { width: auto; padding: 9px 16px; border-radius: var(--radius-pill); }
-  .logout-btn { justify-content: center; padding: 13px; font-size: 15px; }
+  /* Nav becomes a tappable card grid rather than a thin link list — bigger
+     touch targets, each item visibly its own tinted chip so the drawer itself
+     carries the same multi-color identity as the rest of the redesign. */
+  .nav { flex-direction: column; gap: 6px; }
+  .nav a {
+    width: 100%; padding: 13px 14px; border-radius: var(--radius-sm);
+    background: var(--surface-2); border: 1px solid var(--border);
+  }
+  .nav a .ic {
+    width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+    background: var(--surface-3); flex: none;
+  }
+  .nav a.nav-vehicles .ic  { background: var(--blue-soft); }
+  .nav a.nav-locations .ic { background: var(--cyan-soft); }
+  .nav a.nav-fuel .ic      { background: var(--violet-soft); }
+  .nav a.nav-pilots .ic    { background: var(--teal-soft); }
+  .nav a.nav-alerts .ic    { background: var(--crit-soft); }
+  .nav a.nav-geofences .ic { background: var(--amber-soft); }
+  .nav a.nav-vehicles .ic svg  { color: var(--blue); }
+  .nav a.nav-locations .ic svg { color: var(--cyan); }
+  .nav a.nav-fuel .ic svg      { color: var(--violet); }
+  .nav a.nav-pilots .ic svg    { color: var(--teal); }
+  .nav a.nav-alerts .ic svg    { color: var(--crit); }
+  .nav a.nav-geofences .ic svg { color: var(--amber); }
+  .nav a.router-link-active { background: var(--accent-grad); border-color: transparent; }
+  .nav a.router-link-active .ic { background: rgba(255, 255, 255, .22); }
+  .nav a.router-link-active .ic svg { color: var(--brand-ink); }
+  .logout-btn { justify-content: center; padding: 14px; font-size: 15px; margin-top: 8px; }
 
   .main { padding: 16px 14px 26px; }
   .topbar { flex-wrap: wrap; margin-bottom: 16px; }
@@ -290,7 +418,7 @@ tr.clickable:hover { background: var(--surface-2); cursor: pointer; transform: t
      the grid track and forcing the whole page to scroll horizontally. */
   .grid-2 { grid-template-columns: 1fr; }
   .grid-2 > div { min-width: 0; }
-  .map { height: 320px; }
+  .map { height: 300px; }
 
   /* wide tables scroll horizontally instead of breaking the layout */
   .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -303,14 +431,22 @@ tr.clickable:hover { background: var(--surface-2); cursor: pointer; transform: t
   .card:has(table) {
     background-color: var(--surface);
     background-image:
-      linear-gradient(to right, var(--surface) 30%, rgba(255,255,255,0)),
-      linear-gradient(to right, rgba(255,255,255,0), var(--surface) 70%) 100% 0,
-      linear-gradient(to right, rgba(28,20,8,.12), rgba(28,20,8,0)),
-      linear-gradient(to left, rgba(28,20,8,.12), rgba(28,20,8,0)) 100% 0;
+      linear-gradient(to right, var(--surface) 30%, rgba(18,19,28,0)),
+      linear-gradient(to right, rgba(18,19,28,0), var(--surface) 70%) 100% 0,
+      linear-gradient(to right, rgba(0,0,0,.35), rgba(0,0,0,0)),
+      linear-gradient(to left, rgba(0,0,0,.35), rgba(0,0,0,0)) 100% 0;
     background-repeat: no-repeat;
     background-size: 32px 100%, 32px 100%, 12px 100%, 12px 100%;
     background-attachment: local, local, scroll, scroll;
   }
+
+  /* KPI tiles: 2-up grid reads better than a single squeezed column on phones */
+  .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi { padding: 15px 15px; }
+
+  /* tile-style grids (fuel/pilot boxes) go full-bleed single column so each
+     tile gets real touch-friendly height instead of shrinking to fit 2-up */
+  .fuel-grid, .pilot-grid { grid-template-columns: 1fr !important; }
 }
 
 /* ---- inline icon + text alignment ---- */
@@ -324,7 +460,7 @@ tr.clickable:hover { background: var(--surface-2); cursor: pointer; transform: t
 .skel { position: relative; overflow: hidden; background: var(--surface-2); border-radius: 9px; }
 .skel::after {
   content: ""; position: absolute; inset: 0; transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.09), transparent);
   animation: shimmer 1.25s var(--ease) infinite;
 }
 .skel-line { height: 13px; margin: 9px 0; }

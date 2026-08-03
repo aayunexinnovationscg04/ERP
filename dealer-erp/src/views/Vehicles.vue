@@ -8,16 +8,16 @@
     <div class="skel sk-chip" v-for="n in 4" :key="n"></div>
   </div>
   <div v-else class="kpis">
-    <motion.div class="card kpi" :while-hover="{ y: -2 }">
+    <motion.div class="card kpi glow-blue" :while-hover="{ y: -2 }">
       <Truck :size="16" class="ic" /><div class="n">{{ vehicles.length }}</div><div class="l">Total fleet</div>
     </motion.div>
-    <motion.div class="card kpi hero" :while-hover="{ y: -2 }">
+    <motion.div class="card kpi glow-green hero" :while-hover="{ y: -2 }">
       <Activity :size="16" class="ic" /><div class="n">{{ activeCount }}</div><div class="l">Active now</div>
     </motion.div>
-    <motion.div class="card kpi" :while-hover="{ y: -2 }">
+    <motion.div class="card kpi glow-amber" :while-hover="{ y: -2 }">
       <PauseCircle :size="16" class="ic" /><div class="n">{{ idleCount }}</div><div class="l">Idle / maint.</div>
     </motion.div>
-    <motion.div class="card kpi" :while-hover="{ y: -2 }">
+    <motion.div class="card kpi glow-violet" :while-hover="{ y: -2 }">
       <Fuel :size="16" class="ic" /><div class="n">{{ avgFuelPct == null ? '—' : avgFuelPct + '%' }}</div><div class="l">Avg fuel level</div>
     </motion.div>
   </div>
@@ -43,7 +43,7 @@
         </tr>
       </thead>
       <tbody>
-        <motion.tr v-for="(v, i) in vehicles" :key="v.id"
+        <motion.tr v-for="(v, i) in vehicles" :key="v.id" :class="v.status"
           :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }"
           :transition="{ duration: .22, delay: Math.min(i, 12) * .025, ease: [.4, 0, .2, 1] }">
           <td>
@@ -144,15 +144,15 @@ onBeforeUnmount(() => clearInterval(timer))
   border: none; background: none; padding: 0; font: inherit; font-weight: 700; color: inherit;
   display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
 }
-.status-sort:hover { color: var(--brand); }
+.status-sort:hover { color: var(--blue); }
 
 .local-name-btn {
-  border: none; background: none; padding: 4px 0; font: inherit; font-weight: 600; color: var(--text);
+  border: none; background: none; padding: 4px 0; font: inherit; font-weight: 600; color: var(--ink-strong);
   display: inline-flex; align-items: center; gap: 6px;
 }
 .local-name-btn .pencil { color: var(--muted); opacity: 0; transition: opacity var(--dur) var(--ease); }
 .local-name-btn:hover .pencil { opacity: 1; }
-.local-name-btn:hover { color: var(--brand); }
+.local-name-btn:hover { color: var(--blue); }
 
 .col-actions { width: 40px; text-align: right; }
 .row-action {
@@ -160,7 +160,7 @@ onBeforeUnmount(() => clearInterval(timer))
   width: 30px; height: 30px; border-radius: var(--radius-sm); color: var(--muted);
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
-.row-action:hover { background: var(--surface-2); color: var(--brand); }
+.row-action:hover { background: var(--blue-soft); color: var(--blue); }
 
 @media (max-width: 720px) {
   .col-optional { display: none; }

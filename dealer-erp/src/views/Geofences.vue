@@ -55,9 +55,9 @@
       <div ref="mapEl" class="map"></div>
 
       <div class="row" style="gap:16px; margin-top:10px; flex-wrap:wrap">
-        <span class="ico muted" style="font-size:12px"><i class="gf-swatch" style="background:#16a34a"></i> Allowed</span>
-        <span class="ico muted" style="font-size:12px"><i class="gf-swatch" style="background:#dc2626"></i> Restricted</span>
-        <span class="ico muted" style="font-size:12px"><i class="gf-swatch" style="background:#2563eb"></i> Customer site</span>
+        <span class="ico muted" style="font-size:12px"><i class="gf-swatch" style="background:#3ddc97"></i> Allowed</span>
+        <span class="ico muted" style="font-size:12px"><i class="gf-swatch" style="background:#fb7185"></i> Restricted</span>
+        <span class="ico muted" style="font-size:12px"><i class="gf-swatch" style="background:#4da3ff"></i> Customer site</span>
       </div>
     </div>
 
@@ -114,11 +114,11 @@ import { toast } from '../toast'
 const canWrite = computed(() => auth.user?.may_write !== false)
 
 const PURPOSE = {
-  allowed:       { label: 'Allowed',       color: '#16a34a', soft: 'rgba(22,163,74,.14)' },
-  restricted:    { label: 'Restricted',    color: '#dc2626', soft: 'rgba(220,38,38,.14)' },
-  customer_site: { label: 'Customer site', color: '#2563eb', soft: 'rgba(37,99,235,.14)' },
+  allowed:       { label: 'Allowed',       color: '#3ddc97', soft: 'rgba(16,185,129,.20)' },
+  restricted:    { label: 'Restricted',    color: '#fb7185', soft: 'rgba(244,63,94,.20)' },
+  customer_site: { label: 'Customer site', color: '#4da3ff', soft: 'rgba(59,130,246,.20)' },
 }
-function purposeColor(p) { return PURPOSE[p]?.color || '#7a6c5d' }
+function purposeColor(p) { return PURPOSE[p]?.color || '#93a0bd' }
 function purposeLabel(p) { return PURPOSE[p]?.label || p }
 function badgeStyle(p) {
   const m = PURPOSE[p]
@@ -284,10 +284,5 @@ onBeforeUnmount(() => { if (map) map.remove() })
 .gf-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
 .gf-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; }
 .gf-form label:first-child { grid-column: 1 / -1; }
-.gf-form select {
-  font: inherit; width: 100%; color: var(--text);
-  background: var(--surface); border: 1px solid var(--border);
-  padding: 13px 14px; border-radius: var(--radius-sm);
-}
 .gf-swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
 </style>

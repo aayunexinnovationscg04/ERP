@@ -86,19 +86,19 @@ onBeforeUnmount(() => clearInterval(timer))
 .loc-reg { font-size: 12.5px; }
 
 .local-name-btn {
-  border: none; background: none; padding: 2px 0; font: inherit; font-size: 15px; font-weight: 700; color: var(--text);
+  border: none; background: none; padding: 2px 0; font: inherit; font-size: 15px; font-weight: 700; color: var(--ink-strong);
   display: inline-flex; align-items: center; gap: 6px;
 }
 .local-name-btn .pencil { color: var(--muted); opacity: 0; transition: opacity var(--dur) var(--ease); }
 .local-name-btn:hover .pencil { opacity: 1; }
-.local-name-btn:hover { color: var(--brand); }
+.local-name-btn:hover { color: var(--cyan); }
 
 .see-loc-btn {
   display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 700;
-  color: var(--brand); background: var(--brand-soft); border: 1px solid transparent;
+  color: var(--cyan); background: var(--cyan-soft); border: 1px solid transparent;
   padding: 8px 14px; border-radius: var(--radius-pill); flex: none;
 }
-.see-loc-btn:hover { background: var(--brand-ring); }
+.see-loc-btn:hover { background: rgba(34,211,238,.28); }
 
 .loc-detail { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 .coord-row {

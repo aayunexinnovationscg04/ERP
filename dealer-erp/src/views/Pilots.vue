@@ -56,21 +56,21 @@ onMounted(load)
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
-.pilot-box:not(:disabled):hover { box-shadow: var(--shadow-md); border-color: var(--brand); transform: translateY(-2px); }
+.pilot-box:not(:disabled):hover { box-shadow: 0 10px 26px rgba(45,212,191,.2), var(--shadow-md); border-color: var(--teal); transform: translateY(-2px); }
 .pilot-box:not(:disabled):active { transform: translateY(0) scale(.99); }
-.pilot-box:disabled { cursor: default; opacity: .7; }
+.pilot-box:disabled { cursor: default; opacity: .6; }
 
 .pb-avatar {
-  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
-  background: var(--surface-2); color: var(--muted);
+  width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--teal-soft); color: var(--teal);
 }
-.pb-name { font-weight: 700; font-size: 15.5px; margin-top: 2px; }
+.pb-name { font-weight: 700; font-size: 15.5px; margin-top: 2px; color: var(--ink-strong); }
 .pb-reg { font-size: 12px; margin-top: -6px; display: flex; align-items: center; gap: 5px; }
 .pb-reg-ic { flex: none; }
 .pb-pilot {
   display: flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600;
   margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--border); width: 100%; justify-content: center;
 }
-.pilot-ic { color: var(--brand); flex: none; }
+.pilot-ic { color: var(--teal); flex: none; }
 .pb-pilot.muted .pilot-ic { display: none; }
 </style>

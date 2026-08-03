@@ -38,7 +38,7 @@
       <table>
         <thead><tr><th>Date</th><th>Status</th><th>Notes</th></tr></thead>
         <tbody>
-          <tr v-for="a in d.attendance" :key="a.id">
+          <tr v-for="a in d.attendance" :key="a.id" :class="attendanceBadge[a.status]">
             <td>{{ a.date }}</td>
             <td><span class="badge" :class="attendanceBadge[a.status]">{{ a.status_label }}</span></td>
             <td class="muted">{{ a.notes || '—' }}</td>
@@ -53,7 +53,7 @@
       <table>
         <thead><tr><th>When</th><th>Speed</th><th>Status</th></tr></thead>
         <tbody>
-          <tr v-for="a in overspeed" :key="a.id">
+          <tr v-for="a in overspeed" :key="a.id" :class="a.status === 'open' ? 'critical' : 'offline'">
             <td>{{ new Date(a.created_at).toLocaleString() }}</td>
             <td>{{ a.meta?.speed_kmph }} km/h <span class="muted">(limit {{ a.meta?.limit }})</span></td>
             <td><span class="badge" :class="a.status === 'open' ? 'critical' : 'offline'">{{ a.status }}</span></td>
@@ -106,9 +106,9 @@ onMounted(load)
 
 .kvs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
 .kvs div { display: flex; flex-direction: column; gap: 2px; }
-.kvs b { font-size: 15px; }
+.kvs b { font-size: 15px; color: var(--ink-strong); }
 
-.fh-value { font-size: 26px; font-weight: 800; letter-spacing: -.01em; }
+.fh-value { font-size: 26px; font-weight: 800; letter-spacing: -.01em; color: var(--teal); }
 .fh-unit { font-size: 14px; font-weight: 600; color: var(--muted); }
 
 .card + .section-title { margin-top: 28px; }

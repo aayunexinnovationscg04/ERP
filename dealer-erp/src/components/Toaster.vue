@@ -24,8 +24,8 @@ const icon = (t) => (t === 'success' ? CircleCheck : t === 'error' ? CircleAlert
 .toast {
   pointer-events: auto; cursor: pointer; width: 100%;
   display: flex; align-items: center; gap: 10px; padding: 12px 15px;
-  border-radius: 12px; background: var(--surface); color: var(--text);
-  border: 1px solid var(--border); box-shadow: 0 12px 34px rgba(15, 27, 46, .18);
+  border-radius: 12px; background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border-strong); box-shadow: var(--shadow-lg);
   font-size: 14px; font-weight: 600;
 }
 .toast-ic { flex: none; }

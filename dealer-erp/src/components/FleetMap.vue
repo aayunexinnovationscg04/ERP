@@ -36,10 +36,10 @@ function draw() {
   })
 
   if (props.track.length > 1) {
-    L.polyline(props.track, { color: '#ea580c', weight: 4, opacity: 0.85, lineJoin: 'round' }).addTo(trackLayer)
-    L.circleMarker(props.track[0], { radius: 6, color: '#fff', weight: 2, fillColor: '#22c55e', fillOpacity: 1 })
+    L.polyline(props.track, { color: '#fb8a2e', weight: 4, opacity: 0.9, lineJoin: 'round' }).addTo(trackLayer)
+    L.circleMarker(props.track[0], { radius: 6, color: '#0c0e15', weight: 2, fillColor: '#3ddc97', fillOpacity: 1 })
       .bindTooltip('Start').addTo(trackLayer)
-    L.circleMarker(props.track[props.track.length - 1], { radius: 6, color: '#fff', weight: 2, fillColor: '#ef4444', fillOpacity: 1 })
+    L.circleMarker(props.track[props.track.length - 1], { radius: 6, color: '#0c0e15', weight: 2, fillColor: '#fb7185', fillOpacity: 1 })
       .bindTooltip('Latest').addTo(trackLayer)
     props.track.forEach((p) => pts.push(p))
   }

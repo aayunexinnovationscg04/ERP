@@ -13,21 +13,22 @@
           </motion.span>
         </AnimatePresence>
       </motion.button>
+      <div class="mb-brand"><span class="logo-chip"><img :src="logo" alt="" /></span> <span>Fuel Guard X</span></div>
     </div>
     <aside class="sidebar" :class="{ open: menuOpen }">
       <div class="side-head">
-        <div class="brand side-brand"><img :src="logo" alt="" class="side-brand-logo" /> <span class="label">Fuel Guard X</span></div>
+        <div class="brand side-brand"><span class="logo-chip"><img :src="logo" alt="" class="side-brand-logo" /></span> <span class="label">Fuel Guard X</span></div>
         <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
           <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
         </button>
       </div>
       <nav class="nav" @click="menuOpen = false">
-        <router-link to="/vehicles" title="Vehicles" :class="{ 'router-link-active': inSection('/vehicles') }"><Truck :size="18" class="ic" /><span class="label">Vehicles</span></router-link>
-        <router-link to="/locations" title="Locations" :class="{ 'router-link-active': inSection('/locations') }"><LocateFixed :size="18" class="ic" /><span class="label">Locations</span></router-link>
-        <router-link to="/fuel" title="Fuel" :class="{ 'router-link-active': inSection('/fuel') }"><Fuel :size="18" class="ic" /><span class="label">Fuel</span></router-link>
-        <router-link to="/pilots" title="Pilots" :class="{ 'router-link-active': inSection('/pilots') }"><IdCard :size="18" class="ic" /><span class="label">Pilots</span></router-link>
-        <router-link to="/alerts" title="Alerts" :class="{ 'router-link-active': inSection('/alerts') }"><Bell :size="18" class="ic" /><span class="label">Alerts</span></router-link>
-        <router-link to="/geofences" title="Geofences" :class="{ 'router-link-active': inSection('/geofences') }"><MapPin :size="18" class="ic" /><span class="label">Geofences</span></router-link>
+        <router-link to="/vehicles" title="Vehicles" class="nav-vehicles" :class="{ 'router-link-active': inSection('/vehicles') }"><span class="ic"><Truck :size="18" /></span><span class="label">Vehicles</span></router-link>
+        <router-link to="/locations" title="Locations" class="nav-locations" :class="{ 'router-link-active': inSection('/locations') }"><span class="ic"><LocateFixed :size="18" /></span><span class="label">Locations</span></router-link>
+        <router-link to="/fuel" title="Fuel" class="nav-fuel" :class="{ 'router-link-active': inSection('/fuel') }"><span class="ic"><Fuel :size="18" /></span><span class="label">Fuel</span></router-link>
+        <router-link to="/pilots" title="Pilots" class="nav-pilots" :class="{ 'router-link-active': inSection('/pilots') }"><span class="ic"><IdCard :size="18" /></span><span class="label">Pilots</span></router-link>
+        <router-link to="/alerts" title="Alerts" class="nav-alerts" :class="{ 'router-link-active': inSection('/alerts') }"><span class="ic"><Bell :size="18" /></span><span class="label">Alerts</span></router-link>
+        <router-link to="/geofences" title="Geofences" class="nav-geofences" :class="{ 'router-link-active': inSection('/geofences') }"><span class="ic"><MapPin :size="18" /></span><span class="label">Geofences</span></router-link>
       </nav>
       <div class="spacer" style="flex:1"></div>
       <div class="muted label side-user" style="font-size:12px">
