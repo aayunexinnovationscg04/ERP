@@ -12,10 +12,11 @@
 
   <div v-else>
     <motion.div v-for="(a, i) in alerts" :key="a.id" class="card item"
+      :class="'sev-' + (severityClass(a.severity) || 'info')"
       :initial="{ opacity: 0, y: reduced ? 0 : 8 }" :animate="{ opacity: 1, y: 0 }"
       :transition="{ duration: reduced ? 0 : 0.22, delay: reduced ? 0 : Math.min(i, 8) * 0.03, ease: EASE }">
       <div class="item-row">
-        <span class="item-ic" :class="severityClass(a.severity)"><TriangleAlert :size="17" /></span>
+        <span class="item-ic" :class="severityClass(a.severity) || 'info'"><TriangleAlert :size="17" /></span>
         <div>
           <div class="t">{{ a.title || a.type }}</div>
           <div class="d">{{ a.message }}</div>

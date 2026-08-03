@@ -36,7 +36,7 @@ function draw() {
   })
 
   if (props.track.length > 1) {
-    L.polyline(props.track, { color: '#2563eb', weight: 4, opacity: 0.85, lineJoin: 'round' }).addTo(trackLayer)
+    L.polyline(props.track, { color: '#3b82f6', weight: 4, opacity: 0.9, lineJoin: 'round' }).addTo(trackLayer)
     L.circleMarker(props.track[0], { radius: 6, color: '#22c55e', fillColor: '#22c55e', fillOpacity: 1 })
       .bindTooltip('Start').addTo(trackLayer)
     L.circleMarker(props.track[props.track.length - 1], { radius: 6, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1 })

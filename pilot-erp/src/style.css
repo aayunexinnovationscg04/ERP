@@ -1,20 +1,25 @@
 /* ============================================================================
-   Fuel Guard X — Pilot ERP theme  ·  identity: BLUE ("Cab-Glare")
+   Fuel Guard X — Pilot ERP theme  ·  identity: "Night Cab" (dark, multi-hue)
    Mobile-first: bottom thumb-reachable tab bar on phone, collapsible left
-   navbar on desktop/tablet. Tuned for legibility in bright cab / sunlight
-   glare: high-contrast ink, restrained accent, generous touch targets.
+   navbar on desktop/tablet. This app lives in a truck cab, often at night or
+   in bright glare — a considered DARK theme with vivid, glanceable accent
+   colors reads better here than white-on-white: high-contrast ink on deep
+   navy-charcoal surfaces, one hue per data type (never all-blue), rich card
+   depth via layered surfaces + colored glow rather than flat borders.
    Motion: short durations, one easing curve, subtle transforms, no bounce —
    respects prefers-reduced-motion throughout (see App.vue / motion-v usage).
    ========================================================================== */
 :root {
-  /* brand (blue) */
-  --brand: #2563eb;
-  --brand-strong: #1d4ed8;
+  /* brand (electric blue) — same family as the login hero, so interior
+     screens read as one product with it, not a bolted-on reskin */
+  --brand: #3b82f6;
+  --brand-strong: #60a5fa;
+  --brand-dim: #1d4ed8;
   --brand-soft-ink: #3b82f6;
   --brand-ink: #ffffff;
-  --brand-soft: #eaf1ff;
-  --brand-ring: rgba(37, 99, 235, .28);
-  --accent-grad: linear-gradient(135deg, #3b82f6 0%, #2563eb 55%, #1d4ed8 100%);
+  --brand-soft: rgba(59,130,246,.16);
+  --brand-ring: rgba(96,165,250,.38);
+  --accent-grad: linear-gradient(135deg, #60a5fa 0%, #3b82f6 55%, #1d4ed8 100%);
 
   /* deep "night highway" gradient — login hero + a few premium accents only */
   --night-1: #0a1730;
@@ -22,24 +27,37 @@
   --night-3: #1d4ed8;
   --night-grad: radial-gradient(120% 90% at 18% 0%, #1e40af 0%, #122a52 42%, #0a1730 78%);
 
-  /* neutrals (cool, blue-tinted; tuned for outdoor contrast) */
-  --bg: #f3f6fb;
-  --surface: #ffffff;
-  --surface-2: #edf2fa;
-  --border: #e1e8f2;
-  --text: #0b1424;
-  --muted: #5b6b85;
+  /* multi-hue accent system — every data type gets its OWN real hue */
+  --violet: #8b5cf6; --violet-strong: #a78bfa; --violet-soft: rgba(139,92,246,.18);
+  --cyan: #22d3ee; --cyan-strong: #67e8f9; --cyan-soft: rgba(34,211,238,.16);
+  --green: #22c55e; --green-strong: #4ade80; --green-soft: rgba(34,197,94,.18);
+  --amber: #f59e0b; --amber-strong: #fbbf24; --amber-soft: rgba(245,158,11,.18);
+  --red: #fb7185; --red-soft: rgba(251,113,133,.16);
+  --crit: #f43f5e; --crit-strong: #fb7185; --crit-soft: rgba(244,63,94,.20);
 
-  /* semantic — kept visually distinct from brand blue so alerts never blend in */
-  --green: #128a43; --amber: #b45309; --red: #d92d20; --crit: #e11d48;
-  --green-soft: #e5f7ec; --amber-soft: #fdf1e0; --red-soft: #fdeceb; --crit-soft: #fde5eb;
+  /* neutrals — deep navy-charcoal, never flat gray/black; depth comes from
+     stepped surfaces + colored glow, not heavy borders */
+  --bg: #0a0f1c;
+  --surface: #121a2c;
+  --surface-2: #182238;
+  --surface-3: #1e2a44;
+  --border: #223050;
+  --text: #eef2fb;
+  --muted: #8d98b8;
 
   /* form / shape */
   --radius: 18px; --radius-sm: 12px; --radius-pill: 999px;
-  --shadow-sm: 0 1px 2px rgba(11,20,36,.05), 0 1px 3px rgba(11,20,36,.08);
-  --shadow-md: 0 8px 22px rgba(11,20,36,.10);
-  --shadow-lg: 0 18px 44px rgba(11,20,36,.16);
-  --shadow-brand: 0 8px 22px rgba(37,99,235,.30);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+  --shadow-md: 0 12px 30px rgba(0,0,0,.45);
+  --shadow-lg: 0 22px 54px rgba(0,0,0,.55);
+  --shadow-brand: 0 10px 26px rgba(59,130,246,.35);
+  /* colored glow shadows keyed to each accent hue — depth over borders */
+  --glow-blue: 0 8px 22px rgba(59,130,246,.28);
+  --glow-violet: 0 8px 22px rgba(139,92,246,.26);
+  --glow-cyan: 0 8px 22px rgba(34,211,238,.22);
+  --glow-green: 0 8px 22px rgba(34,197,94,.24);
+  --glow-amber: 0 8px 22px rgba(245,158,11,.22);
+  --glow-crit: 0 10px 30px rgba(244,63,94,.30);
   --ease: cubic-bezier(.4, 0, .2, 1);
   --dur: .18s;
 
@@ -169,8 +187,9 @@ a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); border
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
   height: var(--tabbar-h);
   padding-bottom: env(safe-area-inset-bottom, 0);
-  background: var(--surface); border-top: 1px solid var(--border);
-  box-shadow: 0 -8px 24px rgba(11,20,36,.08);
+  background: rgba(10,15,28,.86); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -14px 34px rgba(0,0,0,.5);
   align-items: stretch; justify-content: space-around;
 }
 .tabbar a {
@@ -179,9 +198,10 @@ a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); border
   padding: 6px 4px 8px; min-width: 0; position: relative;
 }
 .tabbar a .tab-ic { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px;
-  transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
 .tabbar a.router-link-exact-active { color: var(--brand-strong); }
-.tabbar a.router-link-exact-active .tab-ic { background: var(--brand-soft); color: var(--brand-strong); }
+.tabbar a.router-link-exact-active .tab-ic { background: var(--brand-soft); color: var(--brand-strong);
+  box-shadow: 0 0 0 1px rgba(96,165,250,.3), var(--glow-blue); }
 .tabbar a:active .tab-ic { transform: scale(.92); }
 
 @media (max-width: 760px) {
@@ -215,40 +235,57 @@ h2 { font-size: 15px; margin: 0; font-weight: 700; }
   margin: 22px 2px 10px; letter-spacing: .06em; font-weight: 700; }
 
 /* ---- status hero ---- */
-.hero { padding: 22px; margin-bottom: 14px; }
-.hero .reg { font-size: clamp(24px, 6vw, 30px); font-weight: 800; letter-spacing: -.01em; }
+.hero {
+  padding: 22px; margin-bottom: 14px; position: relative; overflow: hidden;
+  background: radial-gradient(120% 160% at 0% 0%, rgba(59,130,246,.14), transparent 60%), var(--surface);
+}
+.hero .reg { font-size: clamp(26px, 6.5vw, 34px); font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .hero .sub { color: var(--muted); font-size: 13px; margin-top: 3px; }
 
-/* ---- chips (telemetry) ---- */
+/* ---- chips (telemetry) — each data type gets its OWN real hue, set via a
+   modifier class on .chip-ic (blue/violet/amber/emerald/cyan) ---- */
 .chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px; }
 .chip { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 15px;
   display: flex; align-items: flex-start; gap: 11px; }
 .chip .chip-ic {
-  flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+  flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
   background: var(--brand-soft); color: var(--brand-strong);
+  transition: box-shadow var(--dur) var(--ease);
 }
+.chip-ic.blue    { background: var(--brand-soft);  color: var(--brand-strong);  box-shadow: 0 0 0 1px rgba(96,165,250,.16), var(--glow-blue); }
+.chip-ic.violet  { background: var(--violet-soft); color: var(--violet-strong); box-shadow: 0 0 0 1px rgba(167,139,250,.16), var(--glow-violet); }
+.chip-ic.amber   { background: var(--amber-soft);  color: var(--amber-strong);  box-shadow: 0 0 0 1px rgba(251,191,36,.16), var(--glow-amber); }
+.chip-ic.emerald { background: var(--green-soft);  color: var(--green-strong);  box-shadow: 0 0 0 1px rgba(74,222,128,.16), var(--glow-green); }
+.chip-ic.cyan    { background: var(--cyan-soft);   color: var(--cyan-strong);   box-shadow: 0 0 0 1px rgba(103,232,249,.16), var(--glow-cyan); }
 .chip .chip-body { min-width: 0; }
-.chip .l { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
-.chip .v { font-size: 20px; font-weight: 800; margin-top: 3px; letter-spacing: -.01em; }
-.chip .v small { font-weight: 600; font-size: 12px; }
+.chip .l { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+.chip .v { font-size: 25px; font-weight: 800; margin-top: 4px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.chip .v small { font-weight: 600; font-size: 12px; letter-spacing: 0; }
 
-/* ---- badges / status pills ---- */
+/* ---- badges / status pills — semantic hues distinct from brand blue ---- */
 .badge { padding: 5px 13px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 700;
   display: inline-flex; align-items: center; gap: 5px; line-height: 1.4; }
-.badge.active, .badge.on { background: var(--green-soft); color: var(--green); }
-.badge.idle, .badge.warning { background: var(--amber-soft); color: var(--amber); }
-.badge.offline, .badge.off, .badge.maintenance { background: var(--surface-2); color: var(--muted); }
-.badge.critical { background: var(--crit-soft); color: var(--crit); }
-.badge.info { background: var(--brand-soft); color: var(--brand-strong); }
+.badge.active, .badge.on { background: var(--green-soft); color: var(--green-strong); box-shadow: inset 0 0 0 1px rgba(74,222,128,.22); }
+.badge.idle, .badge.warning { background: var(--amber-soft); color: var(--amber-strong); box-shadow: inset 0 0 0 1px rgba(251,191,36,.22); }
+.badge.offline, .badge.off, .badge.maintenance { background: var(--surface-3); color: var(--muted); }
+.badge.critical { background: var(--crit-soft); color: var(--crit-strong); box-shadow: inset 0 0 0 1px rgba(251,113,133,.3); }
+.badge.info { background: var(--brand-soft); color: var(--brand-strong); box-shadow: inset 0 0 0 1px rgba(96,165,250,.22); }
 .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
 
 .map { height: 300px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+/* fake a dark map style from the (free, no-key) OSM light tiles: invert just
+   the tile pane so markers/route lines keep their true accent colors */
+.map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.94) contrast(.92) saturate(.6); }
+.map .leaflet-control-zoom a { background: var(--surface); color: var(--text); border-color: var(--border) !important; }
+.map .leaflet-control-attribution { background: rgba(10,15,28,.7); color: var(--muted); }
+.map .leaflet-control-attribution a { color: var(--muted); }
 
 /* ---- live position marker (pulsing) ---- */
 .live-marker { background: none; border: none; }
-.live-dot{width:14px;height:14px;border-radius:50%;background:#2563eb;border:2px solid #fff;box-shadow:0 0 0 0 rgba(37,99,235,.5);animation:pulse 1.8s var(--ease) infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(37,99,235,.45)}70%{box-shadow:0 0 0 16px rgba(37,99,235,0)}100%{box-shadow:0 0 0 0 rgba(37,99,235,0)}}
-.leaflet-popup-content-wrapper{border-radius:12px}
+.live-dot{width:14px;height:14px;border-radius:50%;background:var(--brand-strong);border:2px solid var(--bg);box-shadow:0 0 0 0 rgba(96,165,250,.5);animation:pulse 1.8s var(--ease) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(96,165,250,.45)}70%{box-shadow:0 0 0 16px rgba(96,165,250,0)}100%{box-shadow:0 0 0 0 rgba(96,165,250,0)}}
+.leaflet-popup-content-wrapper{border-radius:12px; background:var(--surface); color:var(--text);}
+.leaflet-popup-tip{background:var(--surface);}
 
 /* ---- speed sparkline / gauge ---- */
 .viz-card { padding: 15px 16px; margin-bottom: 14px; }
@@ -263,8 +300,10 @@ h2 { font-size: 15px; margin: 0; font-weight: 700; }
   .gauge { align-self: center; }
 }
 
-/* ---- list items (trips / alerts) ---- */
-.item { padding: 16px; margin-bottom: 11px; display: flex; justify-content: space-between; gap: 12px; }
+/* ---- list items (trips / alerts) — a left accent bar + soft colored glow
+   carries status/severity at a glance, on top of the icon-chip hue ---- */
+.item { padding: 16px; margin-bottom: 11px; display: flex; justify-content: space-between; gap: 12px;
+  border-left: 3px solid transparent; transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease), border-color var(--dur) var(--ease); }
 .item:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
 .item .t { font-weight: 700; }
 .item .d { color: var(--muted); font-size: 12px; margin-top: 4px; }
@@ -272,10 +311,30 @@ h2 { font-size: 15px; margin: 0; font-weight: 700; }
   flex: none; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
   background: var(--surface-2); color: var(--muted); margin-right: 2px;
 }
-.item-ic.on { background: var(--green-soft); color: var(--green); }
-.item-ic.critical { background: var(--crit-soft); color: var(--crit); }
-.item-ic.warning { background: var(--amber-soft); color: var(--amber); }
+.item-ic.on { background: var(--green-soft); color: var(--green-strong); }
+.item-ic.critical { background: var(--crit-soft); color: var(--crit-strong); }
+.item-ic.warning { background: var(--amber-soft); color: var(--amber-strong); }
+.item-ic.info { background: var(--brand-soft); color: var(--brand-strong); }
 .item-row { display: flex; align-items: flex-start; gap: 12px; }
+
+/* trips: active vs completed get distinct hues + glow */
+.item.trip-active { border-left-color: var(--green); box-shadow: var(--glow-green), var(--shadow-sm); }
+.item.trip-active:hover { box-shadow: var(--glow-green), var(--shadow-md); }
+.item.trip-done { border-left-color: var(--border); }
+
+/* alerts: severity carried by the card itself, not just its icon */
+.item.sev-critical, .card.alert-banner {
+  border-left-color: var(--crit); box-shadow: var(--glow-crit), var(--shadow-sm);
+  background: linear-gradient(180deg, rgba(244,63,94,.07), transparent 45%), var(--surface);
+}
+.item.sev-critical:hover, .card.alert-banner:hover { box-shadow: var(--glow-crit), var(--shadow-md); }
+.item.sev-warning { border-left-color: var(--amber); box-shadow: var(--glow-amber), var(--shadow-sm); }
+.item.sev-warning:hover { box-shadow: var(--glow-amber), var(--shadow-md); }
+.item.sev-info { border-left-color: var(--brand); }
+
+/* bold, tabular big-numeral treatment for the key stat in a list row
+   (trip distance, etc.) — the numbers are the whole point of this app */
+.t-numeral { font-size: 25px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 
 .empty { text-align: center; color: var(--muted); padding: 48px 20px; }
 .row { display: flex; gap: 10px; align-items: center; }

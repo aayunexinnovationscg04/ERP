@@ -12,10 +12,11 @@
 
   <div v-else>
     <motion.div v-for="(t, i) in trips" :key="t.id" class="card item"
+      :class="t.status === 'active' ? 'trip-active' : 'trip-done'"
       :initial="{ opacity: 0, y: reduced ? 0 : 8 }" :animate="{ opacity: 1, y: 0 }"
       :transition="{ duration: reduced ? 0 : 0.22, delay: reduced ? 0 : Math.min(i, 8) * 0.03, ease: EASE }">
       <div class="item-row">
-        <span class="item-ic" :class="{ on: t.status === 'active' }">
+        <span class="item-ic" :class="t.status === 'active' ? 'on' : 'info'">
           <component :is="t.status === 'active' ? Navigation : CheckCheck" :size="17" />
         </span>
         <div>
@@ -28,7 +29,7 @@
         </div>
       </div>
       <div style="text-align:right">
-        <div class="t">{{ round(t.distance_km) }} km</div>
+        <div class="t-numeral" :style="{ color: t.status === 'active' ? 'var(--green-strong)' : 'var(--text)' }">{{ round(t.distance_km) }} <small class="muted" style="font-size:12px;font-weight:600;letter-spacing:0">km</small></div>
         <div class="d">max {{ round(t.max_speed_kmph) }} · avg {{ round(t.avg_speed_kmph) }} km/h</div>
       </div>
     </motion.div>
