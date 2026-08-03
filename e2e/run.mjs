@@ -21,7 +21,7 @@ const ONLY = process.env.ONLY; // optional: restrict to one app, e.g. ONLY=deale
 const ALL_APPS = {
   dealer: {
     ...cred('dealer', 'DEALER_USER', 'DEALER_PASS'),
-    routes: [['dashboard', '/'], ['fleet', '/fleet'], ['alerts', '/alerts'], ['geofences', '/geofences']],
+    routes: [['dashboard', '/'], ['fleet', '/vehicles'], ['alerts', '/alerts'], ['geofences', '/geofences']],
   },
   admin: {
     ...cred('admin', 'ADMIN_USER', 'ADMIN_PASS'),
