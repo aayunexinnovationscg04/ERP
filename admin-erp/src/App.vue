@@ -63,7 +63,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { motion, AnimatePresence } from 'motion-v'
 import {
@@ -129,23 +129,26 @@ const navGroups = [
 ]
 
 const GROUP_STORAGE_KEY = 'fgx_admin_nav_groups'
-function loadGroupState() {
-  try { return JSON.parse(localStorage.getItem(GROUP_STORAGE_KEY) || '{}') } catch { return {} }
-}
-// default expanded (true) unless the user explicitly collapsed a group before
-const groupState = reactive(loadGroupState())
-watch(groupState, () => localStorage.setItem(GROUP_STORAGE_KEY, JSON.stringify(groupState)), { deep: true })
-
 function groupHasActiveRoute(g) {
   return g.items.some((i) => route.path === i.to || route.path.startsWith(i.to + '/'))
 }
+
+// Accordion: at most ONE group open at a time, so the sidebar never grows
+// tall enough to need scrolling — opening a group closes whichever was open.
+// Defaults to whichever group contains the current route (falls back to the
+// first group), not "everything expanded".
+const initialGroup = navGroups.find(groupHasActiveRoute)?.key
+  ?? localStorage.getItem(GROUP_STORAGE_KEY)
+  ?? navGroups[0].key
+const openGroupKey = ref(initialGroup)
+watch(openGroupKey, (v) => localStorage.setItem(GROUP_STORAGE_KEY, v || ''))
+
 // a group containing the active route always renders expanded, regardless of
-// its stored collapsed state
+// the accordion's open/closed state
 function isExpanded(g) {
-  if (groupHasActiveRoute(g)) return true
-  return groupState[g.key] !== false
+  return groupHasActiveRoute(g) || openGroupKey.value === g.key
 }
 function toggleGroup(g) {
-  groupState[g.key] = !(groupState[g.key] !== false)
+  openGroupKey.value = openGroupKey.value === g.key ? null : g.key
 }
 </script>

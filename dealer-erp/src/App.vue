@@ -68,7 +68,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Menu, X, LocateFixed, Truck, Bell, MapPin, Fuel, IdCard, ChevronsLeft, ChevronsRight, PowerOff,
@@ -166,23 +166,24 @@ const NAV_GROUPS = [
 ]
 
 const NAV_GROUPS_STORAGE_KEY = 'fgx_dealer_nav_groups'
-function loadGroupState() {
-  try { return JSON.parse(localStorage.getItem(NAV_GROUPS_STORAGE_KEY) || '{}') }
-  catch { return {} }
-}
-// { groupId: boolean } — true/absent = expanded, false = collapsed. Absent
-// (never toggled) defaults to expanded on first load, per spec.
-const groupState = reactive(loadGroupState())
-
-function toggleGroup(id) {
-  groupState[id] = !(groupState[id] !== false)
-  localStorage.setItem(NAV_GROUPS_STORAGE_KEY, JSON.stringify(groupState))
-}
 // A group containing the current route must always render expanded, even if
 // the user previously collapsed it — never hide the active page's own link.
 function groupHasActiveRoute(g) { return g.items.some((item) => inSection(item.to)) }
+
+// Accordion: at most ONE group open at a time, so the sidebar never grows
+// tall enough to need scrolling — opening a group closes whichever was open.
+// Defaults to whichever group contains the current route (falls back to the
+// first group), not "everything expanded".
+const initialGroup = NAV_GROUPS.find(groupHasActiveRoute)?.id
+  ?? localStorage.getItem(NAV_GROUPS_STORAGE_KEY)
+  ?? NAV_GROUPS[0].id
+const openGroupId = ref(initialGroup)
+watch(openGroupId, (v) => localStorage.setItem(NAV_GROUPS_STORAGE_KEY, v || ''))
+
+function toggleGroup(id) {
+  openGroupId.value = openGroupId.value === id ? null : id
+}
 function isGroupOpen(g) {
-  if (groupHasActiveRoute(g)) return true
-  return groupState[g.id] !== false
+  return groupHasActiveRoute(g) || openGroupId.value === g.id
 }
 </script>

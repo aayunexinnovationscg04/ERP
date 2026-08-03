@@ -184,10 +184,15 @@ input:focus, select:focus { outline: none; border-color: var(--brand); box-shado
 }
 
 /* ---- desktop sidebar layout ---- */
-.app { display: grid; grid-template-columns: 236px 1fr; height: 100%; transition: grid-template-columns var(--dur) var(--ease); }
+.app { display: grid; grid-template-columns: 268px 1fr; height: 100%; transition: grid-template-columns var(--dur) var(--ease); }
 .app.collapsed { grid-template-columns: 76px 1fr; }
 .sidebar {
-  background: linear-gradient(180deg, var(--surface) 0%, #0f1018 100%);
+  /* was a hardcoded #0f1018 end-stop — fine on the old short, dark-only
+     sidebar, but non-theme-aware, and the fade now spans a much taller
+     grouped nav (8 clusters) so the end-stop reads a lot more strongly.
+     var(--surface-2) keeps the subtle top-to-bottom depth cue in both
+     themes without overshooting into a false near-black band on light. */
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
   border-right: 1px solid var(--border);
   padding: 20px 16px; display: flex; flex-direction: column; gap: 2px;
   transition: padding var(--dur) var(--ease);
@@ -331,7 +336,7 @@ h2 { font-size: 15px; margin: 0; }
 }
 
 /* ---- KPI tiles ---- */
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 200px)); gap: 14px; margin-bottom: 22px; }
 .kpi { padding: 18px 19px; position: relative; overflow: hidden; }
 .kpi:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--border-strong); }
 .kpi .n { font-size: clamp(24px, 3vw, 29px); font-weight: 700; letter-spacing: -.02em; position: relative; z-index: 1; color: var(--ink-strong); }
