@@ -17,7 +17,8 @@ const cred = (app, envUser, envPass) => ({
   pass: process.env[envPass] || CREDS[app]?.pass,
 });
 
-const APPS = {
+const ONLY = process.env.ONLY; // optional: restrict to one app, e.g. ONLY=dealer (useful when each app is on its own local dev port)
+const ALL_APPS = {
   dealer: {
     ...cred('dealer', 'DEALER_USER', 'DEALER_PASS'),
     routes: [['dashboard', '/'], ['fleet', '/fleet'], ['alerts', '/alerts'], ['geofences', '/geofences']],
@@ -31,6 +32,7 @@ const APPS = {
     routes: [['mytruck', '/'], ['trips', '/trips'], ['alerts', '/alerts']],
   },
 };
+const APPS = ONLY ? { [ONLY]: ALL_APPS[ONLY] } : ALL_APPS;
 
 const DESKTOP = { width: 1280, height: 900 };
 const MOBILE = { width: 390, height: 844 };
@@ -51,7 +53,9 @@ async function login(page, app, cfg) {
   const inputs = page.locator('form input');
   await inputs.nth(0).fill(cfg.user);
   await page.locator('input[type=password]').fill(cfg.pass);
-  await page.locator('button.primary, button[type=submit], form button').first().click();
+  // .primary is the actual submit button; a password show/hide toggle (type=button)
+  // sits earlier in the DOM, so don't fall back to a bare "form button" match.
+  await page.locator('button.primary').first().click();
   // .main is the post-login content region (visible on both desktop and mobile)
   await page.waitForSelector('.main', { state: 'visible', timeout: 20000 });
   await page.waitForTimeout(1200);
