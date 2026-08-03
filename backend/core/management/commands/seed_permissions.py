@@ -1,7 +1,7 @@
 """Seed the RolePermission matrix from DEFAULT_ACCESS.
 
 Safe to re-run: only creates missing (role, module) rows; never overwrites
-values a Super Admin has since changed.
+values an Admin has since changed.
 
     .venv/bin/python manage.py seed_permissions
 """
@@ -18,7 +18,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         created = 0
         for role, _ in User.Role.choices:
-            if role == User.Role.SUPERADMIN:
+            if role == User.Role.ADMIN:
                 continue  # always all-access, not stored
             allowed_set = set(DEFAULT_ACCESS.get(role, []))
             for module in MODULE_KEYS:

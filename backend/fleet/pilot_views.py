@@ -1,8 +1,8 @@
-"""Driver ERP endpoints.
+"""Pilot ERP endpoints.
 
-A driver only ever sees the ONE vehicle currently assigned to them
-(Vehicle.active_driver -> Driver -> User). Every query below is derived from
-request.user, so a driver can never reach another driver's or company's data.
+A pilot only ever sees the ONE vehicle currently assigned to them
+(Vehicle.active_pilot -> Pilot -> User). Every query below is derived from
+request.user, so a pilot can never reach another pilot's or company's data.
 """
 
 from datetime import timedelta
@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 
 from alerts.models import Alert
 from alerts.serializers import AlertSerializer
-from core.permissions import IsDriver
+from core.permissions import IsPilot
 
 from .models import Telemetry, Trip, Vehicle
 from .serializers import TelemetrySerializer, TripSerializer, VehicleDetailSerializer
@@ -22,24 +22,24 @@ from .serializers import TelemetrySerializer, TripSerializer, VehicleDetailSeria
 MAX_HISTORY = 5000
 
 
-def driver_vehicle(user):
-    """The vehicle assigned to this driver user, or None."""
+def pilot_vehicle(user):
+    """The vehicle assigned to this pilot user, or None."""
     return (
-        Vehicle.objects.filter(active_driver__user=user)
-        .select_related("device", "active_driver")
+        Vehicle.objects.filter(active_pilot__user=user)
+        .select_related("device", "active_pilot")
         .first()
     )
 
 
-class _DriverBase(APIView):
-    permission_classes = [IsAuthenticated, IsDriver]
+class _PilotBase(APIView):
+    permission_classes = [IsAuthenticated, IsPilot]
 
     def get_vehicle(self, request):
-        return driver_vehicle(request.user)
+        return pilot_vehicle(request.user)
 
 
-class DriverVehicleView(_DriverBase):
-    """GET /api/driver/vehicle — the driver's assigned vehicle + latest telemetry."""
+class PilotVehicleView(_PilotBase):
+    """GET /api/pilot/vehicle — the pilot's assigned vehicle + latest telemetry."""
 
     def get(self, request):
         vehicle = self.get_vehicle(request)
@@ -48,8 +48,8 @@ class DriverVehicleView(_DriverBase):
         return Response(VehicleDetailSerializer(vehicle).data)
 
 
-class DriverTelemetryView(_DriverBase):
-    """GET /api/driver/vehicle/telemetry?from&to&limit — route history (fixed points)."""
+class PilotTelemetryView(_PilotBase):
+    """GET /api/pilot/vehicle/telemetry?from&to&limit — route history (fixed points)."""
 
     def get(self, request):
         vehicle = self.get_vehicle(request)
@@ -69,8 +69,8 @@ class DriverTelemetryView(_DriverBase):
         return Response(TelemetrySerializer(qs, many=True).data)
 
 
-class DriverTripsView(_DriverBase):
-    """GET /api/driver/trips — recent trips for the driver's vehicle."""
+class PilotTripsView(_PilotBase):
+    """GET /api/pilot/trips — recent trips for the pilot's vehicle."""
 
     def get(self, request):
         vehicle = self.get_vehicle(request)
@@ -80,8 +80,8 @@ class DriverTripsView(_DriverBase):
         return Response(TripSerializer(qs, many=True).data)
 
 
-class DriverAlertsView(_DriverBase):
-    """GET /api/driver/alerts — alerts for the driver's vehicle (open + recent)."""
+class PilotAlertsView(_PilotBase):
+    """GET /api/pilot/alerts — alerts for the pilot's vehicle (open + recent)."""
 
     def get(self, request):
         vehicle = self.get_vehicle(request)
@@ -93,8 +93,8 @@ class DriverAlertsView(_DriverBase):
         return Response(AlertSerializer(qs.order_by("-created_at")[:200], many=True).data)
 
 
-class DriverSummaryView(_DriverBase):
-    """GET /api/driver/summary — compact status card for the driver home screen."""
+class PilotSummaryView(_PilotBase):
+    """GET /api/pilot/summary — compact status card for the pilot home screen."""
 
     def get(self, request):
         vehicle = self.get_vehicle(request)

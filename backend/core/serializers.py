@@ -12,7 +12,7 @@ class CompanySerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
-    may_write = serializers.BooleanField(read_only=True)  # true for superadmin or granted can_edit
+    may_write = serializers.BooleanField(read_only=True)  # true for admin or granted can_edit
 
     class Meta:
         model = User
@@ -37,7 +37,7 @@ class LoginSerializer(TokenObtainPairSerializer):
 
 
 class AdminUserSerializer(serializers.ModelSerializer):
-    """Super-Admin view of a user: create with a password, assign role + company."""
+    """Admin view of a user: create with a password, assign role + company."""
 
     company = serializers.PrimaryKeyRelatedField(
         queryset=Company.objects.all(), allow_null=True, required=False)

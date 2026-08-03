@@ -1,4 +1,4 @@
-"""Seed a clearly-labelled demo company with vehicles, drivers, trips, alerts,
+"""Seed a clearly-labelled demo company with vehicles, pilots, trips, alerts,
 geofences and documents so the dealer and pilot ERPs have data to show in a
 client demo. Safe to re-run (get_or_create everywhere); pass --reset to wipe
 just this demo company first.
@@ -16,12 +16,12 @@ from django.utils import timezone
 
 from alerts.models import Alert
 from core.models import Company, CompanySettings, User
-from fleet.models import (Device, Driver, DriverAttendance, Geofence,
+from fleet.models import (Device, Pilot, PilotAttendance, Geofence,
                           Telemetry, Trip, Vehicle, VehicleDocument)
 
 BASE_LAT, BASE_LNG = 21.1458, 79.0882  # generic demo depot location
 
-DRIVER_NAMES = ["Ramesh Kumar", "Suresh Yadav", "Vikram Singh", "Anil Sharma"]
+PILOT_NAMES = ["Ramesh Kumar", "Suresh Yadav", "Vikram Singh", "Anil Sharma"]
 VEHICLES = [
     ("MH31AB1234", "Tata", "407", Vehicle.Status.ACTIVE),
     ("MH31CD5678", "Ashok Leyland", "1616", Vehicle.Status.ACTIVE),
@@ -31,7 +31,7 @@ VEHICLES = [
 
 
 class Command(BaseCommand):
-    help = "Seed a demo company with vehicles, drivers, trips and alerts for client demos."
+    help = "Seed a demo company with vehicles, pilots, trips and alerts for client demos."
 
     def add_arguments(self, parser):
         parser.add_argument("--reset", action="store_true", help="delete existing demo-fleet company first")
@@ -43,10 +43,10 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             company = self._company()
-            drivers = self._drivers(company)
-            driver_user = self._users(company, drivers)
-            vehicles = self._vehicles(company, drivers)
-            self._trips(vehicles, drivers)
+            pilots = self._pilots(company)
+            pilot_user = self._users(company, pilots)
+            vehicles = self._vehicles(company, pilots)
+            self._trips(vehicles, pilots)
             self._alerts(company, vehicles)
             self._geofences(company)
             self._documents(vehicles)
@@ -64,25 +64,25 @@ class Command(BaseCommand):
         CompanySettings.objects.get_or_create(company=company)
         return company
 
-    def _users(self, company, drivers):
-        owner, _ = User.objects.get_or_create(username="dealer", defaults={"company": company})
-        owner.company, owner.role, owner.can_edit = company, User.Role.OWNER, True
-        owner.set_password("dealer123")
-        owner.save()
+    def _users(self, company, pilots):
+        dealer, _ = User.objects.get_or_create(username="dealer", defaults={"company": company})
+        dealer.company, dealer.role, dealer.can_edit = company, User.Role.DEALER, True
+        dealer.set_password("dealer123")
+        dealer.save()
 
-        driver_user, _ = User.objects.get_or_create(username="pilot", defaults={"company": company})
-        driver_user.company, driver_user.role = company, User.Role.DRIVER
-        driver_user.set_password("pilot123")
-        driver_user.save()
+        pilot_user, _ = User.objects.get_or_create(username="pilot", defaults={"company": company})
+        pilot_user.company, pilot_user.role = company, User.Role.PILOT
+        pilot_user.set_password("pilot123")
+        pilot_user.save()
 
-        drivers[0].user = driver_user
-        drivers[0].save(update_fields=["user"])
-        return driver_user
+        pilots[0].user = pilot_user
+        pilots[0].save(update_fields=["user"])
+        return pilot_user
 
-    def _drivers(self, company):
-        drivers = []
-        for i, name in enumerate(DRIVER_NAMES):
-            d, _ = Driver.objects.get_or_create(
+    def _pilots(self, company):
+        pilots = []
+        for i, name in enumerate(PILOT_NAMES):
+            p, _ = Pilot.objects.get_or_create(
                 company=company, name=name,
                 defaults={
                     "phone": f"9876{500000 + i * 1111}",
@@ -90,20 +90,20 @@ class Command(BaseCommand):
                     "monthly_salary": Decimal(15000 + i * 1500),
                 },
             )
-            drivers.append(d)
+            pilots.append(p)
         today = timezone.localdate()
-        for d in drivers:
+        for p in pilots:
             for days_ago in range(14):
                 date = today - timedelta(days=days_ago)
                 status = random.choices(
-                    [DriverAttendance.Status.PRESENT, DriverAttendance.Status.HALF_DAY,
-                     DriverAttendance.Status.LEAVE, DriverAttendance.Status.ABSENT],
+                    [PilotAttendance.Status.PRESENT, PilotAttendance.Status.HALF_DAY,
+                     PilotAttendance.Status.LEAVE, PilotAttendance.Status.ABSENT],
                     weights=[80, 10, 5, 5], k=1,
                 )[0]
-                DriverAttendance.objects.get_or_create(driver=d, date=date, defaults={"status": status})
-        return drivers
+                PilotAttendance.objects.get_or_create(pilot=p, date=date, defaults={"status": status})
+        return pilots
 
-    def _vehicles(self, company, drivers):
+    def _vehicles(self, company, pilots):
         vehicles = []
         now = timezone.now()
         for i, (reg, make, model, status) in enumerate(VEHICLES):
@@ -117,13 +117,13 @@ class Command(BaseCommand):
             device.last_seen = now - (timedelta(minutes=random.randint(1, 8)) if online else timedelta(hours=9))
             device.save()
 
-            driver = drivers[i % len(drivers)]
+            pilot = pilots[i % len(pilots)]
             vehicle, _ = Vehicle.objects.get_or_create(
                 company=company, registration_number=reg,
                 defaults={"make": make, "model": model, "tank_capacity_litres": 120},
             )
             vehicle.device = device
-            vehicle.active_driver = driver
+            vehicle.active_pilot = pilot
             vehicle.status = status
             vehicle.make, vehicle.model = make, model
             vehicle.save()
@@ -142,7 +142,7 @@ class Command(BaseCommand):
             )
         return vehicles
 
-    def _trips(self, vehicles, drivers):
+    def _trips(self, vehicles, pilots):
         now = timezone.now()
         for vehicle in vehicles:
             if vehicle.status == Vehicle.Status.OFFLINE:
@@ -164,7 +164,7 @@ class Command(BaseCommand):
                 Trip.objects.get_or_create(
                     vehicle=vehicle, started_at=start,
                     defaults={
-                        "driver": vehicle.active_driver,
+                        "pilot": vehicle.active_pilot,
                         "ended_at": start + timedelta(minutes=dur_min),
                         "start_lat": lat0, "start_lng": lng0,
                         "end_lat": lat1, "end_lng": lng1,
@@ -180,7 +180,7 @@ class Command(BaseCommand):
             Trip.objects.get_or_create(
                 vehicle=vehicle, started_at=start,
                 defaults={
-                    "driver": vehicle.active_driver,
+                    "pilot": vehicle.active_pilot,
                     "ended_at": start + timedelta(minutes=dur_min) if vehicle.status != Vehicle.Status.ACTIVE else None,
                     "distance_km": distance,
                     "max_speed_kmph": round(random.uniform(40, 70), 1),

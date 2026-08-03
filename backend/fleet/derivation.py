@@ -95,7 +95,7 @@ def _handle_trip(vehicle, t, prev, th):
         if active is None:
             active = Trip.objects.create(
                 vehicle=vehicle,
-                driver=vehicle.active_driver,
+                pilot=vehicle.active_pilot,
                 started_at=t.received_at,
                 start_lat=t.latitude if t.has_gps_fix else None,
                 start_lng=t.longitude if t.has_gps_fix else None,
