@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
 
-const KEY = 'fgx_sa_auth'
+const KEY = 'fgx_admin_auth'
 const saved = JSON.parse(localStorage.getItem(KEY) || '{}')
 
 export const auth = reactive({
@@ -8,7 +8,7 @@ export const auth = reactive({
   refresh: saved.refresh || null,
   user: saved.user || null,
   get isAuthed() { return !!this.access },
-  get isSuperAdmin() { return this.user?.role === 'superadmin' },
+  get isAdmin() { return this.user?.role === 'admin' },
 })
 
 export function setAuth({ access, refresh, user }) {

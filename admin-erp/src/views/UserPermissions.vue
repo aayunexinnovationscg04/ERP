@@ -1,12 +1,15 @@
 <template>
   <div class="topbar">
-    <h1><router-link to="/users" class="muted">Users</router-link> / member access</h1>
+    <div class="heading">
+      <span class="eyebrow"><router-link to="/users" class="muted">Users</router-link> / Member access</span>
+      <h1>Tabs &amp; overrides</h1>
+    </div>
     <div class="row">
       <span class="muted ico" v-if="saved"><Check :size="16" /> Saved</span>
-      <button class="primary ico" @click="save" :disabled="saving"><Check :size="16" /> {{ saving ? 'Saving…' : 'Save overrides' }}</button>
+      <button class="primary ico" style="width:auto" @click="save" :disabled="saving"><Check :size="16" /> {{ saving ? 'Saving…' : 'Save overrides' }}</button>
     </div>
   </div>
-  <p class="muted" style="margin-top:-8px">Role: <b>{{ data.role }}</b>. Choose <b>Default</b> to follow the role, or override per tab for this member.</p>
+  <p class="hint">Role: <span class="role-badge" :class="data.role">{{ roleLabel(data.role) }}</span> &nbsp;·&nbsp; Choose <b>Default</b> to follow the role, or override per tab for this member.</p>
 
   <div v-if="loading" class="card" style="padding:16px;margin-top:14px">
     <div class="skel sk-row" v-for="n in 6" :key="n"></div>
@@ -16,7 +19,11 @@
     <table>
       <thead><tr><th>Module / Tab</th><th>Role default</th><th>This member</th><th>Effective</th></tr></thead>
       <tbody>
-        <tr v-for="m in modules" :key="m.key">
+        <motion.tr
+          v-for="(m, idx) in modules" :key="m.key"
+          :initial="{ opacity: 0, y: 4 }" :animate="{ opacity: 1, y: 0 }"
+          :transition="{ duration: 0.14, delay: Math.min(idx, 10) * 0.015, ease: [0.4, 0, 0.2, 1] }"
+        >
           <td>{{ m.label }} <span class="muted" style="font-size:11px">{{ m.key }}</span></td>
           <td><span class="badge ico" :class="data.role_defaults[m.key] ? 'active' : 'offline'"><component :is="data.role_defaults[m.key] ? Check : X" :size="13" /> {{ data.role_defaults[m.key] ? 'allowed' : 'denied' }}</span></td>
           <td>
@@ -27,7 +34,7 @@
             </select>
           </td>
           <td><span class="badge ico" :class="effective(m.key) ? 'active' : 'offline'"><component :is="effective(m.key) ? Check : X" :size="13" /> {{ effective(m.key) ? 'yes' : 'no' }}</span></td>
-        </tr>
+        </motion.tr>
       </tbody>
     </table>
   </div>
@@ -35,6 +42,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import { motion } from 'motion-v'
 import { Check, X } from 'lucide-vue-next'
 import { getUserPerms, setUserPerms, getModules } from '../api'
 import { toast } from '../toast'
@@ -45,6 +53,9 @@ const data = ref({ role: '', role_defaults: {}, overrides: {}, effective: [] })
 const state = ref({})   // module -> 'default' | 'allow' | 'deny'
 const loading = ref(true)
 const saving = ref(false); const saved = ref(false)
+
+const roleLabels = { admin: 'Admin', dealer: 'Dealer', manager: 'Manager', pilot: 'Pilot' }
+function roleLabel(r) { return roleLabels[r] || r }
 
 function effective(key) {
   const s = state.value[key]

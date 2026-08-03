@@ -2,10 +2,11 @@
   <div class="login2">
     <!-- LEFT: which portal this is -->
     <section class="brandside">
+      <ParticleField class="bs-particles" />
       <div class="bs-pattern" aria-hidden="true"></div>
       <div class="bs-content">
-        <div class="bs-logo"><span class="bs-logo-badge"><ShieldCheck :size="17" /></span> Fuel Guard X</div>
-        <div class="bs-portal">Super Admin Console</div>
+        <div class="bs-logo"><span class="bs-logo-badge"><img src="../assets/logo.png" alt="" /></span> Fuel Guard X</div>
+        <div class="bs-portal">Admin Console</div>
         <p class="bs-tag">Manage companies, users, roles and tab-level access across the platform.</p>
         <ul class="bs-list">
           <li><span class="bs-ic"><Check :size="13" /></span> User &amp; company management</li>
@@ -19,7 +20,7 @@
     <!-- RIGHT: the login form -->
     <section class="formside">
       <div class="formcard">
-        <div class="form-badge"><ShieldCheck :size="20" /></div>
+        <div class="form-badge"><img src="../assets/logo.png" alt="" style="width:24px;height:24px;object-fit:cover;border-radius:6px" /></div>
         <h2>Sign in</h2>
         <p class="sub">Platform administration — authorized staff only</p>
         <form @submit.prevent="submit">
@@ -39,7 +40,7 @@
           <button class="primary" :disabled="busy">{{ busy ? 'Signing in…' : 'Sign in' }}</button>
           <div v-if="error" class="err">{{ error }}</div>
         </form>
-        <p class="note">No sign-up — super-admin accounts are provisioned internally.</p>
+        <p class="note">No sign-up — admin accounts are provisioned internally.</p>
       </div>
     </section>
   </div>
@@ -48,10 +49,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ShieldCheck, Check, User, Lock, Eye, EyeOff } from 'lucide-vue-next'
+import { Check, User, Lock, Eye, EyeOff } from 'lucide-vue-next'
 import { login } from '../api'
 import { setAuth } from '../auth'
 import { toast } from '../toast'
+import ParticleField from '../components/ParticleField.vue'
 
 const username = ref(''); const password = ref(''); const busy = ref(false); const error = ref('')
 const showPw = ref(false)
@@ -60,9 +62,9 @@ async function submit() {
   busy.value = true; error.value = ''
   try {
     const data = await login(username.value, password.value)
-    if (data.user?.role !== 'superadmin') {
-      error.value = 'Not a super-admin account.'
-      toast.error('Not a super-admin account')
+    if (data.user?.role !== 'admin') {
+      error.value = 'Not an admin account.'
+      toast.error('Not an admin account')
       return
     }
     setAuth({ access: data.access, refresh: data.refresh, user: data.user })
@@ -103,8 +105,10 @@ async function submit() {
 .bs-logo { font-size: 15px; font-weight: 700; display: flex; gap: 10px; align-items: center; opacity: .92; }
 .bs-logo-badge {
   width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none;
-  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); overflow: hidden;
 }
+.bs-logo-badge img { width: 100%; height: 100%; object-fit: cover; }
+.bs-particles { position: absolute; inset: 0; z-index: 0; opacity: .8; }
 .bs-portal { font-size: 34px; font-weight: 850; letter-spacing: -.03em; line-height: 1.08; }
 .bs-tag { font-size: 15px; opacity: .9; max-width: 34ch; line-height: 1.55; margin: 0; }
 .bs-list { list-style: none; padding: 0; margin: 4px 0 0; display: grid; gap: 12px; }

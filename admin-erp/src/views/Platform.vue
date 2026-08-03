@@ -1,7 +1,10 @@
 <template>
   <div class="platform">
   <div class="topbar">
-    <h1 class="ico"><Activity :size="20" /> Platform Health</h1>
+    <div class="heading">
+      <span class="eyebrow">Platform / Systems</span>
+      <h1 class="ico"><Activity :size="20" /> Platform Health</h1>
+    </div>
     <div class="row">
       <span class="muted" style="font-size:12px">{{ h ? 'Updated ' + when(h.time) : '' }}</span>
     </div>
@@ -163,14 +166,14 @@ const c = computed(() => h.value?.counts || {})
 const roleBreakdown = computed(() => {
   const r = h.value?.counts?.users_by_role
   if (!r) return ''
-  return `${r.owner ?? 0} owner · ${r.manager ?? 0} mgr · ${r.driver ?? 0} driver · ${r.superadmin ?? 0} admin`
+  return `${r.dealer ?? 0} dealer · ${r.manager ?? 0} mgr · ${r.pilot ?? 0} pilot · ${r.admin ?? 0} admin`
 })
 
 const rolesOrder = [
-  { key: 'owner', label: 'Owner' },
+  { key: 'dealer', label: 'Dealer' },
   { key: 'manager', label: 'Manager' },
-  { key: 'driver', label: 'Driver' },
-  { key: 'superadmin', label: 'Admin' },
+  { key: 'pilot', label: 'Pilot' },
+  { key: 'admin', label: 'Admin' },
 ]
 const roleData = computed(() => {
   const r = h.value?.counts?.users_by_role || {}
