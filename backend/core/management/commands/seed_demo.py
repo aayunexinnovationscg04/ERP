@@ -1,7 +1,8 @@
-"""Seed a clearly-labelled demo company with vehicles, pilots, trips, alerts,
-geofences and documents so the dealer and pilot ERPs have data to show in a
-client demo. Safe to re-run (get_or_create everywhere); pass --reset to wipe
-just this demo company first.
+"""Seed a clearly-labelled demo company (plus a couple of lighter-weight extra
+companies so the Admin ERP's company/user lists don't look empty) with
+vehicles, pilots, trips, alerts, geofences and documents so the dealer and
+pilot ERPs have data to show in a client demo. Safe to re-run (get_or_create
+everywhere); pass --reset to wipe just these demo companies first.
 
     .venv/bin/python manage.py seed_demo [--reset]
 """
@@ -21,40 +22,64 @@ from fleet.models import (Device, Pilot, PilotAttendance, Geofence,
 
 BASE_LAT, BASE_LNG = 21.1458, 79.0882  # generic demo depot location
 
-PILOT_NAMES = ["Ramesh Kumar", "Suresh Yadav", "Vikram Singh", "Anil Sharma"]
+PILOT_NAMES = [
+    "Ramesh Kumar", "Suresh Yadav", "Vikram Singh", "Anil Sharma",
+    "Deepak Verma", "Manoj Tiwari", "Rajesh Patil", "Santosh Gaikwad",
+]
 VEHICLES = [
     ("MH31AB1234", "Tata", "407", Vehicle.Status.ACTIVE),
     ("MH31CD5678", "Ashok Leyland", "1616", Vehicle.Status.ACTIVE),
-    ("MH31EF9012", "Mahindra", "Bolero Pickup", Vehicle.Status.IDLE),
-    ("MH31GH3456", "Eicher", "Pro 2049", Vehicle.Status.OFFLINE),
+    ("MH31EF9012", "Mahindra", "Bolero Pickup", Vehicle.Status.ACTIVE),
+    ("MH31GH3456", "Eicher", "Pro 2049", Vehicle.Status.ACTIVE),
+    ("MH31IJ7890", "Tata", "1109", Vehicle.Status.ACTIVE),
+    ("MH31KL2345", "Bharat Benz", "1217C", Vehicle.Status.ACTIVE),
+    ("MH31MN6789", "Ashok Leyland", "Dost+", Vehicle.Status.IDLE),
+    ("MH31OP0123", "Mahindra", "Furio 7", Vehicle.Status.IDLE),
+    ("MH31QR4567", "Tata", "Ultra 814", Vehicle.Status.OFFLINE),
+    ("MH31ST8901", "Eicher", "Skyline Pro", Vehicle.Status.OFFLINE),
+]
+
+EXTRA_COMPANIES = [
+    ("Shree Logistics", "shree-logistics", [
+        ("GJ01AB5566", "Tata", "407", Vehicle.Status.ACTIVE),
+        ("GJ01CD7788", "Mahindra", "Bolero Pickup", Vehicle.Status.ACTIVE),
+        ("GJ01EF9900", "Ashok Leyland", "1616", Vehicle.Status.IDLE),
+    ], ["Harish Chauhan", "Bharat Solanki"]),
+    ("Om Sai Transport", "om-sai-transport", [
+        ("RJ14GH1122", "Eicher", "Pro 2049", Vehicle.Status.ACTIVE),
+        ("RJ14IJ3344", "Tata", "1109", Vehicle.Status.OFFLINE),
+    ], ["Devendra Rathore"]),
 ]
 
 
 class Command(BaseCommand):
-    help = "Seed a demo company with vehicles, pilots, trips and alerts for client demos."
+    help = "Seed demo companies with vehicles, pilots, trips and alerts for client demos."
 
     def add_arguments(self, parser):
-        parser.add_argument("--reset", action="store_true", help="delete existing demo-fleet company first")
+        parser.add_argument("--reset", action="store_true", help="delete existing demo companies first")
 
     def handle(self, *args, **opts):
         if opts["reset"]:
-            deleted, _ = Company.objects.filter(slug="demo-fleet").delete()
+            slugs = ["demo-fleet"] + [slug for _, slug, _, _ in EXTRA_COMPANIES]
+            deleted, _ = Company.objects.filter(slug__in=slugs).delete()
             self.stdout.write(f"reset: deleted {deleted} row(s)")
 
         with transaction.atomic():
             company = self._company()
             pilots = self._pilots(company)
-            pilot_user = self._users(company, pilots)
+            self._users(company, pilots)
             vehicles = self._vehicles(company, pilots)
             self._trips(vehicles, pilots)
             self._alerts(company, vehicles)
             self._geofences(company)
             self._documents(vehicles)
+            self._extra_companies()
 
         self.stdout.write(self.style.SUCCESS(
             "\nDemo data ready.\n"
             "  Dealer ERP  ->  dealer / dealer123\n"
             "  Pilot  ERP  ->  pilot / pilot123\n"
+            "  (Admin ERP login is unaffected by this command — see deploy/PILOT_CREDENTIALS.txt.)\n"
         ))
 
     def _company(self):
@@ -144,10 +169,10 @@ class Command(BaseCommand):
 
     def _trips(self, vehicles, pilots):
         now = timezone.now()
+        n_days = 30
         for vehicle in vehicles:
             if vehicle.status == Vehicle.Status.OFFLINE:
                 continue  # a long-offline truck has no recent trips
-            n_days = 7
             for day in range(n_days):
                 if random.random() < 0.15:
                     continue  # skip a day here and there, like real usage
@@ -209,6 +234,14 @@ class Command(BaseCommand):
              Alert.Status.OPEN, 12),
             (Alert.Type.FUEL_THEFT, Alert.Severity.CRITICAL, "Possible fuel theft: -18.0 L",
              "lost 18.0 L suddenly while parked overnight.", Alert.Status.ACKNOWLEDGED, 55),
+            (Alert.Type.OVERSPEED, Alert.Severity.WARNING, "Overspeed: 82 km/h",
+             "exceeded 60 km/h near the toll plaza.", Alert.Status.RESOLVED, 70),
+            (Alert.Type.GEOFENCE_BREACH, Alert.Severity.CRITICAL, "Restricted zone entry",
+             "entered 'Old City Restricted Zone' without authorisation.", Alert.Status.OPEN, 3),
+            (Alert.Type.IDLE_TOO_LONG, Alert.Severity.WARNING, "Idle too long",
+             "has been stopped for over an hour near the depot.", Alert.Status.OPEN, 1),
+            (Alert.Type.LOW_FUEL, Alert.Severity.CRITICAL, "Critically low fuel",
+             "fuel level is critically low — refuel soon.", Alert.Status.ACKNOWLEDGED, 30),
         ]
         for i, (type_, sev, title, msg, status, hours_ago) in enumerate(specs):
             vehicle = vehicles[i % len(vehicles)]
@@ -260,4 +293,64 @@ class Command(BaseCommand):
                         "number": f"{doc_type.upper()}-{vi + 1}{di + 1}0{vi}{di}",
                         "expiry_date": today + timedelta(days=days_offset),
                     },
+                )
+
+    def _extra_companies(self):
+        """A couple of lighter-weight companies so the Admin ERP's company/user
+        lists, and multi-tenant scoping, look real rather than single-tenant."""
+        now = timezone.now()
+        for ci, (name, slug, vehicles_spec, pilot_names) in enumerate(EXTRA_COMPANIES):
+            company, _ = Company.objects.get_or_create(
+                slug=slug, defaults={"name": name, "status": Company.Status.ACTIVE}
+            )
+            CompanySettings.objects.get_or_create(company=company)
+
+            dealer, _ = User.objects.get_or_create(
+                username=f"{slug.replace('-', '')}-dealer", defaults={"company": company}
+            )
+            dealer.company, dealer.role, dealer.can_edit = company, User.Role.DEALER, True
+            dealer.set_password("dealer123")
+            dealer.save()
+
+            pilots = []
+            for pi, pname in enumerate(pilot_names):
+                p, _ = Pilot.objects.get_or_create(
+                    company=company, name=pname,
+                    defaults={
+                        "phone": f"9988{100000 + ci * 10000 + pi * 111}",
+                        "license_no": f"XX{10 + ci}{2019 + pi}{200000 + pi}",
+                        "monthly_salary": Decimal(14000 + pi * 1200),
+                    },
+                )
+                pilots.append(p)
+
+            for vi, (reg, make, model, status) in enumerate(vehicles_spec):
+                online = status != Vehicle.Status.OFFLINE
+                device, _ = Device.objects.get_or_create(
+                    device_id=f"{slug}-esp32-{vi + 1:02d}",
+                    defaults={"company": company, "label": f"{name} unit {vi + 1}"},
+                )
+                device.company = company
+                device.online = online
+                device.last_seen = now - (timedelta(minutes=random.randint(1, 8)) if online else timedelta(hours=9))
+                device.save()
+
+                vehicle, _ = Vehicle.objects.get_or_create(
+                    company=company, registration_number=reg,
+                    defaults={"make": make, "model": model, "tank_capacity_litres": 120},
+                )
+                vehicle.device = device
+                vehicle.active_pilot = pilots[vi % len(pilots)]
+                vehicle.status = status
+                vehicle.make, vehicle.model = make, model
+                vehicle.save()
+
+                Telemetry.objects.create(
+                    device=device, vehicle=vehicle, received_at=device.last_seen,
+                    latitude=BASE_LAT + random.uniform(-1.5, 1.5) + ci,
+                    longitude=BASE_LNG + random.uniform(-1.5, 1.5) + ci,
+                    speed_kmph=round(random.uniform(18, 58), 1) if status == Vehicle.Status.ACTIVE else 0,
+                    satellites=random.randint(6, 12), altitude_m=round(random.uniform(280, 320), 1),
+                    recording=status == Vehicle.Status.ACTIVE, lock_active=True,
+                    gsm_signal=random.randint(-95, -60), has_gps_fix=True, raw={},
                 )
