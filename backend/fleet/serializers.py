@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import (Device, Driver, DriverAttendance, Geofence, Telemetry,
+from .models import (Device, Pilot, PilotAttendance, Geofence, Telemetry,
                      Trip, Vehicle, VehicleDocument)
 
 EXPIRY_WARNING_DAYS = 30
@@ -29,23 +29,23 @@ class DeviceSerializer(serializers.ModelSerializer):
         return obj.commands.filter(status="queued").count()
 
 
-class DriverSerializer(serializers.ModelSerializer):
+class PilotSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Driver
+        model = Pilot
         fields = ["id", "name", "phone", "license_no"]
 
 
-class DriverAttendanceSerializer(serializers.ModelSerializer):
+class PilotAttendanceSerializer(serializers.ModelSerializer):
     status_label = serializers.CharField(source="get_status_display", read_only=True)
 
     class Meta:
-        model = DriverAttendance
+        model = PilotAttendance
         fields = ["id", "date", "status", "status_label", "notes"]
 
 
 class _AssignedVehicleMixin:
-    """A driver isn't tied to one vehicle by a direct FK — it's the reverse of
-    Vehicle.active_driver. `.vehicles.first()` needs an actual method call, so
+    """A pilot isn't tied to one vehicle by a direct FK — it's the reverse of
+    Vehicle.active_pilot. `.vehicles.first()` needs an actual method call, so
     this has to be a SerializerMethodField (a dotted `source=` string only does
     attribute access, it can't call `.first()`)."""
 
@@ -56,23 +56,23 @@ class _AssignedVehicleMixin:
         return {"id": v.id, "registration_number": v.registration_number, "local_name": v.local_name}
 
 
-class DriverListSerializer(_AssignedVehicleMixin, serializers.ModelSerializer):
+class PilotListSerializer(_AssignedVehicleMixin, serializers.ModelSerializer):
     """Powers the Pilots page — the assigned vehicle rides along (entered via
     Django Admin only, same pattern as monthly_salary/attendance) so the boxes
-    grid needs no extra request per driver."""
+    grid needs no extra request per pilot."""
     assigned_vehicle = serializers.SerializerMethodField()
 
     class Meta:
-        model = Driver
+        model = Pilot
         fields = ["id", "name", "phone", "license_no", "assigned_vehicle"]
 
 
-class DriverDetailSerializer(_AssignedVehicleMixin, serializers.ModelSerializer):
-    attendance = DriverAttendanceSerializer(many=True, read_only=True)
+class PilotDetailSerializer(_AssignedVehicleMixin, serializers.ModelSerializer):
+    attendance = PilotAttendanceSerializer(many=True, read_only=True)
     assigned_vehicle = serializers.SerializerMethodField()
 
     class Meta:
-        model = Driver
+        model = Pilot
         fields = ["id", "name", "phone", "license_no", "monthly_salary",
                   "assigned_vehicle", "attendance"]
 
@@ -107,23 +107,23 @@ class _LatestMixin:
 
 class VehicleListSerializer(_LatestMixin, serializers.ModelSerializer):
     """Powers the Fleet table, including its per-row expand panel — carries
-    driver + documents up front so expanding a row needs no extra request."""
+    pilot + documents up front so expanding a row needs no extra request."""
     device_id = serializers.CharField(source="device.device_id", read_only=True, default=None)
-    driver_name = serializers.CharField(source="active_driver.name", read_only=True, default=None)
-    active_driver = DriverSerializer(read_only=True)
+    pilot_name = serializers.CharField(source="active_pilot.name", read_only=True, default=None)
+    active_pilot = PilotSerializer(read_only=True)
     documents = VehicleDocumentSerializer(many=True, read_only=True)
     latest = serializers.SerializerMethodField()
 
     class Meta:
         model = Vehicle
         fields = ["id", "registration_number", "local_name", "status", "make", "model",
-                  "tank_capacity_litres", "device_id", "driver_name",
-                  "active_driver", "documents", "latest"]
+                  "tank_capacity_litres", "device_id", "pilot_name",
+                  "active_pilot", "documents", "latest"]
 
 
 class VehicleDetailSerializer(_LatestMixin, serializers.ModelSerializer):
     device = DeviceSerializer(read_only=True)
-    active_driver = DriverSerializer(read_only=True)
+    active_pilot = PilotSerializer(read_only=True)
     documents = VehicleDocumentSerializer(many=True, read_only=True)
     latest = serializers.SerializerMethodField()
     latest_raw = serializers.SerializerMethodField()
@@ -131,7 +131,7 @@ class VehicleDetailSerializer(_LatestMixin, serializers.ModelSerializer):
     class Meta:
         model = Vehicle
         fields = ["id", "registration_number", "local_name", "status", "make", "model",
-                  "tank_capacity_litres", "device", "active_driver", "documents",
+                  "tank_capacity_litres", "device", "active_pilot", "documents",
                   "latest", "latest_raw", "created_at"]
 
     def get_latest_raw(self, obj):
@@ -148,7 +148,7 @@ class TripSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Trip
-        fields = ["id", "vehicle", "vehicle_reg", "driver", "started_at", "ended_at",
+        fields = ["id", "vehicle", "vehicle_reg", "pilot", "started_at", "ended_at",
                   "start_lat", "start_lng", "end_lat", "end_lng", "distance_km",
                   "max_speed_kmph", "avg_speed_kmph", "fuel_consumed_litres", "status"]
 

@@ -1,4 +1,4 @@
-"""Fleet domain: devices, vehicles, drivers, telemetry, trips, geofences.
+"""Fleet domain: devices, vehicles, pilots, telemetry, trips, geofences.
 
 Telemetry is the high-volume table (every device POST lands here). It keeps
 both typed columns (for querying/aggregation) and the full raw payload (JSONB),
@@ -29,10 +29,10 @@ class Device(models.Model):
         return self.device_id
 
 
-class Driver(models.Model):
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="drivers")
+class Pilot(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="pilots")
     user = models.ForeignKey(
-        "core.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="driver_profiles"
+        "core.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="pilot_profiles"
     )
     name = models.CharField(max_length=120)
     phone = models.CharField(max_length=20, blank=True)
@@ -46,27 +46,27 @@ class Driver(models.Model):
         return self.name
 
 
-class DriverAttendance(models.Model):
+class PilotAttendance(models.Model):
     class Status(models.TextChoices):
         PRESENT = "present", "Present"
         ABSENT = "absent", "Absent"
         HALF_DAY = "half_day", "Half day"
         LEAVE = "leave", "On leave"
 
-    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name="attendance")
+    pilot = models.ForeignKey(Pilot, on_delete=models.CASCADE, related_name="attendance")
     date = models.DateField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PRESENT)
     notes = models.CharField(max_length=200, blank=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["driver", "date"], name="uniq_attendance_per_day")
+            models.UniqueConstraint(fields=["pilot", "date"], name="uniq_attendance_per_day")
         ]
         ordering = ["-date"]
-        verbose_name_plural = "driver attendance"
+        verbose_name_plural = "pilot attendance"
 
     def __str__(self):
-        return f"{self.driver} · {self.date} · {self.status}"
+        return f"{self.pilot} · {self.date} · {self.status}"
 
 
 class Vehicle(models.Model):
@@ -84,12 +84,12 @@ class Vehicle(models.Model):
     device = models.OneToOneField(
         Device, null=True, blank=True, on_delete=models.SET_NULL, related_name="vehicle"
     )
-    active_driver = models.ForeignKey(
-        Driver, null=True, blank=True, on_delete=models.SET_NULL, related_name="vehicles"
+    active_pilot = models.ForeignKey(
+        Pilot, null=True, blank=True, on_delete=models.SET_NULL, related_name="vehicles"
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.OFFLINE)
     # Dealer-facing nickname, separate from the (often cryptic) registration
-    # number — e.g. "Loader 2". Editable anytime by the owner/admin.
+    # number — e.g. "Loader 2". Editable anytime by the dealer/admin.
     local_name = models.CharField(max_length=10, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -174,8 +174,8 @@ class Trip(models.Model):
         COMPLETED = "completed", "Completed"
 
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name="trips")
-    driver = models.ForeignKey(
-        Driver, null=True, blank=True, on_delete=models.SET_NULL, related_name="trips"
+    pilot = models.ForeignKey(
+        Pilot, null=True, blank=True, on_delete=models.SET_NULL, related_name="trips"
     )
     started_at = models.DateTimeField()
     ended_at = models.DateTimeField(null=True, blank=True)

@@ -1,4 +1,4 @@
-"""Super-Admin API: user management, role management, per-member overrides."""
+"""Admin API: user management, role management, per-member overrides."""
 
 from datetime import timedelta
 
@@ -12,20 +12,20 @@ from rest_framework.views import APIView
 from .access import effective_modules, role_defaults, role_matrix
 from .models import RolePermission, User, UserModuleOverride
 from .modules import MODULES, MODULE_KEYS
-from .permissions import IsSuperAdmin
+from .permissions import IsAdmin
 from .serializers import AdminUserSerializer, CompanySerializer
 from .models import Company
 
 
 class ModulesView(APIView):
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsAdmin]
 
     def get(self, request):
         return Response(MODULES)
 
 
 class CompanyViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsAdmin]
     serializer_class = CompanySerializer
     queryset = Company.objects.all().order_by("name")
 
@@ -33,7 +33,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
 class AdminUserViewSet(viewsets.ModelViewSet):
     """CRUD users, assign roles/companies, plus per-user module overrides."""
 
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsAdmin]
     serializer_class = AdminUserSerializer
 
     def get_queryset(self):
@@ -54,7 +54,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             return Response({
                 "user_id": user.id,
                 "role": user.role,
-                "role_defaults": role_defaults(user.role) if user.role != User.Role.SUPERADMIN
+                "role_defaults": role_defaults(user.role) if user.role != User.Role.ADMIN
                                  else {m: True for m in MODULE_KEYS},
                 "overrides": overrides,
                 "effective": effective_modules(user),
@@ -73,9 +73,9 @@ class AdminUserViewSet(viewsets.ModelViewSet):
 
 
 class PlatformHealthView(APIView):
-    """Platform monitoring for Super Admin: DB health, live counts, ingest freshness."""
+    """Platform monitoring for Admin: DB health, live counts, ingest freshness."""
 
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsAdmin]
 
     def get(self, request):
         from alerts.models import Alert
@@ -129,15 +129,15 @@ class PlatformHealthView(APIView):
 class RoleMatrixView(APIView):
     """GET the full role x module matrix; PUT to update role defaults."""
 
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsAdmin]
 
     def get(self, request):
         return Response({"modules": MODULES, "matrix": role_matrix()})
 
     def put(self, request):
-        # body: {role: {module: bool}}  — super admin role is ignored (always all-access)
+        # body: {role: {module: bool}}  — admin role is ignored (always all-access)
         data = request.data or {}
-        valid_roles = {r for r, _ in User.Role.choices if r != User.Role.SUPERADMIN}
+        valid_roles = {r for r, _ in User.Role.choices if r != User.Role.ADMIN}
         for role, mods in data.items():
             if role not in valid_roles or not isinstance(mods, dict):
                 continue

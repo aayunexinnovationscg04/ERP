@@ -1,10 +1,10 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .driver_views import (DriverAlertsView, DriverSummaryView,
-                           DriverTelemetryView, DriverTripsView,
-                           DriverVehicleView)
-from .views import (DashboardViewSet, DeviceViewSet, DriverViewSet,
+from .pilot_views import (PilotAlertsView, PilotSummaryView,
+                          PilotTelemetryView, PilotTripsView,
+                          PilotVehicleView)
+from .views import (DashboardViewSet, DeviceViewSet, PilotViewSet,
                     GeofenceViewSet, TripViewSet, VehicleViewSet)
 
 router = DefaultRouter()
@@ -12,14 +12,14 @@ router.register("vehicles", VehicleViewSet, basename="vehicle")
 router.register("trips", TripViewSet, basename="trip")
 router.register("devices", DeviceViewSet, basename="device")
 router.register("geofences", GeofenceViewSet, basename="geofence")
-router.register("drivers", DriverViewSet, basename="driver")
+router.register("pilots", PilotViewSet, basename="pilot")
 router.register("dashboard/summary", DashboardViewSet, basename="dashboard")
 
 urlpatterns = router.urls + [
-    # Driver ERP (self-scoped; role=DRIVER only)
-    path("driver/summary", DriverSummaryView.as_view()),
-    path("driver/vehicle", DriverVehicleView.as_view()),
-    path("driver/vehicle/telemetry", DriverTelemetryView.as_view()),
-    path("driver/trips", DriverTripsView.as_view()),
-    path("driver/alerts", DriverAlertsView.as_view()),
+    # Pilot ERP (self-scoped; role=PILOT only)
+    path("pilot/summary", PilotSummaryView.as_view()),
+    path("pilot/vehicle", PilotVehicleView.as_view()),
+    path("pilot/vehicle/telemetry", PilotTelemetryView.as_view()),
+    path("pilot/trips", PilotTripsView.as_view()),
+    path("pilot/alerts", PilotAlertsView.as_view()),
 ]

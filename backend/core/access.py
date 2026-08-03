@@ -1,7 +1,7 @@
 """Resolve a user's effective module access.
 
 Precedence:  per-user override  >  role default (RolePermission)  >  False.
-Super Admin is always all-access (cannot be locked out of the platform).
+Admin is always all-access (cannot be locked out of the platform).
 """
 
 from .models import RolePermission, User, UserModuleOverride
@@ -18,7 +18,7 @@ def effective_modules(user):
     """List of module keys the user may access."""
     if not user or not user.is_authenticated:
         return []
-    if user.role == User.Role.SUPERADMIN:
+    if user.role == User.Role.ADMIN:
         return list(MODULE_KEYS)
     base = role_defaults(user.role)
     for ov in UserModuleOverride.objects.filter(user=user):
@@ -31,7 +31,7 @@ def role_matrix():
     """Full {role: {module: allowed}} matrix for the Role Management screen."""
     out = {}
     for role, _ in User.Role.choices:
-        if role == User.Role.SUPERADMIN:
+        if role == User.Role.ADMIN:
             out[role] = {m: True for m in MODULE_KEYS}  # informational, all-access
         else:
             out[role] = role_defaults(role)

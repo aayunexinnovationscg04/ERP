@@ -1,7 +1,7 @@
 """Tenancy, users, and per-company settings.
 
 Company is the tenant: every business row in the system FKs (directly or via a
-vehicle/device) back to a Company, and every Owner-scoped API query is filtered
+vehicle/device) back to a Company, and every Dealer-scoped API query is filtered
 to request.user.company. This is what lets 5 or 30 trucks across 1..N companies
 be pure data, not code changes.
 """
@@ -30,31 +30,31 @@ class Company(models.Model):
 class User(AbstractUser):
     """Custom user set from line 1 (AUTH_USER_MODEL) — cannot be swapped later.
 
-    A SUPERADMIN has no company (platform-wide). Everyone else belongs to one.
+    An ADMIN has no company (platform-wide). Everyone else belongs to one.
     """
 
     class Role(models.TextChoices):
-        SUPERADMIN = "superadmin", "Super Admin"
-        OWNER = "owner", "Owner"
+        ADMIN = "admin", "Admin"
+        DEALER = "dealer", "Dealer"
         MANAGER = "manager", "Manager"
-        DRIVER = "driver", "Driver"
+        PILOT = "pilot", "Pilot"
 
     company = models.ForeignKey(
         Company, null=True, blank=True, on_delete=models.CASCADE, related_name="users"
     )
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.OWNER)
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.DEALER)
     phone = models.CharField(max_length=20, blank=True)
-    # Write gate: non-superadmins can VIEW their data but cannot CHANGE anything
-    # unless a Super Admin grants this. Super Admin always has full write access.
+    # Write gate: non-admins can VIEW their data but cannot CHANGE anything
+    # unless an Admin grants this. Admin always has full write access.
     can_edit = models.BooleanField(
         default=False,
         help_text="If on, this user may make changes (create/edit/delete). "
-                  "Super Admins can always edit regardless of this flag.",
+                  "Admins can always edit regardless of this flag.",
     )
 
     @property
     def may_write(self):
-        return self.role == self.Role.SUPERADMIN or self.can_edit
+        return self.role == self.Role.ADMIN or self.can_edit
 
     def __str__(self):
         return f"{self.username} ({self.role})"
@@ -84,8 +84,8 @@ class CompanySettings(models.Model):
 class RolePermission(models.Model):
     """Global (platform-wide) default: does `role` get access to `module`?
 
-    Managed by Super Admin via Role Management. One row per (role, module).
-    Super Admin is always all-access and is not represented here.
+    Managed by Admin via Role Management. One row per (role, module).
+    Admin is always all-access and is not represented here.
     """
 
     role = models.CharField(max_length=20, choices=User.Role.choices)

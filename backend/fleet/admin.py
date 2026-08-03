@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import (Device, Driver, DriverAttendance, Geofence, GeofenceEvent,
+from .models import (Device, Pilot, PilotAttendance, Geofence, GeofenceEvent,
                      Telemetry, Trip, Vehicle, VehicleDocument)
 
 
@@ -18,7 +18,7 @@ class VehicleDocumentInline(admin.TabularInline):
 
 @admin.register(Vehicle)
 class VehicleAdmin(admin.ModelAdmin):
-    list_display = ("registration_number", "company", "status", "device", "active_driver")
+    list_display = ("registration_number", "company", "status", "device", "active_pilot")
     list_filter = ("status", "company")
     search_fields = ("registration_number", "make", "model")
     inlines = [VehicleDocumentInline]
@@ -31,16 +31,16 @@ class VehicleDocumentAdmin(admin.ModelAdmin):
     search_fields = ("vehicle__registration_number", "number")
 
 
-class DriverAttendanceInline(admin.TabularInline):
-    model = DriverAttendance
+class PilotAttendanceInline(admin.TabularInline):
+    model = PilotAttendance
     extra = 0
 
 
-@admin.register(Driver)
-class DriverAdmin(admin.ModelAdmin):
+@admin.register(Pilot)
+class PilotAdmin(admin.ModelAdmin):
     list_display = ("name", "company", "phone", "license_no", "monthly_salary")
     search_fields = ("name", "phone", "license_no")
-    inlines = [DriverAttendanceInline]
+    inlines = [PilotAttendanceInline]
 
 
 @admin.register(Telemetry)

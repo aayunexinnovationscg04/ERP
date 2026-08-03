@@ -7,12 +7,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from core.permissions import (CanWriteOrReadOnly, CompanyScopedQuerysetMixin,
-                              IsOwnerOrAdmin)
+                              IsDealerOrAdmin)
 from ingest.models import Command
 
-from .models import Device, Driver, Geofence, Telemetry, Trip, Vehicle
-from .serializers import (DeviceSerializer, DriverDetailSerializer,
-                          DriverListSerializer, GeofenceSerializer,
+from .models import Device, Pilot, Geofence, Telemetry, Trip, Vehicle
+from .serializers import (DeviceSerializer, PilotDetailSerializer,
+                          PilotListSerializer, GeofenceSerializer,
                           TelemetrySerializer, TripSerializer,
                           VehicleDetailSerializer, VehicleListSerializer)
 
@@ -21,11 +21,11 @@ STATUS_VALUES = [c[0] for c in Vehicle.Status.choices]
 
 
 class VehicleViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsOwnerOrAdmin]
+    permission_classes = [IsDealerOrAdmin]
 
     def get_queryset(self):
         qs = self.scoped(
-            Vehicle.objects.select_related("device", "active_driver")
+            Vehicle.objects.select_related("device", "active_pilot")
                            .prefetch_related("documents")
         )
         # ?priority_status=active|idle|offline|maintenance sorts that status to the
@@ -46,7 +46,7 @@ class VehicleViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     def get_serializer_class(self):
         return VehicleDetailSerializer if self.action == "retrieve" else VehicleListSerializer
 
-    @action(detail=True, methods=["patch"], permission_classes=[IsOwnerOrAdmin, CanWriteOrReadOnly])
+    @action(detail=True, methods=["patch"], permission_classes=[IsDealerOrAdmin, CanWriteOrReadOnly])
     def local_name(self, request, pk=None):
         """The only writable field on this otherwise read-only viewset — a
         dealer-facing nickname, separate from the write-gating on everything
@@ -86,7 +86,7 @@ class VehicleViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
 
 
 class TripViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsOwnerOrAdmin]
+    permission_classes = [IsDealerOrAdmin]
     serializer_class = TripSerializer
     company_field = "vehicle__company"
 
@@ -95,8 +95,8 @@ class TripViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
 
 
 class DeviceViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
-    # read for owners/managers; the `command` write action needs may_write
-    permission_classes = [IsOwnerOrAdmin, CanWriteOrReadOnly]
+    # read for dealers/managers; the `command` write action needs may_write
+    permission_classes = [IsDealerOrAdmin, CanWriteOrReadOnly]
     serializer_class = DeviceSerializer
 
     def get_queryset(self):
@@ -114,8 +114,8 @@ class DeviceViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
 
 
 class GeofenceViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
-    # read for owners/managers; create/update/delete need may_write
-    permission_classes = [IsOwnerOrAdmin, CanWriteOrReadOnly]
+    # read for dealers/managers; create/update/delete need may_write
+    permission_classes = [IsDealerOrAdmin, CanWriteOrReadOnly]
     serializer_class = GeofenceSerializer
 
     def get_queryset(self):
@@ -126,7 +126,7 @@ class GeofenceViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
 
 
 class DashboardViewSet(CompanyScopedQuerysetMixin, viewsets.ViewSet):
-    permission_classes = [IsOwnerOrAdmin]
+    permission_classes = [IsDealerOrAdmin]
 
     def list(self, request):
         vehicles = self.scoped(Vehicle.objects.all())
@@ -158,13 +158,13 @@ class DashboardViewSet(CompanyScopedQuerysetMixin, viewsets.ViewSet):
         })
 
 
-class DriverViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsOwnerOrAdmin]
+class PilotViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
+    permission_classes = [IsDealerOrAdmin]
 
     def get_queryset(self):
         return self.scoped(
-            Driver.objects.prefetch_related("vehicles", "attendance")
+            Pilot.objects.prefetch_related("vehicles", "attendance")
         ).order_by("name")
 
     def get_serializer_class(self):
-        return DriverDetailSerializer if self.action == "retrieve" else DriverListSerializer
+        return PilotDetailSerializer if self.action == "retrieve" else PilotListSerializer
