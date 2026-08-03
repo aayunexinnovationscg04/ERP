@@ -15,7 +15,7 @@
   </div>
 
   <template v-else>
-    <p class="section-title">Assigned Driver</p>
+    <p class="section-title">Assigned Pilot</p>
     <div class="card" style="padding:16px 18px">
       <div class="kvs">
         <div><span class="muted">Name</span><b>{{ d.name }}</b></div>
@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    <p class="section-title">Driver Attendance</p>
+    <p class="section-title">Pilot Attendance</p>
     <div class="card" style="padding:6px 0">
       <table>
         <thead><tr><th>Date</th><th>Status</th><th>Notes</th></tr></thead>
@@ -65,7 +65,7 @@
       </table>
     </div>
 
-    <p class="section-title">Driver Salary Information</p>
+    <p class="section-title">Pilot Salary Information</p>
     <div class="card" style="padding:16px 18px">
       <div class="fh-value" v-if="d.monthly_salary">₹{{ fmt(d.monthly_salary, 0) }} <span class="fh-unit">/ month</span></div>
       <p v-else class="muted" style="margin:0">Not set — ask an admin to add it in Django Admin.</p>
@@ -76,7 +76,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { ArrowLeft } from 'lucide-vue-next'
-import { getDriver, getAlerts } from '../api'
+import { getPilot, getAlerts } from '../api'
 import { fmt } from '../util'
 
 const props = defineProps({ id: [String, Number] })
@@ -87,7 +87,7 @@ const attendanceBadge = { present: 'active', absent: 'critical', half_day: 'idle
 
 async function load() {
   try {
-    d.value = await getDriver(props.id)
+    d.value = await getPilot(props.id)
     if (d.value.assigned_vehicle) {
       overspeed.value = await getAlerts({ vehicle: d.value.assigned_vehicle.id, type: 'overspeed' })
     }

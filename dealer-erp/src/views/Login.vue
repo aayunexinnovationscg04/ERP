@@ -2,26 +2,31 @@
   <div class="login2">
     <!-- LEFT: which portal this is -->
     <section class="brandside">
+      <AmbientOrb />
       <div class="bs-pattern" aria-hidden="true"></div>
-      <div class="bs-content">
+      <motion.div class="bs-content"
+        :initial="{ opacity: 0, y: 14 }" :animate="{ opacity: 1, y: 0 }" :transition="{ duration: .45, ease: [.4, 0, .2, 1] }">
         <div class="bs-logo">
           <span class="bs-logo-badge"><img :src="logo" alt="" /></span>
           <span class="bs-logo-text"><strong>AAYUNEX INNOVATIONS</strong><small>Fuel Guard X</small></span>
         </div>
         <div class="bs-portal">Dealer Portal</div>
-        <p class="bs-tag">Track your whole fleet — vehicles, fuel, drivers and alerts — in real time.</p>
+        <p class="bs-tag">Track your whole fleet — vehicles, fuel, pilots and alerts — in real time.</p>
         <ul class="bs-list">
-          <li><span class="bs-ic"><Check :size="13" /></span> Live fleet map &amp; vehicle status</li>
-          <li><span class="bs-ic"><Check :size="13" /></span> Fuel, trips &amp; route history</li>
-          <li><span class="bs-ic"><Check :size="13" /></span> Overspeed, geofence &amp; tamper alerts</li>
+          <motion.li v-for="(f, i) in features" :key="f.text"
+            :initial="{ opacity: 0, x: -10 }" :animate="{ opacity: 1, x: 0 }"
+            :transition="{ duration: .35, delay: .15 + i * .08, ease: [.4, 0, .2, 1] }">
+            <span class="bs-ic"><Check :size="13" /></span> {{ f.text }}
+          </motion.li>
         </ul>
         <div class="bs-live"><span class="live-dot"></span> Live tracking, always on</div>
-      </div>
+      </motion.div>
     </section>
 
     <!-- RIGHT: the login form -->
     <section class="formside">
-      <div class="formcard">
+      <motion.div class="formcard"
+        :initial="{ opacity: 0, y: 10 }" :animate="{ opacity: 1, y: 0 }" :transition="{ duration: .4, delay: .1, ease: [.4, 0, .2, 1] }">
         <div class="form-badge"><img :src="logo" alt="" /></div>
         <h2>Sign in</h2>
         <p class="sub">Dealer / company access to Fuel Guard X</p>
@@ -39,21 +44,36 @@
               <component :is="showPw ? EyeOff : Eye" :size="16" />
             </button>
           </div>
-          <button class="primary" :disabled="busy">{{ busy ? 'Signing in…' : 'Sign in' }}</button>
+          <motion.button class="primary" :disabled="busy" :while-tap="{ scale: .97 }" :while-hover="{ y: -1 }">
+            {{ busy ? 'Signing in…' : 'Sign in' }}
+          </motion.button>
           <div v-if="error" class="err">{{ error }}</div>
         </form>
-      </div>
+      </motion.div>
     </section>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { defineAsyncComponent, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Check, User, Lock, Eye, EyeOff } from 'lucide-vue-next'
+import { motion } from 'motion-v'
 import { login } from '../api'
 import { setAuth } from '../auth'
 import logo from '../assets/logo.png'
+
+// three.js is a heavy dependency (~150-600kB depending on tree-shaking) that
+// only this one ambient accent needs — code-split it into its own chunk so
+// it's fetched lazily on the login route instead of bloating the shared app
+// bundle every other screen has to download and parse first.
+const AmbientOrb = defineAsyncComponent(() => import('../components/AmbientOrb.vue'))
+
+const features = [
+  { text: 'Live fleet map & vehicle status' },
+  { text: 'Fuel, trips & route history' },
+  { text: 'Overspeed, geofence & tamper alerts' },
+]
 
 const username = ref('')
 const password = ref('')

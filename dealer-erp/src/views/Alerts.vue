@@ -19,7 +19,9 @@
         <tr><th>Severity</th><th>Type</th><th>Title</th><th>Vehicle</th><th>When</th><th></th></tr>
       </thead>
       <tbody>
-        <tr v-for="a in alerts" :key="a.id">
+        <motion.tr v-for="(a, i) in alerts" :key="a.id"
+          :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }"
+          :transition="{ duration: .2, delay: Math.min(i, 12) * .025, ease: [.4, 0, .2, 1] }">
           <td><span class="badge" :class="a.severity">{{ a.severity }}</span></td>
           <td class="muted">{{ a.type_label || a.type }}</td>
           <td>{{ a.title }}<div class="muted" style="font-size:12px">{{ a.message }}</div></td>
@@ -29,7 +31,7 @@
             <button v-if="a.status === 'open' && canWrite" @click="ack(a)">Acknowledge</button>
             <span v-else class="muted">{{ a.status }}</span>
           </td>
-        </tr>
+        </motion.tr>
         <tr v-if="!alerts.length"><td colspan="6" class="muted" style="padding:16px">No alerts.</td></tr>
       </tbody>
     </table>
@@ -39,6 +41,7 @@
 <script setup>
 import { onMounted, ref, computed } from 'vue'
 import { Lock } from 'lucide-vue-next'
+import { motion } from 'motion-v'
 import { getAlerts, ackAlert } from '../api'
 import { auth } from '../auth'
 import { ago } from '../util'

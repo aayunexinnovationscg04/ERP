@@ -1,9 +1,18 @@
 <template>
   <Toaster />
+  <MotionConfig reduced-motion="user">
   <div v-if="isLogin"><router-view /></div>
   <div v-else class="app" :class="{ collapsed }">
     <div class="mobilebar">
-      <button class="hamburger" aria-label="Menu" @click="menuOpen = !menuOpen"><Menu :size="22" /></button>
+      <motion.button class="hamburger" aria-label="Menu" :while-tap="{ scale: .88 }" @click="menuOpen = !menuOpen">
+        <AnimatePresence mode="wait">
+          <motion.span :key="menuOpen ? 'x' : 'menu'" class="hamburger-ic"
+            :initial="{ opacity: 0, rotate: -90 }" :animate="{ opacity: 1, rotate: 0 }" :exit="{ opacity: 0, rotate: 90 }"
+            :transition="{ duration: .16, ease: [.4, 0, .2, 1] }">
+            <component :is="menuOpen ? X : Menu" :size="22" />
+          </motion.span>
+        </AnimatePresence>
+      </motion.button>
     </div>
     <aside class="sidebar" :class="{ open: menuOpen }">
       <div class="side-head">
@@ -29,19 +38,25 @@
       </button>
     </aside>
     <main class="main">
-      <router-view v-slot="{ Component }">
-        <transition name="page" mode="out-in">
-          <div :key="$route.fullPath"><component :is="Component" /></div>
-        </transition>
+      <router-view v-slot="{ Component, route: r }">
+        <AnimatePresence mode="wait">
+          <motion.div :key="r.fullPath"
+            :initial="{ opacity: 0, y: 8 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -6 }"
+            :transition="{ duration: .22, ease: [.4, 0, .2, 1] }">
+            <component :is="Component" />
+          </motion.div>
+        </AnimatePresence>
       </router-view>
     </main>
   </div>
+  </MotionConfig>
 </template>
 
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Menu, LocateFixed, Truck, Bell, MapPin, Fuel, IdCard, ChevronsLeft, ChevronsRight, PowerOff } from 'lucide-vue-next'
+import { Menu, X, LocateFixed, Truck, Bell, MapPin, Fuel, IdCard, ChevronsLeft, ChevronsRight, PowerOff } from 'lucide-vue-next'
+import { motion, AnimatePresence, MotionConfig } from 'motion-v'
 import { auth, clearAuth } from './auth'
 import Toaster from './components/Toaster.vue'
 import logo from './assets/logo.png'

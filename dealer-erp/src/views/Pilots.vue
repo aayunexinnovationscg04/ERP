@@ -1,7 +1,7 @@
 <template>
   <div class="topbar">
     <h1>Pilots</h1>
-    <span class="muted">{{ driverCount }} driver(s)</span>
+    <span class="muted">{{ pilotCount }} pilot(s)</span>
   </div>
 
   <div v-if="loading" class="pilot-grid">
@@ -9,17 +9,20 @@
   </div>
 
   <div v-else class="pilot-grid">
-    <button type="button" class="pilot-box" v-for="v in vehicles" :key="v.id"
-            :disabled="!v.active_driver" :title="v.active_driver ? 'View pilot' : 'No pilot assigned'"
-            @click="v.active_driver && $router.push(`/pilots/${v.active_driver.id}`)">
+    <motion.button type="button" class="pilot-box" v-for="(v, i) in vehicles" :key="v.id"
+            :disabled="!v.active_pilot" :title="v.active_pilot ? 'View pilot' : 'No pilot assigned'"
+            :initial="{ opacity: 0, y: 10 }" :animate="{ opacity: 1, y: 0 }"
+            :transition="{ duration: .22, delay: Math.min(i, 12) * .03, ease: [.4, 0, .2, 1] }"
+            :while-hover="v.active_pilot ? { y: -3 } : {}" :while-tap="v.active_pilot ? { scale: .98 } : {}"
+            @click="v.active_pilot && $router.push(`/pilots/${v.active_pilot.id}`)">
       <div class="pb-avatar"><UserRound :size="19" /></div>
       <div class="pb-name">{{ v.local_name }}</div>
       <div class="muted pb-reg"><Truck :size="12" class="pb-reg-ic" />{{ v.registration_number }}</div>
-      <div class="pb-pilot" :class="{ muted: !v.active_driver }">
-        <template v-if="v.active_driver"><UserRound :size="13" class="pilot-ic" />{{ v.active_driver.name }}</template>
+      <div class="pb-pilot" :class="{ muted: !v.active_pilot }">
+        <template v-if="v.active_pilot"><UserRound :size="13" class="pilot-ic" />{{ v.active_pilot.name }}</template>
         <template v-else>No pilot assigned</template>
       </div>
-    </button>
+    </motion.button>
 
     <p v-if="!vehicles.length" class="muted">No vehicles yet.</p>
   </div>
@@ -28,11 +31,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { UserRound, Truck } from 'lucide-vue-next'
+import { motion } from 'motion-v'
 import { getVehicles } from '../api'
 
 const vehicles = ref([])
 const loading = ref(true)
-const driverCount = computed(() => vehicles.value.filter((v) => v.active_driver).length)
+const pilotCount = computed(() => vehicles.value.filter((v) => v.active_pilot).length)
 
 async function load() {
   try { vehicles.value = await getVehicles() }

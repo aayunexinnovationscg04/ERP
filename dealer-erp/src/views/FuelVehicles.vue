@@ -9,7 +9,11 @@
   </div>
 
   <div v-else class="fuel-grid">
-    <button type="button" class="fuel-box" v-for="v in vehicles" :key="v.id" @click="$router.push(`/fuel/${v.id}`)">
+    <motion.button type="button" class="fuel-box" v-for="(v, i) in vehicles" :key="v.id"
+            :initial="{ opacity: 0, y: 10 }" :animate="{ opacity: 1, y: 0 }"
+            :transition="{ duration: .22, delay: Math.min(i, 12) * .03, ease: [.4, 0, .2, 1] }"
+            :while-hover="{ y: -3 }" :while-tap="{ scale: .98 }"
+            @click="$router.push(`/fuel/${v.id}`)">
       <div class="fb-top">
         <span class="dot" :class="freshness(v)"></span>
         <span class="fb-name">{{ v.local_name }}</span>
@@ -21,7 +25,7 @@
       </div>
       <div class="fb-bar"><div class="fb-bar-fill" :style="{ width: pct(v) + '%' }"></div></div>
       <div class="muted fb-cap">{{ v.tank_capacity_litres ? pct(v) + '% of ' + v.tank_capacity_litres + ' L tank' : 'Tank capacity not set' }}</div>
-    </button>
+    </motion.button>
 
     <p v-if="!vehicles.length" class="muted">No vehicles yet.</p>
   </div>
@@ -30,6 +34,7 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 import { Fuel } from 'lucide-vue-next'
+import { motion } from 'motion-v'
 import { getVehicles } from '../api'
 import { freshness, fmt } from '../util'
 

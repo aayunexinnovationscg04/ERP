@@ -4,6 +4,24 @@
     <span class="muted">{{ vehicles.length }} vehicle(s)</span>
   </div>
 
+  <div v-if="loading" class="kpis">
+    <div class="skel sk-chip" v-for="n in 4" :key="n"></div>
+  </div>
+  <div v-else class="kpis">
+    <motion.div class="card kpi" :while-hover="{ y: -2 }">
+      <Truck :size="16" class="ic" /><div class="n">{{ vehicles.length }}</div><div class="l">Total fleet</div>
+    </motion.div>
+    <motion.div class="card kpi hero" :while-hover="{ y: -2 }">
+      <Activity :size="16" class="ic" /><div class="n">{{ activeCount }}</div><div class="l">Active now</div>
+    </motion.div>
+    <motion.div class="card kpi" :while-hover="{ y: -2 }">
+      <PauseCircle :size="16" class="ic" /><div class="n">{{ idleCount }}</div><div class="l">Idle / maint.</div>
+    </motion.div>
+    <motion.div class="card kpi" :while-hover="{ y: -2 }">
+      <Fuel :size="16" class="ic" /><div class="n">{{ avgFuelPct == null ? '—' : avgFuelPct + '%' }}</div><div class="l">Avg fuel level</div>
+    </motion.div>
+  </div>
+
   <div v-if="loading" style="padding:2px 0">
     <div class="skel sk-row" v-for="n in 6" :key="n"></div>
   </div>
@@ -25,7 +43,9 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="v in vehicles" :key="v.id">
+        <motion.tr v-for="(v, i) in vehicles" :key="v.id"
+          :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }"
+          :transition="{ duration: .22, delay: Math.min(i, 12) * .025, ease: [.4, 0, .2, 1] }">
           <td>
             <span class="dot" :class="freshness(v)"></span>
             <button type="button" class="local-name-btn" @click="renaming = v" title="Rename">
@@ -42,7 +62,7 @@
               <ChevronRight :size="17" />
             </router-link>
           </td>
-        </tr>
+        </motion.tr>
         <tr v-if="!vehicles.length"><td colspan="6" class="muted" style="padding:16px">No vehicles yet.</td></tr>
       </tbody>
     </table>
@@ -54,7 +74,8 @@
 
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import { ArrowDownAZ, ChevronRight, Pencil } from 'lucide-vue-next'
+import { Activity, ArrowDownAZ, ChevronRight, Fuel, PauseCircle, Pencil, Truck } from 'lucide-vue-next'
+import { motion } from 'motion-v'
 import { getVehicles } from '../api'
 import { freshness, ago, fmt } from '../util'
 import RenameVehicleModal from '../components/RenameVehicleModal.vue'
@@ -80,6 +101,17 @@ let timer
 const priorityStatus = computed(() => PRIORITY_CYCLE[priorityIndex.value])
 const priorityIcon = computed(() => (priorityStatus.value ? ChevronRight : ArrowDownAZ))
 const priorityTitle = computed(() => PRIORITY_TITLES[priorityStatus.value])
+
+// Lightweight fleet-at-a-glance tiles, derived entirely from the vehicle list
+// already being polled every 15s — no extra network round-trip needed.
+const activeCount = computed(() => vehicles.value.filter((v) => v.status === 'active').length)
+const idleCount = computed(() => vehicles.value.filter((v) => v.status === 'idle' || v.status === 'maintenance').length)
+const avgFuelPct = computed(() => {
+  const withData = vehicles.value.filter((v) => v.tank_capacity_litres && v.latest?.total_litres != null)
+  if (!withData.length) return null
+  const pct = withData.reduce((s, v) => s + v.latest.total_litres / v.tank_capacity_litres, 0) / withData.length
+  return Math.round(pct * 100)
+})
 
 function cyclePriority() {
   priorityIndex.value = (priorityIndex.value + 1) % PRIORITY_CYCLE.length

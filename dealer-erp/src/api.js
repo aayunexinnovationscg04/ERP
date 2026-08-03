@@ -53,8 +53,8 @@ export const sendCommand = (deviceId, payload) =>
   api.post(`/devices/${deviceId}/command/`, { payload }).then((r) => r.data)
 export const setVehicleLocalName = (id, local_name) =>
   api.patch(`/vehicles/${id}/local_name/`, { local_name }).then((r) => r.data)
-export const getDrivers = () => api.get('/drivers/').then((r) => r.data.results || r.data)
-export const getDriver = (id) => api.get(`/drivers/${id}/`).then((r) => r.data)
+export const getPilots = () => api.get('/pilots/').then((r) => r.data.results || r.data)
+export const getPilot = (id) => api.get(`/pilots/${id}/`).then((r) => r.data)
 
 // --- geofences ---
 export const getGeofences = () =>

@@ -33,20 +33,20 @@
       <FleetMap :markers="markers" :track="trackLatLng" />
 
       <div class="card" style="padding:14px 16px;margin-top:14px">
-        <p class="section-title" style="margin-top:0">Vehicle &amp; driver</p>
+        <p class="section-title" style="margin-top:0">Vehicle &amp; pilot</p>
         <div class="kvs">
           <div><span class="muted">Make / model</span><b>{{ v?.make || v?.model ? `${v?.make || ''} ${v?.model || ''}`.trim() : '—' }}</b></div>
           <div><span class="muted">Tank capacity</span><b>{{ v?.tank_capacity_litres ? v.tank_capacity_litres + ' L' : '—' }}</b></div>
           <div><span class="muted">Device</span><b>{{ v?.device?.device_id || 'Not linked' }}</b></div>
           <div><span class="muted">SIM</span><b>{{ v?.device?.sim_number || '—' }}</b></div>
         </div>
-        <div class="driver-row">
-          <span class="muted">Assigned driver</span>
-          <template v-if="v?.active_driver">
-            <b>{{ v.active_driver.name }}</b>
-            <span class="muted">{{ v.active_driver.phone || '—' }} · {{ v.active_driver.license_no || '—' }}</span>
+        <div class="pilot-row">
+          <span class="muted">Assigned pilot</span>
+          <template v-if="v?.active_pilot">
+            <b>{{ v.active_pilot.name }}</b>
+            <span class="muted">{{ v.active_pilot.phone || '—' }} · {{ v.active_pilot.license_no || '—' }}</span>
           </template>
-          <span v-else class="muted">No driver assigned</span>
+          <span v-else class="muted">No pilot assigned</span>
         </div>
       </div>
 
@@ -220,7 +220,7 @@ onBeforeUnmount(() => clearInterval(timer))
 .kvs div { display: flex; flex-direction: column; }
 .kvs b { font-size: 16px; margin-top: 2px; }
 
-.driver-row {
+.pilot-row {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
   margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 14px;
 }
