@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Fuel Guard X</title>
+<title>Fuel Guard X — Aayunex Innovations</title>
 <meta name="description" content="Fuel Guard X — pick your portal." />
+<link rel="icon" type="image/png" href="/assets/logo.png" />
 <style>
   :root{
     --ink:#0b1220; --muted:#5f6f8c; --line:#e7ecf4; --bg:#f6f8fc; --card:#fff;
@@ -16,30 +17,34 @@
   body{
     margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);
     background:
-      radial-gradient(900px 480px at 85% -10%,rgba(37,99,235,.10),transparent 60%),
-      radial-gradient(700px 420px at 8% 105%,rgba(234,88,12,.10),transparent 55%),
+      radial-gradient(900px 480px at 85% -10%,rgba(37,99,235,.12),transparent 60%),
+      radial-gradient(700px 420px at 8% 105%,rgba(234,88,12,.12),transparent 55%),
       var(--bg);
     line-height:1.5;-webkit-font-smoothing:antialiased;
     min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding:32px 20px;
+    padding:clamp(20px,5vw,48px) clamp(16px,4vw,32px);
+    position:relative;overflow-x:hidden;
   }
   a{text-decoration:none;color:inherit}
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
-  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.01em;margin-bottom:40px}
-  .brand .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#2563eb);display:grid;place-items:center;color:#fff;flex:none}
+  #hero-3d{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55}
+  .brand,.stage,footer{position:relative;z-index:1}
 
-  .stage{width:100%;max-width:760px;text-align:center}
-  h1{font-size:clamp(22px,3.4vw,30px);letter-spacing:-.02em;margin:0 0 8px;font-weight:800}
-  .sub{color:var(--muted);font-size:15.5px;margin:0 0 36px}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:clamp(17px,2.2vw,20px);letter-spacing:-.01em;margin-bottom:clamp(28px,6vw,48px)}
+  .brand img{width:38px;height:38px;border-radius:50%;flex:none;box-shadow:0 4px 14px rgba(11,18,32,.12)}
 
-  .cards{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .stage{width:100%;max-width:800px;text-align:center}
+  h1{font-size:clamp(24px,3.6vw,32px);letter-spacing:-.02em;margin:0 0 8px;font-weight:800}
+  .sub{color:var(--muted);font-size:clamp(14px,1.6vw,16px);margin:0 0 clamp(28px,5vw,40px)}
+
+  .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(14px,2.5vw,22px)}
   @media(max-width:560px){.cards{grid-template-columns:1fr}}
 
   .card{
     position:relative;background:var(--card);border:1px solid var(--line);border-radius:20px;
-    padding:32px 26px;overflow:hidden;text-align:left;
-    transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s var(--ease);
+    padding:clamp(24px,4vw,34px) clamp(20px,3.5vw,28px);overflow:hidden;text-align:left;
+    transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .22s var(--ease);
   }
   .card:hover{transform:translateY(-4px);box-shadow:0 20px 44px rgba(15,27,46,.13)}
   .card:active{transform:translateY(-1px) scale(.99)}
@@ -54,12 +59,24 @@
   .c-dealer .bar,.c-dealer .pic{background:linear-gradient(135deg,#fb923c,#ea580c)}.c-dealer .go{color:var(--orange)}
   .c-pilot .bar,.c-pilot .pic{background:linear-gradient(135deg,#3b82f6,#2563eb)}.c-pilot .go{color:var(--blue)}
 
-  footer{margin-top:40px;color:var(--muted);font-size:13px}
+  footer{margin-top:clamp(28px,6vw,44px);display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
+  footer img{width:16px;height:16px;border-radius:50%;opacity:.85}
+
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .brand,.stage h1,.stage .sub,.cards,footer{animation:rise .6s var(--ease) both}
+  .stage h1{animation-delay:.05s}
+  .stage .sub{animation-delay:.12s}
+  .cards{animation-delay:.18s}
+  .cards .card:nth-child(1){animation:rise .6s var(--ease) .24s both}
+  .cards .card:nth-child(2){animation:rise .6s var(--ease) .32s both}
+  footer{animation-delay:.5s}
 </style>
 </head>
 <body>
+  <canvas id="hero-3d"></canvas>
+
   <div class="brand">
-    <span class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 20V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v14"/><path d="M14 9h3l3 3v6a2 2 0 0 1-2 2h-1"/><path d="M4 20h12"/></svg></span>
+    <img src="/assets/logo.png" alt="Aayunex Innovations" width="38" height="38" />
     Fuel Guard X
   </div>
 
@@ -77,7 +94,7 @@
       </a>
       <a class="card c-pilot" href="/pilot/">
         <div class="bar"></div>
-        <div class="pic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></div>
+        <div class="pic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v3m0 12v3m9-9h-3M6 12H3"/><circle cx="12" cy="12" r="2.5"/></svg></div>
         <h2>Pilot</h2>
         <p>Your truck, live route, trips &amp; alerts.</p>
         <span class="go">Open <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -85,6 +102,60 @@
     </div>
   </div>
 
-  <footer>© 2026 Aayunex Innovations</footer>
+  <footer><img src="/assets/logo.png" alt="" /> © 2026 Aayunex Innovations</footer>
+
+  <script type="module">
+    // Tasteful, low-cost ambient 3D accent — a slowly drifting field of thin
+    // wireframe icosahedra behind the portal cards. Vendored locally (no CDN),
+    // paused off-screen/hidden tab, skipped entirely under reduced-motion.
+    const canvas = document.getElementById('hero-3d');
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduceMotion && canvas) {
+      import('/assets/three.module.min.js').then((THREE) => {
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
+        camera.position.z = 14;
+
+        const group = new THREE.Group();
+        const colors = [0xea580c, 0x2563eb];
+        for (let i = 0; i < 14; i++) {
+          const size = 0.4 + Math.random() * 1.1;
+          const geo = new THREE.IcosahedronGeometry(size, 0);
+          const mat = new THREE.MeshBasicMaterial({
+            color: colors[i % 2], wireframe: true, transparent: true, opacity: 0.18,
+          });
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set((Math.random() - 0.5) * 22, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 10 - 4);
+          mesh.userData.spin = 0.05 + Math.random() * 0.15;
+          group.add(mesh);
+        }
+        scene.add(group);
+
+        function resize() {
+          renderer.setSize(innerWidth, innerHeight);
+          renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+          camera.aspect = innerWidth / innerHeight;
+          camera.updateProjectionMatrix();
+        }
+        resize();
+        addEventListener('resize', resize);
+
+        let running = true;
+        document.addEventListener('visibilitychange', () => { running = !document.hidden; });
+
+        let raf;
+        function tick() {
+          if (running) {
+            group.children.forEach((m) => { m.rotation.x += 0.0016 * m.userData.spin; m.rotation.y += 0.0026 * m.userData.spin; });
+            group.rotation.y += 0.0004;
+            renderer.render(scene, camera);
+          }
+          raf = requestAnimationFrame(tick);
+        }
+        tick();
+      }).catch(() => { /* 3D accent is decorative only — fail silently */ });
+    }
+  </script>
 </body>
 </html>
