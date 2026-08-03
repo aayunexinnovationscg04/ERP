@@ -163,7 +163,7 @@ onMounted(load)
 
 .fh-bar-wrap { margin-top: 14px; }
 .fh-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-bottom: 6px; }
-.fh-bar-fill { height: 100%; background: linear-gradient(90deg, #7c5cf0, var(--violet) 60%, #d8c8ff); border-radius: 999px; }
+.fh-bar-fill { height: 100%; background: var(--grad-violet); border-radius: 999px; }
 
 .kvs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
 .kvs div { display: flex; flex-direction: column; }

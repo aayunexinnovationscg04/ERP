@@ -8,7 +8,7 @@
    (Emil-Kowalski-style): short durations, one easing curve, subtle transforms,
    no bounce.
    ========================================================================== */
-:root {
+:root[data-theme="dark"] {
   /* brand — orange stays the ONE brand hue: logo, primary actions, active nav,
      login hero, focus rings. Brightened a touch vs. the old light-mode value
      so it still reads hot against near-black surfaces. */
@@ -65,6 +65,75 @@
   --shadow-brand: 0 10px 26px rgba(242, 102, 13, .35);
   --ease: cubic-bezier(.4, 0, .2, 1);
   --dur: .18s;
+
+  /* level-bar fill gradients (fuel tank / progress bars) — three-stop so the
+     mid-tone is always the real theme hue, with a darker start / lighter end
+     for a subtle sheen. Tokenized (rather than literal hex in components) so
+     the sheen retunes per theme instead of going pale-on-pale on a white
+     light-mode surface. */
+  --grad-violet: linear-gradient(90deg, #7c5cf0, var(--violet) 60%, #d8c8ff);
+  --grad-amber: linear-gradient(90deg, #b45309, var(--amber) 60%, #ffe4a8);
+  --grad-crit: linear-gradient(90deg, #9f1239, var(--crit) 60%, #ffd0d8);
+}
+
+/* ---- light theme — same token names, warm off-white / white-surface values.
+   A slightly deeper, more-saturated orange carries the brand hue on white
+   (the dark-mode value is too light for AA text/icon contrast on #fff), and
+   the jewel-tone system is retuned darker/more-saturated per hue for the same
+   reason while keeping each hue's identity recognizable next to its dark
+   counterpart. ---- */
+:root[data-theme="light"] {
+  --brand: #e2660f;
+  --brand-strong: #c2510a;
+  --brand-dim: #a8440a;
+  --brand-ink: #ffffff;
+  --brand-soft: rgba(226, 102, 15, .10);
+  --brand-ring: rgba(226, 102, 15, .30);
+  --accent-grad: linear-gradient(135deg, #f2913f 0%, #e2660f 45%, #c2510a 100%);
+  --accent-glow: radial-gradient(circle, rgba(226, 102, 15, .35), rgba(226, 102, 15, 0) 72%);
+
+  --bg: #f7f5f2;
+  --bg-grad: radial-gradient(120% 70% at 50% -10%, #fff9f2 0%, #f9f6f1 45%, #f7f5f2 100%);
+  --surface: #ffffff;
+  --surface-2: #f4f1ec;
+  --surface-3: #ece7df;
+  --field-bg: #ffffff;
+  --border: rgba(30, 24, 14, .10);
+  --border-strong: rgba(30, 24, 14, .18);
+  --text: #29241d;
+  --ink-strong: #0f0c07;
+  --muted: #756f63;
+  --muted-2: #9a9184;
+
+  --blue: #1d5fd6;        --blue-soft: rgba(29, 95, 214, .12);
+  --violet: #7c3aed;      --violet-soft: rgba(124, 58, 237, .12);
+  --green: #0f9d68;       --green-soft: rgba(15, 157, 104, .12);
+  --amber: #b57905;       --amber-soft: rgba(181, 121, 5, .14);
+  --crit: #d6284a;        --crit-soft: rgba(214, 40, 74, .12);
+  --gray: #667089;        --gray-soft: rgba(102, 112, 137, .12);
+  --cyan: #0e8fa8;        --cyan-soft: rgba(14, 143, 168, .12);
+  --teal: #0f9a86;        --teal-soft: rgba(15, 154, 134, .12);
+
+  --red: var(--crit); --red-soft: var(--crit-soft);
+
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-head: "Space Grotesk Variable", "Space Grotesk", var(--font-body);
+
+  --radius: 16px; --radius-sm: 11px; --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(30, 24, 14, .06), 0 1px 3px rgba(30, 24, 14, .05), inset 0 1px 0 rgba(255, 255, 255, .6);
+  --shadow-md: 0 10px 26px rgba(30, 24, 14, .10), inset 0 1px 0 rgba(255, 255, 255, .5);
+  --shadow-lg: 0 22px 54px rgba(30, 24, 14, .16);
+  --shadow-brand: 0 10px 26px rgba(194, 81, 10, .22);
+  --ease: cubic-bezier(.4, 0, .2, 1);
+  --dur: .18s;
+
+  /* lighter start / darker-saturated end vs. dark mode — on a white surface
+     a pale end-stop would nearly vanish, so light mode leans the sheen the
+     other direction (bright start, deeper saturated end) so the fill stays
+     visible against var(--surface-2) end to end. */
+  --grad-violet: linear-gradient(90deg, #a892f7, var(--violet) 55%, #5b21b6);
+  --grad-amber: linear-gradient(90deg, #f2c675, var(--amber) 55%, #7c4a03);
+  --grad-crit: linear-gradient(90deg, #f2879b, var(--crit) 55%, #8f1436);
 }
 * { box-sizing: border-box; }
 html, body, #app { height: 100%; margin: 0; }
@@ -128,12 +197,13 @@ input:focus, select:focus { outline: none; border-color: var(--brand); box-shado
   font-size: 17px; font-weight: 800; color: var(--ink-strong);
   display: flex; gap: 10px; align-items: center; letter-spacing: -.01em;
 }
-.side-head .brand { margin-bottom: 0; min-width: 0; }
-.collapse-btn {
+.side-head .brand { margin-bottom: 0; min-width: 0; flex: 1; }
+.collapse-btn, .theme-toggle {
   flex: none; width: 26px; height: 26px; padding: 0; border: none; background: none;
   color: var(--muted); display: grid; place-items: center; border-radius: 7px;
 }
-.collapse-btn:hover { background: var(--surface-3); color: var(--text); }
+.collapse-btn:hover, .theme-toggle:hover { background: var(--surface-3); color: var(--text); }
+.mb-theme-toggle { width: 34px; height: 34px; }
 
 /* logo "sticker" — the Aayunex mark ships on a solid white square; rather than
    let that white box clash with the dark chrome, give it an intentional small
@@ -145,38 +215,64 @@ input:focus, select:focus { outline: none; border-color: var(--brand); box-shado
 }
 .logo-chip img { width: 100%; height: 100%; object-fit: cover; }
 
-/* Every row spans the full sidebar width with icon + label left-aligned —
-   a uniform, structured list (same size/shape for every item) rather than a
-   pill that shrink-wraps to each label's own text width. Each item's icon
-   carries its own section hue at rest (a genuine multi-color sidebar, not a
-   monochrome list), and lights up to the brand-orange gradient pill only
-   when active. */
-.nav { display: flex; flex-direction: column; gap: 2px; }
-.nav a {
+/* Grouped, collapsible nav — the sidebar is now a stack of named clusters
+   (Fleet Management, Fuel Monitoring, …) instead of one flat list. Each group
+   has its own small uppercase header (icon chip + label + rotating chevron)
+   and a column of item rows underneath. Every row still spans the full
+   sidebar width with icon + label left-aligned — a uniform, structured list
+   rather than a pill that shrink-wraps to each label's own text width. Each
+   item's icon carries its own group hue at rest (a genuine multi-color
+   sidebar, not a monochrome list), and lights up to the brand-orange
+   gradient pill only when active. */
+.nav { display: flex; flex-direction: column; }
+.nav-group + .nav-group { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+.nav-group-head {
+  width: 100%; display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px; border: none; background: none;
+  color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700;
+  border-radius: var(--radius-sm);
+  transition: background .2s var(--ease), color .2s var(--ease);
+}
+.nav-group-head:hover { background: var(--surface-3); color: var(--text); }
+.nav-group-head:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); }
+.nav-group-head .label { flex: 1; text-align: left; }
+.nav-group-head .ic {
+  width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; flex: none;
+}
+.nav-group-head .chev { flex: none; color: var(--muted-2); transition: transform .2s var(--ease); }
+.nav-group-head.open .chev { transform: rotate(90deg); }
+
+.nav-group-items { display: flex; flex-direction: column; gap: 2px; padding: 3px 0 2px; }
+.nav-group-items.is-collapsed { display: none; }
+
+.nav-item {
   display: flex; align-items: center; justify-content: flex-start; gap: 12px;
-  width: 100%; padding: 8px 14px; border-radius: var(--radius-sm);
+  width: 100%; padding: 8px 14px 8px 32px; border-radius: var(--radius-sm);
   color: var(--muted); font-weight: 600;
   transition: background .25s var(--ease), color .25s var(--ease),
               box-shadow .25s var(--ease), transform .15s var(--ease);
 }
-.nav a:hover { background: var(--surface-3); color: var(--text); }
-.nav a:active { transform: scale(.97); }
+.nav-item:hover { background: var(--surface-3); color: var(--text); }
+.nav-item:active { transform: scale(.97); }
 
 /* every nav icon lives in its own tinted chip — a soft/ghost tint per
-   section's hue at rest — instead of a bare colored glyph floating next to
+   group's hue at rest — instead of a bare colored glyph floating next to
    the label. Same chip system as table/list rows, sized to the sidebar row. */
-.nav a .ic {
-  width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none;
+.nav-item .ic {
+  width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; flex: none;
   transition: background .25s var(--ease), color .2s var(--ease), box-shadow .2s var(--ease);
 }
-.nav a.nav-vehicles .ic  { background: var(--blue-soft);   color: var(--blue); }
-.nav a.nav-locations .ic { background: var(--cyan-soft);   color: var(--cyan); }
-.nav a.nav-fuel .ic      { background: var(--violet-soft); color: var(--violet); }
-.nav a.nav-pilots .ic    { background: var(--teal-soft);   color: var(--teal); }
-.nav a.nav-alerts .ic    { background: var(--crit-soft);   color: var(--crit); }
-.nav a.nav-geofences .ic { background: var(--amber-soft);  color: var(--amber); }
+.nav-item.blue .ic, .nav-group-head .ic.blue     { background: var(--blue-soft);   color: var(--blue); }
+.nav-item.cyan .ic, .nav-group-head .ic.cyan     { background: var(--cyan-soft);   color: var(--cyan); }
+.nav-item.violet .ic, .nav-group-head .ic.violet { background: var(--violet-soft); color: var(--violet); }
+.nav-item.teal .ic, .nav-group-head .ic.teal     { background: var(--teal-soft);   color: var(--teal); }
+.nav-item.green .ic, .nav-group-head .ic.green   { background: var(--green-soft);  color: var(--green); }
+.nav-item.crit .ic, .nav-group-head .ic.crit     { background: var(--crit-soft);   color: var(--crit); }
+.nav-item.amber .ic, .nav-group-head .ic.amber   { background: var(--amber-soft);  color: var(--amber); }
+.nav-item.gray .ic, .nav-group-head .ic.gray     { background: var(--gray-soft);   color: var(--gray); }
 
-.nav a.router-link-active {
+.nav-item.router-link-active {
   background: var(--accent-grad); color: var(--brand-ink);
   box-shadow: var(--shadow-brand);
 }
@@ -184,12 +280,12 @@ input:focus, select:focus { outline: none; border-color: var(--brand); box-shado
    contrast fill and its icon gets a bolder stroke — lucide has no separate
    filled variant for most of these glyphs, so this stands in as the real
    active/inactive distinction instead of just swapping a background color. */
-.nav a.router-link-active .ic {
+.nav-item.router-link-active .ic {
   background: rgba(255, 255, 255, .24); color: var(--brand-ink);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .3);
 }
-.nav a.router-link-active .ic svg.lucide { stroke-width: 2.5; }
-.nav a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); }
+.nav-item.router-link-active .ic svg.lucide { stroke-width: 2.5; }
+.nav-item:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); }
 .main { overflow: auto; padding: 24px 28px; }
 .logout-btn {
   display: flex; align-items: center; gap: 10px; width: 100%; justify-content: flex-start;
@@ -203,8 +299,15 @@ input:focus, select:focus { outline: none; border-color: var(--brand); box-shado
   .app.collapsed .side-head { justify-content: center; }
   .app.collapsed .side-head .brand { display: none; }
   .app.collapsed .label { display: none; }
-  .app.collapsed .nav a { justify-content: center; padding: 8px; }
+  .app.collapsed .nav-item { justify-content: center; padding: 8px; }
   .app.collapsed .logout-btn { justify-content: center; padding: 11px; }
+  /* group headers collapse to a plain non-interactive spacer (icon hidden
+     too — with no label there's nothing left to click a chevron for) and
+     every group's items stay forced visible, regardless of stored collapsed
+     state, so the icon rail never hides a whole section behind a chevron
+     the user can't see. */
+  .app.collapsed .nav-group-head { pointer-events: none; padding: 4px 0; }
+  .app.collapsed .nav-group-items.is-collapsed { display: flex; }
 }
 
 /* mobile-only chrome — hidden on desktop, shown in the mobile media query */
@@ -405,14 +508,15 @@ tr[class] td:first-child { padding-left: 17px; }
   .collapse-btn { display: none; }
 
   /* Nav becomes a tappable card grid rather than a thin link list — bigger
-     touch targets. The icon chip treatment itself (tint per section, solid
+     touch targets. The icon chip treatment itself (tint per group, solid
      fill on active) is shared with desktop — see the base .nav rules above. */
-  .nav { flex-direction: column; gap: 6px; }
-  .nav a {
-    width: 100%; padding: 10px 14px; border-radius: var(--radius-sm);
+  .nav-group-head { padding: 10px; }
+  .nav-group-items { gap: 8px; padding-top: 6px; }
+  .nav-item {
+    width: 100%; padding: 10px 14px 10px 32px; border-radius: var(--radius-sm);
     background: var(--surface-2); border: 1px solid var(--border);
   }
-  .nav a.router-link-active { background: var(--accent-grad); border-color: transparent; }
+  .nav-item.router-link-active { background: var(--accent-grad); border-color: transparent; }
   .logout-btn { justify-content: center; padding: 14px; font-size: 15px; margin-top: 8px; }
 
   .main { padding: 16px 14px 26px; }
@@ -456,7 +560,7 @@ tr[class] td:first-child { padding-left: 17px; }
 
 /* ---- inline icon + text alignment ---- */
 .ico { display: inline-flex; align-items: center; gap: 8px; }
-.nav a .ic { flex: none; }
+.nav-item .ic { flex: none; }
 .brand svg, .hamburger svg, .side-brand svg { flex: none; }
 .brand svg { color: var(--brand); }
 

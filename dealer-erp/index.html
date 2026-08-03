@@ -6,6 +6,20 @@
     <meta name="description" content="Fuel Guard X Dealer Portal — fleet, fuel and pilot management for your trucks, in real time." />
     <link rel="icon" type="image/png" href="/dealer/favicon.png" />
     <title>Dealer - Fuel Guard X</title>
+    <!-- Set the theme attribute synchronously, before first paint / CSS
+         application, so light/dark mode never flashes the wrong theme while
+         waiting for the deferred module script (src/theme.js) to run. Kept
+         in sync with theme.js's own storage key + default. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('fgx_theme');
+          document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

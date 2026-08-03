@@ -97,8 +97,8 @@ onBeforeUnmount(() => clearInterval(timer))
 .fb-level .muted { font-size: 12.5px; }
 
 .fb-bar { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 8px; }
-.fb-bar-fill { height: 100%; background: linear-gradient(90deg, #7c5cf0, var(--violet) 60%, #d8c8ff); border-radius: 999px; transition: width var(--dur) var(--ease); }
-.fb-bar-fill.amber { background: linear-gradient(90deg, #b45309, var(--amber) 60%, #ffe4a8); }
-.fb-bar-fill.crit { background: linear-gradient(90deg, #9f1239, var(--crit) 60%, #ffd0d8); }
+.fb-bar-fill { height: 100%; background: var(--grad-violet); border-radius: 999px; transition: width var(--dur) var(--ease); }
+.fb-bar-fill.amber { background: var(--grad-amber); }
+.fb-bar-fill.crit { background: var(--grad-crit); }
 .fb-cap { font-size: 11.5px; margin-top: 5px; }
 </style>

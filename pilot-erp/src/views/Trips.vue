@@ -22,8 +22,9 @@
             <component :is="rowIcon(t)" :size="17" :stroke-width="2.25" />
           </span>
           <div>
-            <div class="t" v-if="t.status === 'active'">
+            <div class="t" v-if="t.status === 'active'" style="display:flex; align-items:center; gap:7px">
               <span class="badge on"><span class="dot"></span>Active</span>
+              <router-link to="/route-guidance" class="badge info" @click.stop title="Turn-by-turn for this trip">Guidance</router-link>
             </div>
             <!-- completed trips are the expected/default state, so instead of
                  repeating an identical "Completed" pill on every row, this

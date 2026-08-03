@@ -9,7 +9,7 @@
    Motion: short durations, one easing curve, subtle transforms, no bounce —
    respects prefers-reduced-motion throughout (see App.vue / motion-v usage).
    ========================================================================== */
-:root {
+:root[data-theme="dark"] {
   /* brand (electric blue) — same family as the login hero, so interior
      screens read as one product with it, not a bolted-on reskin */
   --brand: #3b82f6;
@@ -62,6 +62,66 @@
   --dur: .18s;
 
   /* mobile chrome heights, used to keep content clear of fixed bars */
+  --topbar-h: 56px;
+  --tabbar-h: 68px;
+}
+
+/* ---- light theme — same brand blue, re-tuned for a bright cab: strong
+   contrast over subtlety since this is read in direct sunlight, not a soft
+   "pastel" light mode. Every token name mirrors the dark block above so the
+   rest of the stylesheet works unchanged in either theme. ---- */
+:root[data-theme="light"] {
+  /* brand — darkened a shade vs. the dark theme so blue-on-white still meets
+     contrast; strong/dim variants keep the same relationship */
+  --brand: #1d4ed8;
+  --brand-strong: #1e40af;
+  --brand-dim: #1e3a8a;
+  --brand-soft-ink: #1d4ed8;
+  --brand-ink: #ffffff;
+  --brand-soft: rgba(29,78,216,.10);
+  --brand-ring: rgba(29,78,216,.30);
+  --accent-grad: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 55%, #1e3a8a 100%);
+
+  /* deep "night highway" gradient stays dark even in light mode — it's a
+     deliberate hero treatment (login), not a surface color */
+  --night-1: #0a1730;
+  --night-2: #122a52;
+  --night-3: #1d4ed8;
+  --night-grad: radial-gradient(120% 90% at 18% 0%, #1e40af 0%, #122a52 42%, #0a1730 78%);
+
+  /* multi-hue accent system — darkened/saturated for legibility on white,
+     each hue keeps its identity from the dark theme */
+  --violet: #7c3aed; --violet-strong: #6d28d9; --violet-soft: rgba(124,58,237,.12);
+  --cyan: #0891b2; --cyan-strong: #0e7490; --cyan-soft: rgba(8,145,178,.12);
+  --green: #16a34a; --green-strong: #15803d; --green-soft: rgba(22,163,74,.12);
+  --amber: #d97706; --amber-strong: #b45309; --amber-soft: rgba(217,119,6,.14);
+  --red: #e11d48; --red-soft: rgba(225,29,72,.10);
+  --crit: #e11d48; --crit-strong: #be123c; --crit-soft: rgba(225,29,72,.12);
+
+  /* neutrals — very light blue-tinted background, white surfaces, dark ink */
+  --bg: #f5f8fc;
+  --surface: #ffffff;
+  --surface-2: #eef3fa;
+  --surface-3: #e3eaf5;
+  --border: #d3ddec;
+  --text: #0e1a2e;
+  --muted: #55647e;
+
+  /* form / shape — same geometry as dark, only shadow tone changes */
+  --radius: 18px; --radius-sm: 12px; --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(16,24,40,.06), inset 0 1px 0 rgba(255,255,255,.6);
+  --shadow-md: 0 12px 30px rgba(16,24,40,.10);
+  --shadow-lg: 0 22px 54px rgba(16,24,40,.14);
+  --shadow-brand: 0 10px 26px rgba(29,78,216,.24);
+  --glow-blue: 0 8px 22px rgba(29,78,216,.16);
+  --glow-violet: 0 8px 22px rgba(124,58,237,.14);
+  --glow-cyan: 0 8px 22px rgba(8,145,178,.14);
+  --glow-green: 0 8px 22px rgba(22,163,74,.14);
+  --glow-amber: 0 8px 22px rgba(217,119,6,.14);
+  --glow-crit: 0 10px 30px rgba(225,29,72,.18);
+  --ease: cubic-bezier(.4, 0, .2, 1);
+  --dur: .18s;
+
   --topbar-h: 56px;
   --tabbar-h: 68px;
 }
@@ -126,11 +186,13 @@ input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px v
 .side-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 24px; }
 .brand { font-size: 17px; font-weight: 800; display: flex; gap: 9px; align-items: center; letter-spacing: -.01em; }
 .side-head .brand { margin-bottom: 0; min-width: 0; }
-.collapse-btn {
+.side-head-actions { display: flex; align-items: center; gap: 2px; flex: none; }
+.collapse-btn, .theme-toggle {
   flex: none; width: 27px; height: 27px; padding: 0; border: none; background: none;
   color: var(--muted); display: grid; place-items: center; border-radius: 8px;
 }
-.collapse-btn:hover { background: var(--surface-2); color: var(--text); }
+.collapse-btn:hover, .theme-toggle:hover { background: var(--surface-2); color: var(--text); }
+.theme-toggle:active { transform: scale(.92); }
 
 .nav { display: flex; flex-direction: column; gap: 3px; }
 .nav a {
@@ -153,6 +215,25 @@ input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px v
 .nav a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); }
 a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); border-radius: var(--radius-sm); }
 
+/* ---- grouped nav (desktop sidebar) — collapsible clusters, each with a
+   small uppercase muted header + divider matching .section-title typography ---- */
+.nav-grouped { gap: 0; }
+.nav-group { display: flex; flex-direction: column; }
+.nav-group + .nav-group { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 4px; }
+.nav-group-head {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  background: none; border: none; padding: 8px 9px; margin: 0 0 2px;
+  color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700;
+  cursor: pointer; border-radius: var(--radius-sm); text-align: left;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nav-group-head:hover { color: var(--text); background: var(--surface-2); }
+.nav-group-head:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); }
+.nav-group-ic { flex: none; }
+.nav-group-chevron { flex: none; transition: transform var(--dur) var(--ease); }
+.nav-group-chevron.open { transform: rotate(180deg); }
+.nav-group-items { display: flex; flex-direction: column; gap: 3px; margin-bottom: 3px; }
+
 .main { overflow: auto; padding: 26px 28px; }
 .logout-btn {
   display: flex; align-items: center; gap: 10px; width: 100%; justify-content: flex-start;
@@ -174,6 +255,11 @@ a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); border
   .app.collapsed .label { display: none; }
   .app.collapsed .nav a { justify-content: center; padding: 12px; }
   .app.collapsed .logout-btn { justify-content: center; padding: 12px; }
+  /* collapsed rail is icon-only: grouping reads as clutter at that width, so
+     headers/chevrons/dividers disappear and every item's icon just stacks */
+  .app.collapsed .nav-group-head { display: none; }
+  .app.collapsed .nav-group-items { margin-bottom: 0; }
+  .app.collapsed .nav-group + .nav-group { border-top: none; margin-top: 2px; padding-top: 2px; }
 }
 
 /* mobile-only chrome — hidden on desktop/tablet */
@@ -224,8 +310,19 @@ a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); border
     box-shadow: var(--shadow-sm);
   }
   .mobilebar .mb-logo { width: 26px; height: 26px; object-fit: contain; border-radius: 7px; }
-  .mobilebar .mb-brand { font-weight: 800; font-size: 15px; letter-spacing: -.01em; flex: 1; }
-  .mobilebar .mb-user { color: var(--muted); font-size: 12px; font-weight: 600; }
+  .mobilebar .mb-brand { font-weight: 800; font-size: 15px; letter-spacing: -.01em; }
+  .mobilebar .mb-user {
+    color: var(--muted); font-size: 12px; font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 84px;
+  }
+  .mb-theme-toggle, .mb-logout {
+    flex: none; width: 34px; height: 34px; padding: 0; border: none; background: none;
+    color: var(--muted); display: grid; place-items: center; border-radius: 9px;
+  }
+  .mb-theme-toggle:hover { background: var(--surface-2); color: var(--text); }
+  .mb-theme-toggle:active, .mb-logout:active { transform: scale(.92); }
+  .mb-logout { color: var(--red); }
+  .mb-logout:hover { background: var(--red-soft); }
 
   .tabbar { display: flex; }
   .main { padding: 18px 16px calc(var(--tabbar-h) + 22px); }
@@ -285,6 +382,22 @@ h2 { font-size: 15px; margin: 0; font-weight: 700; }
 .badge.critical { background: var(--crit-soft); color: var(--crit-strong); box-shadow: inset 0 0 0 1px rgba(251,113,133,.3); }
 .badge.info { background: var(--brand-soft); color: var(--brand-strong); box-shadow: inset 0 0 0 1px rgba(96,165,250,.22); }
 .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+
+/* ---- filter chips (category pills — e.g. Alerts by type) ---- */
+.filter-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; -webkit-overflow-scrolling: touch; }
+.filter-chips::-webkit-scrollbar { display: none; }
+.filter-chip {
+  flex: none; display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 15px; border-radius: var(--radius-pill); font-size: 12.5px; font-weight: 700;
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+}
+.filter-chip:hover { color: var(--text); background: var(--surface-2); }
+.filter-chip.active { background: var(--accent-grad); color: #fff; border-color: transparent; box-shadow: var(--shadow-brand); }
+.filter-chip-count {
+  font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-pill);
+  background: rgba(255,255,255,.16); color: inherit;
+}
+.filter-chip:not(.active) .filter-chip-count { background: var(--surface-3); color: var(--muted); }
 
 .map { height: 300px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
 /* fake a dark map style from the (free, no-key) OSM light tiles: invert just

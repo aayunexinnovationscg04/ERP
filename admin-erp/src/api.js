@@ -37,3 +37,6 @@ export const setUserPerms = (id, overrides) => api.put(`/admin/users/${id}/permi
 export const getRoles = () => api.get('/admin/roles').then((r) => r.data)
 export const setRoles = (matrix) => api.put('/admin/roles', matrix).then((r) => r.data)
 export const getHealth = () => api.get('/admin/health').then((r) => r.data)
+// cross-company fleet aggregate (Admin bypasses the company scoping this
+// endpoint applies to dealers, so it returns platform-wide totals for us)
+export const getFleetSummary = () => api.get('/dashboard/summary/').then((r) => r.data)
