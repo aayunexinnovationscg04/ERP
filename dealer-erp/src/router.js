@@ -34,7 +34,7 @@ import AiRouteOptimization from './views/AiRouteOptimization.vue'
 
 const routes = [
   { path: '/login', component: Login, meta: { public: true } },
-  { path: '/', redirect: '/vehicles' }, // Vehicles is the default landing tab
+  { path: '/', redirect: '/fleet-overview' }, // Fleet Overview: first item of the first sidebar group
   { path: '/locations', component: Locations },
   { path: '/vehicles', component: Vehicles },
   { path: '/vehicles/:id', component: VehicleDetail, props: true },
