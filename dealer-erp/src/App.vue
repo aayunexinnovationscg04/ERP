@@ -23,6 +23,12 @@
     <aside class="sidebar" :class="{ open: menuOpen }">
       <div class="side-head">
         <div class="brand side-brand"><span class="logo-chip"><img :src="logo" alt="" class="side-brand-logo" /></span> <span class="label">Fuel Guard X</span></div>
+        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
+        </button>
+        <button class="drawer-close" @click="menuOpen = false" aria-label="Close menu" title="Close menu">
+          <X :size="20" />
+        </button>
       </div>
       <nav class="nav" @click="menuOpen = false">
         <div class="nav-group" v-for="g in NAV_GROUPS" :key="g.id">
@@ -40,14 +46,10 @@
           </div>
         </div>
       </nav>
-      <div class="spacer" style="flex:1"></div>
       <div class="sidebar-controls">
         <button class="theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
           <Sun v-if="theme === 'dark'" :size="16" />
           <Moon v-else :size="16" />
-        </button>
-        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
         </button>
       </div>
       <button class="logout-btn" style="margin-top:12px" @click="logout" title="Log out">
@@ -91,6 +93,10 @@ const menuOpen = ref(false)
 const collapsed = ref(localStorage.getItem('fgx-sidebar-collapsed') === '1')
 const { theme, toggleTheme } = useTheme()
 watch(() => route.path, () => { menuOpen.value = false })
+// Full-screen mobile drawer: lock background scroll while it's open so the
+// takeover reads as a real modal surface, not a scrollable overlay on top of
+// a still-scrollable page.
+watch(menuOpen, (open) => { document.documentElement.classList.toggle('drawer-open', open) })
 // The list routes and their /:id detail routes are flat siblings, not nested
 // children, so vue-router's own router-link-active (matched-record based) drops
 // once you're on e.g. /vehicles/123. Match by path prefix instead so the sidebar

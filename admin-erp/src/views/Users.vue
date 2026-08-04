@@ -54,8 +54,8 @@
           :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }"
           :transition="{ duration: 0.16, delay: Math.min(idx, 10) * 0.02, ease: [0.4, 0, 0.2, 1] }"
         >
-          <td>{{ u.username }}<div class="muted" style="font-size:12px">{{ u.email }}</div></td>
-          <td>
+          <td data-label="User">{{ u.username }}<div class="muted" style="font-size:12px">{{ u.email }}</div></td>
+          <td data-label="Role">
             <select :value="u.role" class="role-select" :class="'r-' + u.role" @change="patch(u, { role: $event.target.value })" style="width:auto">
               <option value="dealer">Dealer</option>
               <option value="manager">Manager</option>
@@ -63,16 +63,16 @@
               <option value="admin">Admin</option>
             </select>
           </td>
-          <td>
+          <td data-label="Company">
             <select :value="u.company" @change="patch(u, { company: $event.target.value || null })" style="width:auto">
               <option :value="''">—</option>
               <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
           </td>
-          <td>
+          <td data-label="Active">
             <ToggleSwitch :model-value="u.is_active" @change="(v) => patch(u, { is_active: v })" />
           </td>
-          <td><router-link :to="`/users/${u.id}/permissions`" class="tabs-link"><SlidersHorizontal :size="13" /> Tabs &amp; overrides</router-link></td>
+          <td data-label="Access"><router-link :to="`/users/${u.id}/permissions`" class="tabs-link"><SlidersHorizontal :size="13" /> Tabs &amp; overrides</router-link></td>
         </motion.tr>
       </tbody>
     </table>
@@ -139,4 +139,33 @@ select { font: inherit; background: var(--surface-2); border: 1px solid var(--bo
 .role-select.r-manager { background: var(--role-manager-soft); color: var(--role-manager); border-color: rgba(45,212,191,.35); }
 .role-select.r-pilot { background: var(--role-pilot-soft); color: var(--role-pilot); border-color: rgba(56,189,248,.35); }
 @media (max-width: 800px) { .formgrid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .formgrid { grid-template-columns: 1fr; } .formgrid button { width: 100%; } }
+
+/* Phones: the horizontal-scroll pattern used for wider/denser tables (like
+   the Role Management matrix, which genuinely can't be "stacked") works but
+   isn't obviously discoverable - a swipe-to-see-more table reads as broken
+   at a glance. This table's rows are simple enough to restructure into
+   readable stacked cards instead: each row becomes its own bordered card,
+   each cell becomes a labelled line (label from data-label, set in the
+   template) instead of a table column. */
+@media (max-width: 640px) {
+  .users-card { overflow-x: visible; }
+  .users-card table, .users-card thead, .users-card tbody, .users-card tr, .users-card td { display: block; width: 100%; }
+  .users-card thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .users-card tbody tr {
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    margin: 10px 12px; padding: 4px 12px; background: var(--surface-2);
+  }
+  .users-card td {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 9px 0; border-bottom: 1px solid var(--border); white-space: normal; text-align: right;
+  }
+  .users-card tr td:last-child { border-bottom: none; }
+  .users-card td::before {
+    content: attr(data-label); flex: none; font-size: var(--fs-xs); font-weight: 700;
+    letter-spacing: .04em; text-transform: uppercase; color: var(--muted); text-align: left;
+  }
+  .users-card td select { width: auto; max-width: 60%; }
+  .users-card .table-foot { padding: 10px 12px 4px; }
+}
 </style>

@@ -99,4 +99,5 @@ onMounted(load)
 .bval { font-size: 13px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
 .btrack { display: block; }
 .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 16px 0; }
+@media (max-width: 480px) { .brow { grid-template-columns: 76px 1fr 34px; gap: 8px; } }
 </style>

@@ -6,7 +6,6 @@
       <button class="hamburger" @click="menuOpen = true" aria-label="Open menu"><Menu :size="22" /></button>
       <div class="brand"><img class="brand-logo" src="./assets/logo.png" alt="" /> <span class="brand-title">Admin</span></div>
     </div>
-    <div class="backdrop" :class="{ open: menuOpen }" @click="menuOpen = false"></div>
     <aside class="sidebar" :class="{ open: menuOpen }">
       <div class="brand">
         <img class="brand-logo" src="./assets/logo.png" alt="Fuel Guard X" />
@@ -14,6 +13,12 @@
           <span class="brand-title">Control Tower</span>
           <span class="brand-sub">Admin ERP</span>
         </div>
+        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
+        </button>
+        <button class="mobile-close-btn" @click="menuOpen = false" title="Close menu" aria-label="Close menu">
+          <X :size="20" />
+        </button>
       </div>
       <nav class="nav">
         <template v-for="(g, gi) in navGroups" :key="g.key">
@@ -45,9 +50,6 @@
           <Sun v-if="theme === 'dark'" :size="16" />
           <Moon v-else :size="16" />
         </button>
-        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
-        </button>
       </div>
       <button class="logout-btn" style="margin-top:12px" @click="logout" title="Log out">
         <PowerOff :size="16" class="ic" /><span class="label">Log out</span>
@@ -74,7 +76,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { motion, AnimatePresence } from 'motion-v'
 import {
-  Menu, Users, KeyRound, Activity, Sun, Moon, ChevronDown, ChevronsLeft, ChevronsRight, PowerOff,
+  Menu, X, Users, KeyRound, Activity, Sun, Moon, ChevronDown, ChevronsLeft, ChevronsRight, PowerOff,
   Building2, BarChart, Truck, Radar, Cpu, Server, ScrollText,
   ShieldAlert, Flame, ChartLine,
 } from 'lucide-vue-next'
@@ -91,6 +93,14 @@ const reduced = typeof window !== 'undefined' && window.matchMedia
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
   : false
 watch(() => route.path, () => { menuOpen.value = false })
+// full-screen mobile menu is a real takeover — lock the page underneath from
+// scrolling while it's open, same as any modal/sheet would, and let Escape
+// close it like the (now-removed) backdrop click used to.
+watch(menuOpen, (v) => {
+  if (typeof document !== 'undefined') document.body.style.overflow = v ? 'hidden' : ''
+})
+function onKeydown(e) { if (e.key === 'Escape' && menuOpen.value) menuOpen.value = false }
+if (typeof window !== 'undefined') window.addEventListener('keydown', onKeydown)
 function logout() { clearAuth(); router.push('/login') }
 
 // ---- grouped, collapsible sidebar nav ----

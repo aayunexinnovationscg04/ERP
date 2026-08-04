@@ -113,4 +113,5 @@ const sparkPoints = sparkDots.map((p) => `${p.x},${p.y}`).join(' ')
 .brow { display: grid; grid-template-columns: 120px 1fr 28px; align-items: center; gap: 10px; }
 .blabel { font-size: 12px; font-weight: 700; color: var(--muted); }
 .bval { font-size: 12.5px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) { .brow { grid-template-columns: 92px 1fr 28px; gap: 8px; } .blabel { font-size: 11px; } }
 </style>

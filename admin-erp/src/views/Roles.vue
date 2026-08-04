@@ -21,7 +21,9 @@
     <div class="skel sk-row" v-for="n in 7" :key="n"></div>
   </div>
 
-  <div v-else class="card" style="padding:6px 0;margin-top:14px">
+  <div v-else>
+    <p class="swipe-hint">Swipe sideways to see every role <ArrowLeftRight :size="12" /></p>
+    <div class="card" style="padding:6px 0;margin-top:14px">
     <table>
       <thead>
         <tr>
@@ -47,13 +49,14 @@
         </template>
       </tbody>
     </table>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { motion } from 'motion-v'
-import { Check } from 'lucide-vue-next'
+import { Check, ArrowLeftRight } from 'lucide-vue-next'
 import { getRoles, setRoles } from '../api'
 import { toast } from '../toast'
 import MatrixCheckbox from '../components/MatrixCheckbox.vue'
@@ -112,3 +115,16 @@ async function save() {
 }
 onMounted(load)
 </script>
+
+<style scoped>
+/* Only shown on narrow screens where the matrix genuinely needs to scroll
+   horizontally (it can't be "stacked" like a simple list - it's a real
+   grid comparison). Explicit and unmissable, unlike relying on a subtle
+   edge-shadow a phone user might not notice at a glance. */
+.swipe-hint {
+  display: none; align-items: center; gap: 6px; margin: 10px 2px 0;
+  font-size: var(--fs-xs); font-weight: 700; color: var(--brand-bright);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+@media (max-width: 900px) { .swipe-hint { display: inline-flex; } }
+</style>

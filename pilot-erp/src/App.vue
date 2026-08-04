@@ -23,6 +23,9 @@
     <aside class="sidebar">
       <div class="side-head">
         <div class="brand side-brand"><img :src="logo" alt="" class="side-brand-logo" /> <span class="label">Fuel Guard X</span></div>
+        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" :stroke-width="2.25" />
+        </button>
       </div>
 
       <nav class="nav nav-grouped">
@@ -47,9 +50,6 @@
         <button class="theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
           <Sun v-if="theme === 'dark'" :size="16" :stroke-width="2.25" />
           <Moon v-else :size="16" :stroke-width="2.25" />
-        </button>
-        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" :stroke-width="2.25" />
         </button>
       </div>
       <button class="logout-btn" style="margin-top:12px" @click="logout" title="Log out">
