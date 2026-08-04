@@ -1,5 +1,6 @@
 <template>
   <Toaster />
+  <WelcomeGate v-if="justLoggedIn" :name="welcomeName" @done="justLoggedIn = false" />
   <div v-if="isLogin"><router-view /></div>
   <div v-else class="app" :class="{ collapsed }">
     <!-- phone top bar: brand + quick actions (theme, logout) — primary nav
@@ -7,7 +8,7 @@
          drawer/hamburger to manage -->
     <div class="mobilebar">
       <img :src="logo" alt="" class="mb-logo" />
-      <span class="mb-brand">Fuel Guard X</span>
+      <span class="mb-brand-text"><span class="mb-brand-sub">Aayunex Innovations</span><span class="mb-brand">Fuel Guard X</span></span>
       <span class="spacer"></span>
       <span class="mb-user">{{ auth.user?.username }}</span>
       <button class="theme-toggle mb-theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
@@ -22,7 +23,10 @@
     <!-- desktop/tablet: collapsible side navbar, grouped into clusters -->
     <aside class="sidebar">
       <div class="side-head">
-        <div class="brand side-brand"><img :src="logo" alt="" class="side-brand-logo" /> <span class="label">Fuel Guard X</span></div>
+        <div class="brand side-brand">
+          <img :src="logo" alt="" class="side-brand-logo" />
+          <span class="label mb-brand-text"><span class="mb-brand-sub">Aayunex Innovations</span><span class="mb-brand">Fuel Guard X</span></span>
+        </div>
         <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
           <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" :stroke-width="2.25" />
         </button>
@@ -45,7 +49,6 @@
         </div>
       </nav>
 
-      <div class="spacer" style="flex:1"></div>
       <div class="sidebar-controls">
         <button class="theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
           <Sun v-if="theme === 'dark'" :size="16" :stroke-width="2.25" />
@@ -93,7 +96,8 @@ import {
   Sun, Moon, ChevronDown, User, ShieldAlert, Compass, Navigation,
 } from 'lucide-vue-next'
 import Toaster from './components/Toaster.vue'
-import { auth, clearAuth } from './auth'
+import WelcomeGate from './components/WelcomeGate.vue'
+import { auth, clearAuth, justLoggedIn } from './auth'
 import { usePrefersReducedMotion, pageTransition } from './motion'
 import { useTheme } from './theme'
 import logo from './assets/logo.png'
@@ -101,6 +105,10 @@ import logo from './assets/logo.png'
 const route = useRoute()
 const router = useRouter()
 const isLogin = computed(() => route.path === '/login')
+const welcomeName = computed(() => {
+  const u = auth.user?.username
+  return u ? u.charAt(0).toUpperCase() + u.slice(1) : 'Pilot'
+})
 const collapsed = ref(localStorage.getItem('fgx-pilot-sidebar-collapsed') === '1')
 const reduced = usePrefersReducedMotion()
 const { theme, toggleTheme } = useTheme()

@@ -1,17 +1,21 @@
 <template>
   <Toaster />
+  <WelcomeGate v-if="justLoggedIn" :name="welcomeName" @done="justLoggedIn = false" />
   <div v-if="isLogin"><router-view /></div>
   <div v-else class="app" :class="{ collapsed }">
     <div class="mobilebar">
       <button class="hamburger" @click="menuOpen = true" aria-label="Open menu"><Menu :size="22" /></button>
-      <div class="brand"><img class="brand-logo" src="./assets/logo.png" alt="" /> <span class="brand-title">Admin</span></div>
+      <div class="brand">
+        <img class="brand-logo" src="./assets/logo.png" alt="" />
+        <div class="brand-text"><span class="brand-sub">Aayunex Innovations</span><span class="brand-title">Admin</span></div>
+      </div>
     </div>
     <aside class="sidebar" :class="{ open: menuOpen }">
       <div class="brand">
         <img class="brand-logo" src="./assets/logo.png" alt="Fuel Guard X" />
         <div class="brand-text">
+          <span class="brand-sub">Aayunex Innovations</span>
           <span class="brand-title">Control Tower</span>
-          <span class="brand-sub">Admin ERP</span>
         </div>
         <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
           <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
@@ -79,11 +83,16 @@ import {
   Building2, BarChart, Truck, Radar, Cpu, Server, ScrollText,
   ShieldAlert, Flame, ChartLine,
 } from 'lucide-vue-next'
-import { auth, clearAuth } from './auth'
+import { auth, clearAuth, justLoggedIn } from './auth'
 import { useTheme } from './theme'
 import Toaster from './components/Toaster.vue'
+import WelcomeGate from './components/WelcomeGate.vue'
 const route = useRoute(); const router = useRouter()
 const isLogin = computed(() => route.path === '/login')
+const welcomeName = computed(() => {
+  const u = auth.user?.username
+  return u ? u.charAt(0).toUpperCase() + u.slice(1) : 'Admin'
+})
 const menuOpen = ref(false)
 const collapsed = ref(localStorage.getItem('fgx-admin-sidebar-collapsed') === '1')
 watch(collapsed, (v) => localStorage.setItem('fgx-admin-sidebar-collapsed', v ? '1' : '0'))

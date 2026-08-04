@@ -211,6 +211,12 @@ input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px v
 .side-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 24px; }
 .brand { font-size: 17px; font-weight: 800; display: flex; gap: 9px; align-items: center; letter-spacing: -.01em; }
 .side-head .brand { margin-bottom: 0; min-width: 0; }
+/* persistent Aayunex Innovations wordmark, above the product name — same
+   small-caption-over-headline pairing the login screen already uses, shown
+   in both the top bar and the sidebar header, not just on login. */
+.mb-brand-text { display: flex; flex-direction: column; gap: 1px; line-height: 1.15; min-width: 0; }
+.mb-brand-sub { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.mb-brand { font-size: 17px; font-weight: 800; letter-spacing: -.01em; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .side-head-actions { display: flex; align-items: center; gap: 2px; flex: none; }
 .collapse-btn, .theme-toggle {
   flex: none; width: 27px; height: 27px; padding: 0; border: none; background: none;

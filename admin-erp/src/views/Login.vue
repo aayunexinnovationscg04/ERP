@@ -51,7 +51,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Check, User, Lock, Eye, EyeOff } from 'lucide-vue-next'
 import { login } from '../api'
-import { setAuth } from '../auth'
+import { setAuth, justLoggedIn } from '../auth'
 import { toast } from '../toast'
 import ParticleField from '../components/ParticleField.vue'
 
@@ -68,6 +68,7 @@ async function submit() {
       return
     }
     setAuth({ access: data.access, refresh: data.refresh, user: data.user })
+    justLoggedIn.value = true
     router.push('/')
   } catch (e) {
     error.value = e.response?.status === 429

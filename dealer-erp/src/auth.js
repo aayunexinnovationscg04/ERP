@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 
 // Tiny reactive auth store persisted to localStorage.
 const saved = JSON.parse(localStorage.getItem('fgx_auth') || '{}')
@@ -9,6 +9,11 @@ export const auth = reactive({
   user: saved.user || null,
   get isAuthed() { return !!this.access },
 })
+
+// Set by Login.vue right after a successful sign-in; App.vue watches this to
+// show the WelcomeGate overlay exactly once for that session (not on every
+// page load/refresh — those already have a token and skip straight in).
+export const justLoggedIn = ref(false)
 
 export function setAuth({ access, refresh, user }) {
   if (access !== undefined) auth.access = access

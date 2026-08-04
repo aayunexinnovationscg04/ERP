@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 
 const KEY = 'fgx_admin_auth'
 const saved = JSON.parse(localStorage.getItem(KEY) || '{}')
@@ -10,6 +10,10 @@ export const auth = reactive({
   get isAuthed() { return !!this.access },
   get isAdmin() { return this.user?.role === 'admin' },
 })
+
+// Set by Login.vue right after a successful sign-in; App.vue watches this to
+// show the WelcomeGate overlay exactly once for that session.
+export const justLoggedIn = ref(false)
 
 export function setAuth({ access, refresh, user }) {
   if (access !== undefined) auth.access = access

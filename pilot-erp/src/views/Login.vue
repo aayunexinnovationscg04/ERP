@@ -66,7 +66,7 @@ import { useRouter } from 'vue-router'
 import { motion, AnimatePresence } from 'motion-v'
 import { Check, User, Lock, Eye, EyeOff, ArrowRight } from 'lucide-vue-next'
 import { login, getMe } from '../api'
-import { setAuth } from '../auth'
+import { setAuth, justLoggedIn } from '../auth'
 import { usePrefersReducedMotion, EASE } from '../motion'
 import AmbientField from '../components/AmbientField.vue'
 import logo from '../assets/logo.png'
@@ -86,6 +86,7 @@ async function submit() {
     const data = await login(username.value.trim(), password.value)
     setAuth({ access: data.access, refresh: data.refresh, user: data.user })
     try { const me = await getMe(); setAuth({ user: me }) } catch (e) { /* non-fatal */ }
+    justLoggedIn.value = true
     router.push('/')
   } catch (e) {
     error.value = e.response?.status === 429

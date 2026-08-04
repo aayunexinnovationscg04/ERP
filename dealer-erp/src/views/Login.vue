@@ -60,7 +60,7 @@ import { useRouter } from 'vue-router'
 import { Check, User, Lock, Eye, EyeOff } from 'lucide-vue-next'
 import { motion } from 'motion-v'
 import { login } from '../api'
-import { setAuth } from '../auth'
+import { setAuth, justLoggedIn } from '../auth'
 import logo from '../assets/logo.png'
 
 // three.js is a heavy dependency (~150-600kB depending on tree-shaking) that
@@ -87,6 +87,7 @@ async function submit() {
   try {
     const data = await login(username.value, password.value)
     setAuth({ access: data.access, refresh: data.refresh, user: data.user })
+    justLoggedIn.value = true
     router.push('/')
   } catch (e) {
     error.value = e.response?.status === 429
