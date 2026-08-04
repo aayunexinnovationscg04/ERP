@@ -5,7 +5,7 @@ import './style.css'
 import 'leaflet/dist/leaflet.css'
 // Self-hosted variable font (matches Pilot/Admin) — no external font CDN,
 // so there's no third-party network request or FOUC risk in production.
-import '@fontsource-variable/inter/wght.css'
+import '@fontsource-variable/plus-jakarta-sans/wght.css'
 
 // Fix Leaflet's default marker icon paths under a bundler.
 import L from 'leaflet'

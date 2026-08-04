@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import router from './router'
 import App from './App.vue'
-import '@fontsource-variable/inter/wght.css'
+import '@fontsource-variable/plus-jakarta-sans/wght.css'
 import './style.css'
 
 createApp(App).use(router).mount('#app')

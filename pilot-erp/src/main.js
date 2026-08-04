@@ -5,7 +5,7 @@ import './style.css'
 import 'leaflet/dist/leaflet.css'
 // Self-hosted variable font (matches Dealer/Admin) — replaces the Google
 // Fonts CDN link in index.html so there's no third-party network request.
-import '@fontsource-variable/inter/wght.css'
+import '@fontsource-variable/plus-jakarta-sans/wght.css'
 
 // Fix Leaflet's default marker icon paths under a bundler.
 import L from 'leaflet'

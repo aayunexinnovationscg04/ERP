@@ -65,7 +65,7 @@
   --red: var(--crit); --red-soft: var(--crit-soft);
 
   /* type */
-  --font-body: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-head: var(--font-body);
 
   /* form */
@@ -127,7 +127,7 @@
 
   --red: var(--crit); --red-soft: var(--crit-soft);
 
-  --font-body: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-head: var(--font-body);
 
   --radius: 16px; --radius-sm: 11px; --radius-pill: 999px;
@@ -390,8 +390,9 @@ h1 { font-size: var(--fs-2xl); margin: 0 0 4px; letter-spacing: -.02em; color: v
 h2 { font-size: var(--fs-lg); margin: 0; }
 .section-title {
   font-size: 12px; text-transform: uppercase; color: var(--muted);
-  margin: 0 2px 10px; letter-spacing: .07em; font-weight: 700;
+  margin: 26px 2px 10px; letter-spacing: .07em; font-weight: 700;
 }
+.section-title:first-child { margin-top: 0; }
 
 /* ---- KPI tiles ---- */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 200px)); gap: 14px; margin-bottom: 22px; }
@@ -644,8 +645,8 @@ html.drawer-open, html.drawer-open body { overflow: hidden; }
   /* wide tables scroll horizontally *inside their card* instead of breaking
      the page layout — never page-level horizontal scroll. */
   .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { min-width: 560px; }
-  th, td { padding: 12px 12px; font-size: var(--fs-sm); }
+  table { width: auto; min-width: 100%; }
+  th, td { padding: 12px 12px; font-size: var(--fs-sm); white-space: nowrap; }
 
   /* CSS-only scroll-shadow cue, scoped to cards that actually wrap a table:
      two masks that scroll with the content plus two shadows fixed to the
@@ -669,7 +670,7 @@ html.drawer-open, html.drawer-open body { overflow: hidden; }
      tile dangling on its own row whenever the count is odd — the trailing
      tile spans the full row instead so every row reads as a deliberate
      layout, never a stray gap. */
-  .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpis { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .kpis > *:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .kpi { padding: 15px 15px; }
   .kpi .l { font-size: var(--fs-xs); }
@@ -687,7 +688,7 @@ html.drawer-open, html.drawer-open body { overflow: hidden; }
 /* small phones — trim padding/gaps a touch further so 360-375px devices
    don't feel cramped, without changing the layout shape */
 @media (max-width: 380px) {
-  .kpis { gap: 8px; }
+  .kpis { gap: 10px; }
   .kpi { padding: 13px 13px; }
   .nav-item { padding: 11px 12px 11px 30px; }
 }
