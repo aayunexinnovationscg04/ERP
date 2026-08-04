@@ -15,7 +15,7 @@ import Reports from './views/Reports.vue'
 
 const routes = [
   { path: '/login', component: Login, meta: { public: true } },
-  { path: '/', redirect: '/users' },
+  { path: '/', redirect: '/companies' }, // Companies: first item of the first sidebar group
   { path: '/companies', component: Companies },
   { path: '/company-analytics', component: CompanyAnalytics },
   { path: '/users', component: Users },

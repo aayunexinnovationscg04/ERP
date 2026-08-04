@@ -68,7 +68,7 @@ async function submit() {
       return
     }
     setAuth({ access: data.access, refresh: data.refresh, user: data.user })
-    router.push('/users')
+    router.push('/')
   } catch (e) {
     error.value = e.response?.status === 429
       ? 'Too many attempts. Please wait a minute and try again.'
