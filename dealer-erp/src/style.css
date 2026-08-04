@@ -482,23 +482,25 @@ tr[class] td:first-child { padding-left: 17px; }
    see tiles.js). Classic CSS trick: invert + hue-rotate just the tile pane so
    the basemap reads dark like the rest of the app, while leaving markers,
    the live pulse dot, route polyline and popups (separate leaflet panes)
-   in their normal true colors. */
-.map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.93) contrast(.92) saturate(.75); }
+   in their normal true colors. Dark theme only — in light theme the OSM
+   tiles are already light, so inverting them would make the map the one
+   dark island on an otherwise bright page; leave them natural instead. */
+:root[data-theme="dark"] .map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.93) contrast(.92) saturate(.75); }
 
 /* pulsing live vehicle marker */
 .live-dot{width:14px;height:14px;border-radius:50%;background:var(--brand);border:2px solid #fff;box-shadow:0 0 0 0 rgba(251,138,46,.5);animation:pulse 1.8s var(--ease) infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(251,138,46,.5)}70%{box-shadow:0 0 0 16px rgba(251,138,46,0)}100%{box-shadow:0 0 0 0 rgba(251,138,46,0)}}
 .leaflet-popup-content-wrapper{border-radius:12px;background:var(--surface);color:var(--text)}
 .leaflet-popup-tip{background:var(--surface)}
-.leaflet-container{background:#0c0e15}
+.leaflet-container{background:var(--surface-2)}
 /* Leaflet's stock zoom control ships as stark white squares — restyle to the
-   app's dark chrome so the map doesn't have an unstyled control floating on it. */
+   app's chrome so the map doesn't have an unstyled control floating on it. */
 .leaflet-bar, .leaflet-bar a {
   background: var(--surface-2); border-color: var(--border) !important; color: var(--text);
 }
 .leaflet-bar a:hover { background: var(--surface-3); color: var(--brand); }
 .leaflet-bar a.leaflet-disabled { background: var(--surface-2); color: var(--muted-2); }
-.leaflet-control-attribution { background: rgba(9,10,16,.75) !important; color: var(--muted) !important; }
+.leaflet-control-attribution { background: color-mix(in srgb, var(--surface) 75%, transparent) !important; color: var(--muted) !important; }
 .leaflet-control-attribution a { color: var(--muted) !important; }
 
 /* ---- inline SVG data-viz (sparkline / bars) ---- */

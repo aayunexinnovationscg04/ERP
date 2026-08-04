@@ -15,7 +15,7 @@ only — no public plaintext port). nginx path-routes:
 | `/admin/`  | Admin ERP SPA (Vite base=`/admin/`) |
 | `/pilot/`  | Pilot ERP SPA (Vite base=`/pilot/`) |
 | `/api/`    | Django REST API (gunicorn `127.0.0.1:8000`) |
-| `/django-admin/` | Django admin — NOT publicly routed, SSH-tunnel only |
+| `/django-admin/` | Django admin (gunicorn `127.0.0.1:8000`) — publicly routed 2026-08-04 |
 | `/` | Landing page ("pick your portal") from `/var/www/fuelguardx/landing/` |
 
 Legacy device telemetry (`/api/telemetry`, plain HTTP, port 80) is still

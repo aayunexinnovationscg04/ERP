@@ -22,11 +22,9 @@ PUBLIC LINKS (open in a browser)  --  ALL ERPs on ONE subdomain, HTTPS via Caddy
   demo companies above, which exist purely to make the ERP look populated for
   demos/sales. `seed_demo --reset` wipes only those demo companies.)
 
-  Django Admin panel   NOT publicly routed (as of 2026-08-02) -- no nginx location
-     for /django-admin/ means no network path to it from the internet at all.
-     Reach it via SSH tunnel:
-       ssh -L 8000:127.0.0.1:8000 root@31.42.125.144
-       then browse http://127.0.0.1:8000/django-admin/   login: admin / admin123
+  Django Admin panel   https://erp.aayunexinnovations.com/django-admin/  login: admin / admin123
+     (publicly routed 2026-08-04 at explicit user request -- previously SSH-tunnel
+     only. Same Django auth gate as before; no separate access control added.)
   Receiver Dashboard   https://dashboard.aayunexinnovations.com     login: admin / admin123
      (legacy device dashboard - separate subdomain, also HTTPS via Caddy)
 

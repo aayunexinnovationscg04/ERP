@@ -40,7 +40,6 @@
           <div class="nav-divider" v-if="gi < navGroups.length - 1"></div>
         </template>
       </nav>
-      <div style="flex:1"></div>
       <div class="sidebar-controls">
         <button
           type="button" class="theme-toggle" @click="toggleTheme"

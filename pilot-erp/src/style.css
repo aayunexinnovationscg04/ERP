@@ -76,6 +76,11 @@
   /* mobile chrome heights, used to keep content clear of fixed bars */
   --topbar-h: 56px;
   --tabbar-h: 68px;
+  /* bottom tab bar glass tint — was hardcoded to this dark value everywhere;
+     tokenized so light theme gets its own tint instead of a dark bar sitting
+     under an otherwise light page. */
+  --tabbar-bg: rgba(10,15,28,.86);
+  --tabbar-shadow: 0 -14px 34px rgba(0,0,0,.5);
 }
 
 /* ---- light theme — same brand blue, re-tuned for a bright cab: strong
@@ -136,6 +141,8 @@
 
   --topbar-h: 56px;
   --tabbar-h: 68px;
+  --tabbar-bg: rgba(255,255,255,.86);
+  --tabbar-shadow: 0 -10px 26px rgba(16,24,40,.10);
 }
 * { box-sizing: border-box; }
 html, body, #app { height: 100%; margin: 0; }
@@ -306,9 +313,9 @@ a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-ring); border
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
   height: var(--tabbar-h);
   padding-bottom: env(safe-area-inset-bottom, 0);
-  background: rgba(10,15,28,.86); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%);
+  background: var(--tabbar-bg); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%);
   border-top: 1px solid var(--border);
-  box-shadow: 0 -14px 34px rgba(0,0,0,.5);
+  box-shadow: var(--tabbar-shadow);
   align-items: stretch; justify-content: space-around;
 }
 .tabbar a {
@@ -438,11 +445,15 @@ h2 { font-size: var(--fs-lg); margin: 0; font-weight: 700; }
 .gmaps-btn:active { transform: translateY(0) scale(.97); }
 @media (max-width: 480px) { .gmaps-btn span { display: none; } .gmaps-btn { padding: 8px; } }
 /* fake a dark map style from the (free, no-key) OSM light tiles: invert just
-   the tile pane so markers/route lines keep their true accent colors */
-.map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.94) contrast(.92) saturate(.6); }
+   the tile pane so markers/route lines keep their true accent colors. Dark
+   theme only — light theme keeps the OSM tiles in their natural light colors
+   so the map matches the rest of the light UI instead of staying a dark
+   island on an otherwise bright page. */
+:root[data-theme="dark"] .map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.94) contrast(.92) saturate(.6); }
 .map .leaflet-control-zoom a { background: var(--surface); color: var(--text); border-color: var(--border) !important; }
-.map .leaflet-control-attribution { background: rgba(10,15,28,.7); color: var(--muted); }
+.map .leaflet-control-attribution { background: rgba(255,255,255,.7); color: var(--muted); }
 .map .leaflet-control-attribution a { color: var(--muted); }
+:root[data-theme="dark"] .map .leaflet-control-attribution { background: rgba(10,15,28,.7); }
 
 /* ---- live position marker (pulsing) ---- */
 .live-marker { background: none; border: none; }

@@ -620,8 +620,19 @@ tr.group-row .grp-dot {
   .mobile-close-btn { display: inline-flex; }
 
   /* roomier, clearly-tappable nav — full-screen means no need to conserve
-     width, so touch targets grow instead of staying icon-rail-tight */
-  .nav { gap: .2rem; }
+     width, so touch targets grow instead of staying icon-rail-tight.
+     Scroll-fade cue (matches Dealer/Pilot's mobile drawer) signals there's
+     more to scroll to when 6 groups don't all fit above the fold on a
+     shorter phone — self-hides at whichever edge is already scrolled to. */
+  .nav {
+    gap: .2rem;
+    background-image:
+      linear-gradient(var(--ink-950) 40%, rgba(10,11,14,0)),
+      linear-gradient(rgba(10,11,14,0), var(--ink-950) 60%) 0 100%;
+    background-repeat: no-repeat;
+    background-size: 100% 28px, 100% 28px;
+    background-attachment: local, local;
+  }
   .nav-group-head { padding: .8rem .6rem; }
   .nav a { padding: .85rem .9rem; font-size: var(--fs-md); min-height: 44px; }
   .nav a .ic { width: 34px; height: 34px; }
