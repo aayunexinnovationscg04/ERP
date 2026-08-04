@@ -172,8 +172,11 @@ async function submit() {
 
 @media (max-width: 820px) {
   .login2 { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  /* min-height so the hero absorbs extra vertical space on tall phones by
+     growing (already justify-content:center from the base rule), instead of
+     leaving it as dead black space below the card. */
   .brandside {
-    padding: 26px 24px 30px; min-height: 0;
+    padding: 26px 24px 30px; min-height: 38dvh;
     border-radius: 0 0 28px 28px;
   }
   .bs-content { gap: 10px; }
