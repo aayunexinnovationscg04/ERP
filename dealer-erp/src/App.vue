@@ -62,7 +62,8 @@
       </button>
     </aside>
     <main class="main">
-      <router-view v-slot="{ Component, route: r }">
+      <PageSkeleton v-if="showRouteSkeleton" />
+      <router-view v-else v-slot="{ Component, route: r }">
         <AnimatePresence mode="wait">
           <motion.div :key="r.fullPath"
             :initial="{ opacity: 0, y: 8 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -6 }"
@@ -90,11 +91,28 @@ import { auth, clearAuth, justLoggedIn } from './auth'
 import { useTheme } from './theme'
 import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
+import PageSkeleton from './components/PageSkeleton.vue'
 import logo from './assets/logo.png'
 
 const route = useRoute()
 const router = useRouter()
 const isLogin = computed(() => route.path === '/login')
+
+// Route-level chunks are lazy (see router.js) — most resolve fast enough
+// that this never shows, but a slow/first-time chunk fetch gets a skeleton
+// instead of a frozen page. The 150ms show-delay avoids a flash of skeleton
+// for the common case where the chunk is already cached/instant.
+const showRouteSkeleton = ref(false)
+let skeletonShowTimer = null
+router.beforeEach((to) => {
+  if (to.meta.public) return
+  clearTimeout(skeletonShowTimer)
+  skeletonShowTimer = setTimeout(() => { showRouteSkeleton.value = true }, 150)
+})
+router.afterEach(() => {
+  clearTimeout(skeletonShowTimer)
+  showRouteSkeleton.value = false
+})
 const welcomeName = computed(() => auth.user?.company?.name || auth.user?.username || 'Dealer')
 const menuOpen = ref(false)
 const collapsed = ref(localStorage.getItem('fgx-sidebar-collapsed') === '1')

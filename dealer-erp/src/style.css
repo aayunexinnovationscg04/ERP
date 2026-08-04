@@ -159,6 +159,18 @@ h1, .kpi .n, .fh-value, .bs-portal, .formcard h2, .pb-name, .fb-level b { font-f
 /* motion-respecting reset */
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
+/* Smooth light/dark theme switch — theme.js toggles this class on <html> for
+   ~340ms around a data-theme flip so every surface cross-fades its colors
+   instead of snapping instantly. Scoped to no-preference so it never fights
+   the reduced-motion reset above (that rule wins outright when motion is
+   off, since this one simply doesn't exist in that case). */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-transition, .theme-transition * {
+    transition: background-color .3s ease, border-color .3s ease, color .3s ease,
+                box-shadow .3s ease, fill .3s ease, stroke .3s ease !important;
+  }
+}
+
 /* ---- controls ---- */
 button {
   font: inherit; font-weight: 600; cursor: pointer;
