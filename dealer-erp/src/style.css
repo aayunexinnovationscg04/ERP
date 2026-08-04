@@ -644,8 +644,14 @@ html.drawer-open, html.drawer-open body { overflow: hidden; }
     background-attachment: local, local, scroll, scroll;
   }
 
-  /* KPI tiles: 2-up grid reads better than a single squeezed column on phones */
+  /* KPI tiles: 2-up grid reads better than a single squeezed column on phones.
+     Pages render anywhere from 2 to 5 tiles depending on the view (e.g. Fleet
+     Overview has exactly 3), so a straight 2-up grid leaves a lone half-width
+     tile dangling on its own row whenever the count is odd — the trailing
+     tile spans the full row instead so every row reads as a deliberate
+     layout, never a stray gap. */
   .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpis > *:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .kpi { padding: 15px 15px; }
   .kpi .l { font-size: var(--fs-xs); }
 

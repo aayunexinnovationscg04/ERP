@@ -1,36 +1,44 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { auth } from './auth'
 
-import Login from './views/Login.vue'
-import Locations from './views/Locations.vue'
-import Vehicles from './views/Vehicles.vue'
-import VehicleDetail from './views/VehicleDetail.vue'
-import FuelVehicles from './views/FuelVehicles.vue'
-import FuelDetail from './views/FuelDetail.vue'
-import Pilots from './views/Pilots.vue'
-import PilotDetail from './views/PilotDetail.vue'
-import Alerts from './views/Alerts.vue'
-import Geofences from './views/Geofences.vue'
+// Every view is route-level code-split (dynamic import) instead of statically
+// imported here. Statically importing ~25 views meant the Login screen — the
+// very first thing an unauthenticated visitor sees — couldn't render until
+// the ENTIRE app (every view for every page) had downloaded as one ~590kB
+// bundle. On a slow/real mobile connection that's 15s+ of a blank/unresponsive
+// page before Sign In even works, which reads as "sign in hangs, need to
+// refresh". Each view now ships as its own small chunk, fetched only when
+// actually navigated to.
+const Login = () => import('./views/Login.vue')
+const Locations = () => import('./views/Locations.vue')
+const Vehicles = () => import('./views/Vehicles.vue')
+const VehicleDetail = () => import('./views/VehicleDetail.vue')
+const FuelVehicles = () => import('./views/FuelVehicles.vue')
+const FuelDetail = () => import('./views/FuelDetail.vue')
+const Pilots = () => import('./views/Pilots.vue')
+const PilotDetail = () => import('./views/PilotDetail.vue')
+const Alerts = () => import('./views/Alerts.vue')
+const Geofences = () => import('./views/Geofences.vue')
 
 // New sidebar-group pages (preview / mock data — see src/mock.js). No
 // dedicated backend endpoints exist for these yet, so they render
 // deterministic seeded mock data following the same visual conventions as
 // the pages above.
-import FleetOverview from './views/FleetOverview.vue'
-import VehicleDocuments from './views/VehicleDocuments.vue'
-import RouteHistory from './views/RouteHistory.vue'
-import FuelReports from './views/FuelReports.vue'
-import FuelEfficiency from './views/FuelEfficiency.vue'
-import PilotAttendance from './views/PilotAttendance.vue'
-import PilotPerformance from './views/PilotPerformance.vue'
-import PilotSalary from './views/PilotSalary.vue'
-import TripPlanner from './views/TripPlanner.vue'
-import TripEta from './views/TripEta.vue'
-import BillingOrders from './views/BillingOrders.vue'
-import BillingInvoices from './views/BillingInvoices.vue'
-import BillingExpenses from './views/BillingExpenses.vue'
-import AiPredictions from './views/AiPredictions.vue'
-import AiRouteOptimization from './views/AiRouteOptimization.vue'
+const FleetOverview = () => import('./views/FleetOverview.vue')
+const VehicleDocuments = () => import('./views/VehicleDocuments.vue')
+const RouteHistory = () => import('./views/RouteHistory.vue')
+const FuelReports = () => import('./views/FuelReports.vue')
+const FuelEfficiency = () => import('./views/FuelEfficiency.vue')
+const PilotAttendance = () => import('./views/PilotAttendance.vue')
+const PilotPerformance = () => import('./views/PilotPerformance.vue')
+const PilotSalary = () => import('./views/PilotSalary.vue')
+const TripPlanner = () => import('./views/TripPlanner.vue')
+const TripEta = () => import('./views/TripEta.vue')
+const BillingOrders = () => import('./views/BillingOrders.vue')
+const BillingInvoices = () => import('./views/BillingInvoices.vue')
+const BillingExpenses = () => import('./views/BillingExpenses.vue')
+const AiPredictions = () => import('./views/AiPredictions.vue')
+const AiRouteOptimization = () => import('./views/AiRouteOptimization.vue')
 
 const routes = [
   { path: '/login', component: Login, meta: { public: true } },
@@ -65,7 +73,7 @@ const router = createRouter({ history: createWebHashHistory(), routes })
 
 router.beforeEach((to) => {
   if (!to.meta.public && !auth.isAuthed) return '/login'
-  if (to.path === '/login' && auth.isAuthed) return '/vehicles'
+  if (to.path === '/login' && auth.isAuthed) return '/'
 })
 
 export default router

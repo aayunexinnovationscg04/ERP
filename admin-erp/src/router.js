@@ -1,17 +1,22 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { auth } from './auth'
-import Login from './views/Login.vue'
-import Users from './views/Users.vue'
-import Roles from './views/Roles.vue'
-import UserPermissions from './views/UserPermissions.vue'
-import Platform from './views/Platform.vue'
-import Companies from './views/Companies.vue'
-import CompanyAnalytics from './views/CompanyAnalytics.vue'
-import FleetMonitoring from './views/FleetMonitoring.vue'
-import Devices from './views/Devices.vue'
-import PlatformLogs from './views/PlatformLogs.vue'
-import SecurityAnalytics from './views/SecurityAnalytics.vue'
-import Reports from './views/Reports.vue'
+
+// Route-level code-split (dynamic import) instead of static imports — see
+// dealer-erp/src/router.js for why: statically importing every view meant
+// Login couldn't render until the whole app's JS had downloaded, which reads
+// as a hung/slow sign-in on a real mobile connection.
+const Login = () => import('./views/Login.vue')
+const Users = () => import('./views/Users.vue')
+const Roles = () => import('./views/Roles.vue')
+const UserPermissions = () => import('./views/UserPermissions.vue')
+const Platform = () => import('./views/Platform.vue')
+const Companies = () => import('./views/Companies.vue')
+const CompanyAnalytics = () => import('./views/CompanyAnalytics.vue')
+const FleetMonitoring = () => import('./views/FleetMonitoring.vue')
+const Devices = () => import('./views/Devices.vue')
+const PlatformLogs = () => import('./views/PlatformLogs.vue')
+const SecurityAnalytics = () => import('./views/SecurityAnalytics.vue')
+const Reports = () => import('./views/Reports.vue')
 
 const routes = [
   { path: '/login', component: Login, meta: { public: true } },

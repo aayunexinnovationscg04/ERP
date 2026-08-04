@@ -389,6 +389,9 @@ h2 { font-size: var(--fs-lg); margin: 0; font-weight: 700; }
 /* ---- chips (telemetry) — each data type gets its OWN real hue, set via a
    modifier class on .chip-ic (blue/violet/amber/emerald/cyan) ---- */
 .chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px; }
+/* if a page ever renders an odd number of chips, the trailing one spans the
+   full row instead of sitting alone at half width (matches Dealer/Admin). */
+.chips > *:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .chip { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 15px;
   display: flex; align-items: flex-start; gap: 11px; }
 .chip .chip-ic {

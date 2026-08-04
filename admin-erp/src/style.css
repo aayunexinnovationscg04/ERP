@@ -647,17 +647,24 @@ tr.group-row .grp-dot {
   button, .hamburger { min-height: 44px; }
   input:not([type=checkbox]):not([type=radio]), select { min-height: 44px; }
 
-  /* stat grid: single column on very small screens, keep colored accents */
-  .stats { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  /* Stat/KPI grid: a steady 2-up layout, same convention as Dealer/Pilot's
+     mobile tile grids, instead of auto-fit (which silently rendered 2 or 3
+     per row depending on viewport width and each page's own tile count —
+     inconsistent from page to page, the "unstructured" look). Pages render
+     anywhere from 2 to 5 tiles, so when the count is odd the trailing tile
+     spans the full row instead of sitting alone at half width. */
+  .stats, .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stats > *:last-child:nth-child(odd), .kpis > *:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .chiprow { gap: .45rem; }
 }
 
-/* Very narrow phones (<= 400px, e.g. 360-390px devices): the stat grid's
-   minmax(130px,...) floor can still force two cramped columns depending on
-   content — drop to a single column so numbers/labels never truncate. */
+/* Very narrow phones (<= 400px, e.g. 360-390px devices): tighten padding so
+   numbers/labels have more room, without abandoning the 2-up grid (a forced
+   single column here looked inconsistent next to Dealer/Pilot, which stay
+   2-up at every mobile width). */
 @media (max-width: 400px) {
-  .stats { grid-template-columns: 1fr; }
-  .kpis { grid-template-columns: 1fr; }
+  .stats, .kpis { gap: 8px; }
+  .stat, .kpi { padding: 13px 14px; }
 }
 
 /* ============================================================================
