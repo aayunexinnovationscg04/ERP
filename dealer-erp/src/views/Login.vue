@@ -9,7 +9,7 @@
     form-subtitle="Enter your details to open your fleet dashboard."
     submit-label="Sign in"
     security-note="Encrypted session · signs out automatically when idle"
-    note="Need an account? Ask your Aayunex administrator."
+    note="Need an account? Ask your administrator."
     :busy="busy"
     :error="error"
     @submit="submit"

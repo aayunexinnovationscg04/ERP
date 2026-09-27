@@ -20,7 +20,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { motion } from 'motion-v'
-import logo from '@shared/design/brand/fgx-mark.png'
+import logo from '@shared/design/brand/aayunex-logo.png'
 
 // Entrance transition shown once, right after a successful sign-in: masks
 // the ~1.5s it takes the destination page's own data to load behind a

@@ -14,7 +14,7 @@
         <span class="ab-logo"><img :src="logo" alt="" /></span>
         <span class="ab-name">
           <strong>Fuel Guard X</strong>
-          <small>by Aayunex Innovations</small>
+          <small>by AAYUNEX INNOVATIONS OPC Pvt Ltd.</small>
         </span>
       </header>
 
@@ -80,7 +80,7 @@
 
       <footer class="auth-foot">
         <a href="https://erp.aayunexinnovations.com/"><ArrowLeft :size="14" aria-hidden="true" /> All portals</a>
-        <span>© {{ year }} Aayunex Innovations</span>
+        <span>© 2025 AAYUNEX INNOVATIONS OPC Pvt Ltd.</span>
       </footer>
     </main>
   </div>
@@ -91,7 +91,7 @@ import { computed, onMounted, ref } from 'vue'
 import {
   ArrowLeft, ArrowRight, CircleAlert, Eye, EyeOff, LockKeyhole, ShieldCheck, TriangleAlert, UserRound,
 } from 'lucide-vue-next'
-import brandMark from '../design/brand/fgx-mark.png'
+import brandMark from '../design/brand/aayunex-logo.png'
 import AdminScene from './scenes/AdminScene.vue'
 import DealerScene from './scenes/DealerScene.vue'
 import PilotScene from './scenes/PilotScene.vue'
@@ -100,7 +100,7 @@ const props = defineProps({
   portal: { type: String, required: true },          // 'admin' | 'dealer' | 'pilot'
   portalName: { type: String, required: true },      // e.g. 'Admin Console'
   portalIcon: { type: [Object, Function], required: true },
-  logo: { type: String, default: brandMark },         // Aayunex flame mark
+  logo: { type: String, default: brandMark },         // official logo, used unaltered
   headline: { type: String, required: true },
   description: { type: String, required: true },
   points: { type: Array, default: () => [] },        // [{ icon, title, text }]
@@ -114,7 +114,6 @@ const props = defineProps({
 const emit = defineEmits(['submit'])
 
 const scene = computed(() => ({ admin: AdminScene, dealer: DealerScene, pilot: PilotScene }[props.portal]))
-const year = new Date().getFullYear()
 
 const username = ref('')
 const password = ref('')

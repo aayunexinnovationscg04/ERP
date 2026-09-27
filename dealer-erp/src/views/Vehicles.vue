@@ -34,7 +34,7 @@
     <div v-if="loading" class="card-body"><div class="skel sk-row" v-for="n in 6" :key="n"></div></div>
 
     <EmptyState v-else-if="!vehicles.length" :icon="Truck" title="No vehicles yet"
-      text="Vehicles appear here once your Aayunex administrator links a Fuel Guard X device to your company." />
+      text="Vehicles appear here once your administrator links a Fuel Guard X device to your company." />
     <EmptyState v-else-if="!shown.length" compact :icon="SearchX" title="No matching vehicles"
       text="Try a different search or status filter.">
       <button type="button" class="sm" @click="q = ''; statusFilter = ''">Clear filters</button>

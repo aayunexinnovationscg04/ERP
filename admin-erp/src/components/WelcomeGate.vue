@@ -10,7 +10,7 @@
       :initial="{ opacity: 0, y: reduced ? 0 : 12 }" :animate="{ opacity: opening ? 0 : 1, y: opening ? (reduced ? 0 : -8) : 0 }"
       :transition="{ duration: reduced ? 0 : (opening ? .28 : .45), ease: [.4, 0, .2, 1] }">
       <span class="wgate-logo"><img :src="logo" alt="" /></span>
-      <div class="wgate-brand">AAYUNEX INNOVATIONS</div>
+      <div class="wgate-brand">AAYUNEX INNOVATIONS OPC Pvt Ltd.</div>
       <div class="wgate-welcome">Welcome, {{ name }}</div>
       <div class="wgate-loader" aria-hidden="true"><span></span></div>
     </motion.div>
@@ -20,7 +20,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { motion } from 'motion-v'
-import logo from '@shared/design/brand/fgx-mark.png'
+import logo from '@shared/design/brand/aayunex-logo.png'
 
 // Entrance transition shown once, right after a successful sign-in: masks
 // the ~1.5s it takes the destination page's own data to load behind a

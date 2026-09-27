@@ -132,7 +132,7 @@ import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
 import PageSkeleton from './components/PageSkeleton.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
-import brandMark from '@shared/design/brand/fgx-mark.png'
+import brandMark from '@shared/design/brand/aayunex-logo.png'
 
 const route = useRoute(); const router = useRouter()
 const isLogin = computed(() => route.path === '/login')

@@ -94,7 +94,7 @@
         <div class="page">
           <div v-if="suspended" class="notice amber suspended-banner" role="status">
             <TriangleAlert :size="16" />
-            <span><b>{{ companyName }} is suspended.</b> Live tracking and alerts may be paused. Contact your Aayunex administrator to restore the account.</span>
+            <span><b>{{ companyName }} is suspended.</b> Live tracking and alerts may be paused. Contact your administrator to restore the account.</span>
           </div>
           <PageSkeleton v-if="showRouteSkeleton" />
           <router-view v-else v-slot="{ Component, route: r }">
@@ -129,7 +129,7 @@ import { useTheme } from './theme'
 import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
 import PageSkeleton from './components/PageSkeleton.vue'
-import logo from '@shared/design/brand/fgx-mark.png'
+import logo from '@shared/design/brand/aayunex-logo.png'
 import { canOpen } from './access'
 
 const route = useRoute()

@@ -9,7 +9,7 @@
       <div class="brand-lockup">
         <span class="logo-tile"><img :src="logo" alt="" /></span>
         <span class="brand-text">
-          <span class="brand-sub">Aayunex Innovations</span>
+          <span class="brand-sub">AAYUNEX INNOVATIONS OPC Pvt Ltd.</span>
           <span class="brand-name">Fuel Guard X</span>
         </span>
       </div>
@@ -117,7 +117,7 @@ import { auth, justLoggedIn, logout as endSession } from './auth'
 import { getSummary } from './api'
 import { usePrefersReducedMotion, pageTransition } from './motion'
 import { useTheme } from './theme'
-import logo from '@shared/design/brand/fgx-mark.png'
+import logo from '@shared/design/brand/aayunex-logo.png'
 import { canOpen } from './access'
 
 const route = useRoute()

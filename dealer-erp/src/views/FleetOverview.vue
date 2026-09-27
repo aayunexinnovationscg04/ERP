@@ -18,7 +18,7 @@
 
   <div v-if="!loading && !vehicles.length" class="card">
     <EmptyState :icon="Truck" title="No vehicles yet"
-      text="Vehicles appear here once your Aayunex administrator installs a Fuel Guard X device and links it to your company." />
+      text="Vehicles appear here once your administrator installs a Fuel Guard X device and links it to your company." />
   </div>
 
   <template v-else>
