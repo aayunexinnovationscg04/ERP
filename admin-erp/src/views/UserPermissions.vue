@@ -3,7 +3,6 @@
   <PageHeader :icon="SlidersHorizontal" :title="user ? `Screen access · ${user.username}` : 'Screen access'">
     <template #description>
       Each screen follows the <b>{{ roleLabel(data.role) }}</b> role default unless you grant or deny it for this person.
-      Role defaults are edited in <router-link to="/roles">Role Management</router-link>.
     </template>
     <span v-if="dirtyCount" class="ph-meta"><CircleDot :size="13" style="color:var(--amber)" /> {{ dirtyCount }} unsaved {{ dirtyCount === 1 ? 'change' : 'changes' }}</span>
     <button v-if="dirtyCount" type="button" class="btn" :disabled="saving" @click="reset"><Undo2 :size="16" /> Discard</button>

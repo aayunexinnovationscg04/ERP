@@ -43,8 +43,6 @@ export const createUser = (body) => api.post('/admin/users/', body).then((r) => 
 export const updateUser = (id, body) => api.patch(`/admin/users/${id}/`, body).then((r) => r.data)
 export const getUserPerms = (id) => api.get(`/admin/users/${id}/permissions/`).then((r) => r.data)
 export const setUserPerms = (id, overrides) => api.put(`/admin/users/${id}/permissions/`, { overrides }).then((r) => r.data)
-export const getRoles = () => api.get('/admin/roles').then((r) => r.data)
-export const setRoles = (matrix) => api.put('/admin/roles', matrix).then((r) => r.data)
 export const getHealth = () => api.get('/admin/health').then((r) => r.data)
 // cross-company fleet aggregate (Admin bypasses the company scoping this
 // endpoint applies to dealers, so it returns platform-wide totals for us)

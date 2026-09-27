@@ -110,19 +110,22 @@
         <label for="nu-password">Password<span class="req">*</span></label>
         <input id="nu-password" v-model="nu.password" class="input" type="password" required autocomplete="new-password" />
       </div>
-      <div class="field">
-        <label for="nu-role">Role</label>
-        <select id="nu-role" v-model="nu.role" class="select">
-          <option v-for="r in roles" :key="r" :value="r">{{ roleLabel(r) }}</option>
-        </select>
+      <div class="field span-2">
+        <span class="field-label" id="nu-role-label">Role<span class="req">*</span></span>
+        <div class="role-pick" role="radiogroup" aria-labelledby="nu-role-label">
+          <button v-for="r in createRoles" :key="r.value" type="button" class="role-opt" :class="{ on: nu.role === r.value }"
+                  role="radio" :aria-checked="nu.role === r.value" @click="nu.role = r.value">
+            <span class="role-opt-ic"><component :is="r.icon" :size="18" /></span>
+            <span class="role-opt-text"><strong>{{ r.label }}</strong><small>{{ r.hint }}</small></span>
+          </button>
+        </div>
       </div>
-      <div class="field">
-        <label for="nu-company">Company</label>
-        <select id="nu-company" v-model="nu.company" class="select">
-          <option :value="null">No company</option>
+      <div class="field span-2">
+        <label for="nu-company">Company<span class="req">*</span></label>
+        <select id="nu-company" v-model="nu.company" class="select" required>
+          <option :value="null" disabled>Select a company</option>
           <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
-        <span v-if="nu.role !== 'admin' && !nu.company" class="help">Dealers, managers and pilots normally belong to a company.</span>
       </div>
       <div class="field">
         <label for="nu-email">Email</label>
@@ -153,7 +156,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Users, UserPlus, UserCheck, UserX, Eye, Search, X, SlidersHorizontal, CircleAlert } from 'lucide-vue-next'
+import { Users, UserPlus, UserCheck, UserX, Eye, Search, X, SlidersHorizontal, CircleAlert, Truck, Navigation } from 'lucide-vue-next'
 import { getUsers, createUser, updateUser, getCompanies } from '../api'
 import { auth } from '../auth'
 import { fmt, fmtDateTime, relTime, roleLabel, apiError } from '../format'
@@ -206,8 +209,15 @@ const showCreate = ref(false); const msg = ref(''); const creating = ref(false)
 const blank = () => ({ username: '', password: '', role: 'dealer', company: null, email: '', phone: '' })
 const nu = ref(blank())
 function openCreate() { nu.value = blank(); msg.value = ''; showCreate.value = true }
+// New accounts are dealers or pilots only, and always belong to a company.
+const createRoles = [
+  { value: 'dealer', label: 'Dealer', hint: 'Dealer portal', icon: Truck },
+  { value: 'pilot', label: 'Pilot', hint: 'Pilot app', icon: Navigation },
+]
 async function create() {
-  msg.value = ''; creating.value = true
+  msg.value = ''
+  if (!nu.value.company) { msg.value = 'Choose the company this user belongs to.'; return }
+  creating.value = true
   try {
     await createUser({ ...nu.value, username: nu.value.username.trim() })
     showCreate.value = false
@@ -245,6 +255,21 @@ onMounted(load)
 </script>
 
 <style scoped>
+/* new-user role picker: two large options, easy to tap on phones */
+.role-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.role-opt {
+  display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 12px; text-align: left;
+  border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text);
+  font: inherit; cursor: pointer; box-shadow: none; transform: none;
+}
+.role-opt:hover { border-color: var(--muted-2); transform: none; }
+.role-opt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--brand-ring); }
+.role-opt.on { border-color: var(--brand); background: var(--brand-soft); }
+.role-opt-ic { flex: none; width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; background: var(--surface-3); color: var(--muted); }
+.role-opt.on .role-opt-ic { background: var(--brand); color: #FFFFFF; }
+.role-opt-text { display: flex; flex-direction: column; line-height: 1.25; }
+.role-opt-text strong { font-size: .9rem; }
+.role-opt-text small { font-size: .75rem; color: var(--muted); }
 .role-select { font-weight: 700; width: auto; min-width: 118px; border-color: transparent; }
 .role-select.r-admin { background-color: var(--role-admin-soft); color: var(--role-admin); }
 .role-select.r-dealer { background-color: var(--role-dealer-soft); color: var(--role-dealer); }

@@ -15,17 +15,37 @@
         <button type="button" class="sb-close" @click="menuOpen = false" aria-label="Close menu"><X :size="20" /></button>
       </div>
 
+      <!-- collapse handle, attached to the sidebar's edge (desktop) -->
+      <button
+        type="button" class="sb-handle" @click="collapsed = !collapsed"
+        :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+      >
+        <component :is="collapsed ? ChevronRight : ChevronLeft" :size="16" />
+      </button>
+
       <nav class="sb-nav">
-        <div v-for="g in navGroups" :key="g.key" class="sb-group">
-          <div class="sb-group-label">{{ g.label }}</div>
-          <router-link
-            v-for="item in g.items" :key="item.to" :to="item.to" class="sb-link"
-            :title="collapsed ? item.label : undefined" @click="menuOpen = false"
+        <section
+          v-for="g in navGroups" :key="g.key" class="sb-sec"
+          :class="{ open: isOpen(g), current: hasActive(g) }" :style="{ '--sec': g.color }"
+        >
+          <button
+            type="button" class="sb-sec-head" :aria-expanded="isOpen(g)"
+            :aria-controls="'sec-' + g.key" @click="toggleSection(g)"
           >
-            <component :is="item.icon" :size="18" />
-            <span class="label">{{ item.label }}</span>
-          </router-link>
-        </div>
+            <span class="sb-sec-ic"><component :is="g.icon" :size="16" /></span>
+            <span class="sb-sec-label">{{ g.label }}</span>
+            <ChevronDown class="sb-sec-chev" :size="16" />
+          </button>
+          <div v-show="rail || isOpen(g)" :id="'sec-' + g.key" class="sb-sec-items">
+            <router-link
+              v-for="item in g.items" :key="item.to" :to="item.to" class="sb-link"
+              :title="collapsed ? item.label : undefined" @click="menuOpen = false"
+            >
+              <component :is="item.icon" :size="17" />
+              <span class="label">{{ item.label }}</span>
+            </router-link>
+          </div>
+        </section>
       </nav>
 
       <div class="sb-foot">
@@ -40,12 +60,6 @@
     <div class="main-col">
       <header class="topbar">
         <button type="button" class="tb-btn tb-menu" @click="menuOpen = true" aria-label="Open menu"><Menu :size="22" /></button>
-        <button
-          type="button" class="tb-btn sb-collapse" @click="collapsed = !collapsed"
-          :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-        >
-          <component :is="collapsed ? PanelLeftOpen : PanelLeftClose" :size="18" />
-        </button>
         <nav class="crumbs" aria-label="Breadcrumb">
           <template v-if="current.group">
             <span class="c-group">{{ current.group }}</span>
@@ -55,14 +69,6 @@
         </nav>
         <div class="tb-spacer"></div>
         <div class="tb-right">
-          <button
-            type="button" class="tb-btn" @click="toggleTheme"
-            :title="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
-            :aria-label="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
-          >
-            <Sun v-if="theme === 'dark'" :size="18" />
-            <Moon v-else :size="18" />
-          </button>
           <div class="user-menu" ref="userMenuEl">
             <button
               type="button" class="user-trigger" @click="userMenu = !userMenu"
@@ -77,10 +83,6 @@
                 <strong>{{ username }}</strong>
                 <small>Platform administrator</small>
               </div>
-              <button type="button" class="menu-item" role="menuitem" @click="toggleTheme(); userMenu = false">
-                <component :is="theme === 'dark' ? Sun : Moon" :size="16" />
-                {{ theme === 'dark' ? 'Light theme' : 'Dark theme' }}
-              </button>
               <button type="button" class="menu-item" role="menuitem" @click="askLogoutAll">
                 <MonitorSmartphone :size="16" /> Sign out of all devices
               </button>
@@ -122,12 +124,12 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { motion, AnimatePresence } from 'motion-v'
 import {
-  Menu, X, Users, KeyRound, Activity, Sun, Moon, ChevronDown, ChevronRight, LogOut,
-  Building2, ChartColumn, Radar, Cpu, ScrollText, ShieldAlert, ChartLine,
-  PanelLeftClose, PanelLeftOpen, MonitorSmartphone,
+  Menu, X, Users, UsersRound, Activity, ChevronDown, ChevronLeft, ChevronRight, LogOut,
+  Building2, ChartColumn, Radar, Cpu, ScrollText, ShieldAlert, ChartLine, Truck, Server,
+  MonitorSmartphone,
 } from 'lucide-vue-next'
 import { auth, justLoggedIn, logout as endSession, logoutEverywhere } from './auth'
-import { useTheme } from './theme'
+import './theme'  // pins the light theme
 import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
 import PageSkeleton from './components/PageSkeleton.vue'
@@ -162,7 +164,6 @@ const userMenu = ref(false)
 const userMenuEl = ref(null)
 const collapsed = ref(localStorage.getItem('fgx-admin-sidebar-collapsed') === '1')
 watch(collapsed, (v) => localStorage.setItem('fgx-admin-sidebar-collapsed', v ? '1' : '0'))
-const { theme, toggleTheme } = useTheme()
 const reduced = typeof window !== 'undefined' && window.matchMedia
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
   : false
@@ -201,41 +202,64 @@ async function logoutAll() {
 
 const navGroups = [
   {
-    key: 'company', label: 'Companies',
+    key: 'company', label: 'Companies', icon: Building2, color: '#F97316',
     items: [
       { to: '/companies', label: 'Companies', icon: Building2 },
       { to: '/company-analytics', label: 'Company Analytics', icon: ChartColumn },
     ],
   },
   {
-    key: 'user', label: 'Users & Access',
+    key: 'user', label: 'Users & Access', icon: UsersRound, color: '#38BDF8',
     items: [
       { to: '/users', label: 'Users', icon: Users },
-      { to: '/roles', label: 'Role Management', icon: KeyRound },
     ],
   },
   {
-    key: 'fleet', label: 'Fleet & Devices',
+    key: 'fleet', label: 'Fleet & Devices', icon: Truck, color: '#34D399',
     items: [
       { to: '/fleet-monitoring', label: 'Fleet Overview', icon: Radar },
       { to: '/devices', label: 'Devices', icon: Cpu },
     ],
   },
   {
-    key: 'security', label: 'Security & Analytics',
+    key: 'security', label: 'Security & Analytics', icon: ShieldAlert, color: '#FB7185',
     items: [
       { to: '/security-analytics', label: 'Fraud & Theft Alerts', icon: ShieldAlert },
       { to: '/reports', label: 'Global Reports', icon: ChartLine },
     ],
   },
   {
-    key: 'platform', label: 'Platform',
+    key: 'platform', label: 'Platform', icon: Server, color: '#FBBF24',
     items: [
       { to: '/platform', label: 'Platform Health', icon: Activity },
       { to: '/platform-logs', label: 'Audit & Error Logs', icon: ScrollText },
     ],
   },
 ]
+
+// ---- collapsible sidebar sections: remembered per browser; the section of the
+// current page always opens so the active link is never hidden.
+const OPEN_KEY = 'fgx-admin-nav-open'
+const openSections = ref((() => {
+  try { return JSON.parse(localStorage.getItem(OPEN_KEY)) || [] } catch (e) { return [] }
+})())
+const inGroup = (g) => g.items.some((i) => route.path === i.to || route.path.startsWith(i.to + '/'))
+const hasActive = (g) => inGroup(g) || (g.key === 'user' && route.path.startsWith('/users/'))
+const isOpen = (g) => openSections.value.includes(g.key)
+// The icon rail only exists on desktop; below 960px the sidebar is a drawer.
+const desktopMq = typeof matchMedia !== 'undefined' ? matchMedia('(min-width: 961px)') : null
+const isDesktop = ref(desktopMq ? desktopMq.matches : true)
+desktopMq?.addEventListener('change', (e) => { isDesktop.value = e.matches })
+const rail = computed(() => collapsed.value && isDesktop.value)
+function toggleSection(g) {
+  if (rail.value) { collapsed.value = false; if (!isOpen(g)) openSections.value.push(g.key); return }
+  openSections.value = isOpen(g) ? openSections.value.filter((k) => k !== g.key) : [...openSections.value, g.key]
+}
+watch(openSections, (v) => { try { localStorage.setItem(OPEN_KEY, JSON.stringify(v)) } catch (e) { /* storage blocked */ } }, { deep: true })
+watch(() => route.path, () => {
+  const g = navGroups.find(hasActive)
+  if (g && !isOpen(g)) openSections.value = [...openSections.value, g.key]
+}, { immediate: true })
 
 const current = computed(() => {
   if (route.path.startsWith('/users/') && route.path.endsWith('/permissions')) {

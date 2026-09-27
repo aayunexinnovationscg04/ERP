@@ -7,7 +7,6 @@ import { auth, sessionReady, setSessionEndHandler } from './auth'
 // as a hung/slow sign-in on a real mobile connection.
 const Login = () => import('./views/Login.vue')
 const Users = () => import('./views/Users.vue')
-const Roles = () => import('./views/Roles.vue')
 const UserPermissions = () => import('./views/UserPermissions.vue')
 const Platform = () => import('./views/Platform.vue')
 const Companies = () => import('./views/Companies.vue')
@@ -21,11 +20,11 @@ const Reports = () => import('./views/Reports.vue')
 const routes = [
   { path: '/login', component: Login, meta: { public: true } },
   { path: '/', redirect: '/companies' }, // Companies: first item of the first sidebar group
+  { path: '/:pathMatch(.*)*', redirect: '/' }, // removed or unknown pages (e.g. old /roles links)
   { path: '/companies', component: Companies },
   { path: '/company-analytics', component: CompanyAnalytics },
   { path: '/users', component: Users },
   { path: '/users/:id/permissions', component: UserPermissions, props: true },
-  { path: '/roles', component: Roles },
   { path: '/fleet-monitoring', component: FleetMonitoring },
   { path: '/devices', component: Devices },
   { path: '/platform', component: Platform },

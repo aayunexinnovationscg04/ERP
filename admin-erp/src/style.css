@@ -169,11 +169,37 @@ input[type=checkbox], input[type=radio] { width: 16px; height: 16px; accent-colo
 .sb-close:hover { background: var(--navy-800); color: #fff; }
 
 .sb-nav { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 10px 16px; scrollbar-width: thin; scrollbar-color: var(--navy-700) transparent; }
-.sb-group + .sb-group { margin-top: 14px; }
-.sb-group-label {
-  padding: 0 10px 6px; font-size: .6875rem; font-weight: 700; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--sb-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+/* ---- sections: header (colour-coded icon, label, count, chevron) + its pages */
+.sb-sec { border-radius: 10px; }
+.sb-sec + .sb-sec { margin-top: 6px; }
+.sb-sec.open { background: rgba(255,255,255,.025); }
+.sb-sec-head {
+  width: 100%; display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 0 8px;
+  border: 0; border-radius: 10px; background: transparent; color: var(--sb-text);
+  font: inherit; font-size: .8125rem; font-weight: 700; letter-spacing: .01em; text-align: left; cursor: pointer;
+  box-shadow: none; transform: none;
 }
+.sb-sec-head:hover { background: var(--navy-800); color: var(--sb-strong); transform: none; }
+.sb-sec-head:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--flame-500); }
+.sb-sec-ic {
+  flex: none; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+  background: var(--navy-800); color: var(--sec); border: 1px solid rgba(255,255,255,.06);
+}
+.sb-sec.current .sb-sec-ic { background: var(--sec); color: var(--navy-900); border-color: transparent; }
+.sb-sec-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-sec.current .sb-sec-label { color: var(--sb-strong); }
+.sb-sec-count {
+  flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+  display: grid; place-items: center; font-size: .6875rem; font-weight: 700;
+  background: var(--navy-800); color: var(--sb-dim);
+}
+.sb-sec-chev { flex: none; color: var(--sb-dim); transition: transform var(--dur) var(--ease); }
+.sb-sec.open .sb-sec-chev { transform: rotate(180deg); }
+.sb-sec-items {
+  position: relative; margin: 2px 0 0 22px; padding: 2px 0 8px 12px;
+  border-left: 1px solid var(--navy-700);
+}
+
 .sb-link {
   position: relative; display: flex; align-items: center; gap: 11px;
   min-height: 38px; padding: 0 10px; border-radius: var(--radius-sm);
@@ -187,7 +213,7 @@ input[type=checkbox], input[type=radio] { width: 16px; height: 16px; accent-colo
 .sb-link:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--flame-500); }
 .sb-link.router-link-active { background: var(--navy-800); color: var(--sb-strong); }
 .sb-link.router-link-active::before {
-  content: ""; position: absolute; left: -10px; top: 7px; bottom: 7px; width: 3px;
+  content: ""; position: absolute; left: -13px; top: 7px; bottom: 7px; width: 3px;
   border-radius: 0 3px 3px 0; background: var(--flame-500);
 }
 .sb-link.router-link-active svg { color: var(--flame-500); }
@@ -211,12 +237,26 @@ input[type=checkbox], input[type=radio] { width: 16px; height: 16px; accent-colo
 .sb-icon-btn:hover { background: var(--navy-800); color: var(--sb-strong); }
 .sb-icon-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--flame-500); }
 
+/* collapse handle attached to the sidebar's right edge (desktop only) */
+.sb-handle {
+  position: absolute; top: 76px; right: -13px; z-index: 2;
+  width: 26px; height: 26px; padding: 0; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer;
+  background: var(--navy-900); color: var(--sb-text); border: 1px solid var(--navy-700);
+  box-shadow: 0 2px 6px rgba(15, 27, 45, .25); transform: none;
+}
+.sb-handle:hover { background: var(--flame-600); border-color: var(--flame-600); color: #FFFFFF; transform: none; }
+.sb-handle:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--brand-ring); }
+
 /* collapsed icon rail (desktop) */
 .app.collapsed .sb-brand { justify-content: center; padding: 0; }
-.app.collapsed .sb-name, .app.collapsed .sb-group-label, .app.collapsed .sb-link .label,
-.app.collapsed .sb-user-text { display: none; }
+.app.collapsed .sb-name, .app.collapsed .sb-link .label,
+.app.collapsed .sb-user-text, .app.collapsed .sb-sec-head { display: none; }
+.app.collapsed .sb-sec { background: transparent; }
+.app.collapsed .sb-sec-items { margin: 0; padding: 0; border-left: 0; }
 .app.collapsed .sb-link { justify-content: center; padding: 0; min-height: 42px; }
-.app.collapsed .sb-group + .sb-group { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.07); }
+.app.collapsed .sb-link.router-link-active::before { left: -10px; }
+.app.collapsed .sb-sec + .sb-sec { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.07); }
 .app.collapsed .sb-foot { flex-direction: column; padding: 12px 8px; }
 .app.collapsed .sb-user { justify-content: center; padding: 0; }
 
@@ -577,16 +617,17 @@ tr.group-row:hover { background: transparent; }
   .scrim.show { opacity: 1; pointer-events: auto; }
   /* the icon rail is a desktop concept: the drawer always shows full labels */
   .app.collapsed .sb-brand { justify-content: flex-start; padding: 0 16px; }
-  .app.collapsed .sb-name, .app.collapsed .sb-group-label, .app.collapsed .sb-user-text { display: flex; }
-  .app.collapsed .sb-group-label { display: block; }
+  .app.collapsed .sb-name, .app.collapsed .sb-user-text, .app.collapsed .sb-sec-head { display: flex; }
+  .app.collapsed .sb-sec-items { margin: 2px 0 0 22px; padding: 2px 0 8px 12px; border-left: 1px solid var(--navy-700); }
+  .app.collapsed .sb-link.router-link-active::before { left: -13px; }
   .app.collapsed .sb-link .label { display: inline; }
   .app.collapsed .sb-link { justify-content: flex-start; padding: 0 10px; }
-  .app.collapsed .sb-group + .sb-group { border-top: 0; padding-top: 0; margin-top: 14px; }
+  .app.collapsed .sb-sec + .sb-sec { border-top: 0; padding-top: 0; margin-top: 6px; }
   .app.collapsed .sb-foot { flex-direction: row; padding: 12px 10px; }
   .app.collapsed .sb-user { justify-content: flex-start; padding: 0 4px; }
   .sb-close { display: inline-flex; }
   .sb-link { min-height: 44px; }
-  .sb-collapse { display: none; }
+  .sb-handle { display: none; }
   .tb-menu { display: inline-flex; color: var(--text); }
   .tb-brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
   .tb-brand .sb-logo { width: 30px; height: 30px; background: #FFFFFF; }
