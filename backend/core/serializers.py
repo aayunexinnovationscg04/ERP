@@ -1,3 +1,5 @@
+import re
+
 from rest_framework import serializers
 
 from .models import Company, User
@@ -32,6 +34,31 @@ class AdminUserSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "email", "role", "phone", "company",
                   "company_name", "is_active", "can_edit", "password", "last_login"]
         read_only_fields = ["last_login"]
+
+    # Admin console rules: new accounts are dealers or pilots and need a phone
+    # number; a role is fixed once the account exists; the admin may set a new
+    # password at any time (no old password needed).
+    CREATABLE_ROLES = (User.Role.DEALER, User.Role.PILOT)
+
+    def validate_phone(self, value):
+        value = (value or "").strip()
+        if value and not re.fullmatch(r"\+?[0-9][0-9 \-]{8,18}[0-9]", value):
+            raise serializers.ValidationError("Enter a valid phone number (10–15 digits).")
+        return value
+
+    def validate(self, attrs):
+        if self.instance is None:
+            if attrs.get("role", User.Role.DEALER) not in self.CREATABLE_ROLES:
+                raise serializers.ValidationError({"role": "New accounts must be a dealer or a pilot."})
+            if not attrs.get("phone"):
+                raise serializers.ValidationError({"phone": "Phone number is required."})
+            if not attrs.get("password"):
+                raise serializers.ValidationError({"password": "Password is required."})
+        elif "role" in attrs and attrs["role"] != self.instance.role:
+            raise serializers.ValidationError({"role": "A user's role can't be changed."})
+        if "password" in attrs and attrs["password"] and len(attrs["password"]) < 8:
+            raise serializers.ValidationError({"password": "Use at least 8 characters."})
+        return attrs
 
     def create(self, validated):
         pwd = validated.pop("password", None)

@@ -104,7 +104,7 @@ class AdminRbacTests(ApiBase):
     def test_admin_creates_user(self):
         c = self.client_for("sa", "SaPass1234")
         r = c.post("/api/admin/users/",
-                   {"username": "newplt", "password": "NewDrvPass99",
+                   {"username": "newplt", "password": "NewDrvPass99", "phone": "+91 98765 43210",
                     "role": "pilot", "company": self.c1.id}, format="json")
         self.assertIn(r.status_code, (200, 201), r.content)
         self.assertTrue(User.objects.filter(username="newplt").exists())
@@ -378,10 +378,10 @@ class TokenSessionTests(ApiBase):
         self.assertEqual(c.get("/api/auth/me").status_code, 401)
         self.assertEqual(self.refresh(c, "dealer").status_code, 401)
 
-    def test_role_change_by_admin_kills_sessions(self):
+    def test_company_change_by_admin_kills_sessions(self):
         c, r = self.login("dealer1", "OwnPass1234")
         admin = self.client_for("sa", "SaPass1234")
-        admin.patch(f"/api/admin/users/{self.dealer1.pk}/", {"role": "pilot"}, format="json")
+        admin.patch(f"/api/admin/users/{self.dealer1.pk}/", {"company": self.c2.id}, format="json")
         c.credentials(HTTP_AUTHORIZATION="Bearer " + r.data["access"])
         self.assertEqual(c.get("/api/auth/me").status_code, 401)
 
@@ -517,3 +517,38 @@ class ViewAsTests(ApiBase):
         c = APIClient(); c.credentials(HTTP_AUTHORIZATION="Bearer " + v.data["access"])
         User.objects.filter(pk=self.sa.pk).update(is_active=False)
         self.assertEqual(c.get("/api/vehicles/").status_code, 401)
+
+
+class AdminUserRulesTests(ApiBase):
+    """Admin console user rules: dealer/pilot only, phone required, role fixed, password reset."""
+
+    def admin(self):
+        return self.client_for("sa", "SaPass1234")
+
+    def test_phone_required_and_only_dealer_or_pilot(self):
+        c = self.admin()
+        base = {"username": "nu1", "password": "GoodPass123", "company": self.c1.id}
+        self.assertEqual(c.post("/api/admin/users/", {**base, "role": "pilot"}, format="json").status_code, 400)
+        r = c.post("/api/admin/users/", {**base, "role": "admin", "phone": "9876543210"}, format="json")
+        self.assertEqual(r.status_code, 400)
+        r = c.post("/api/admin/users/", {**base, "role": "dealer", "phone": "abc"}, format="json")
+        self.assertEqual(r.status_code, 400)
+        r = c.post("/api/admin/users/", {**base, "role": "dealer", "phone": "9876543210"}, format="json")
+        self.assertEqual(r.status_code, 201, r.content)
+
+    def test_role_cannot_change(self):
+        r = self.admin().patch(f"/api/admin/users/{self.dealer1.pk}/", {"role": "pilot"}, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.dealer1.refresh_from_db()
+        self.assertEqual(self.dealer1.role, "dealer")
+
+    def test_admin_resets_password_without_old_one(self):
+        c, r = self.login("dealer1", "OwnPass1234")
+        c.credentials(HTTP_AUTHORIZATION="Bearer " + r.data["access"])
+        r = self.admin().patch(f"/api/admin/users/{self.dealer1.pk}/", {"password": "BrandNew123"}, format="json")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(c.get("/api/auth/me").status_code, 401)          # signed out everywhere
+        _, r = self.login("dealer1", "BrandNew123")
+        self.assertEqual(r.status_code, 200)
+        r = self.admin().patch(f"/api/admin/users/{self.dealer1.pk}/", {"password": "short"}, format="json")
+        self.assertEqual(r.status_code, 400)

@@ -111,9 +111,9 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { motion, AnimatePresence } from 'motion-v'
 import {
-  Menu, X, Users, Activity, ChevronDown, ChevronRight, LogOut,
+  Menu, X, Activity, ChevronDown, ChevronRight, LogOut,
   Building2, ChartColumn, Radar, Cpu, ScrollText, ShieldAlert, ChartLine,
-  MonitorSmartphone, PanelLeftClose, PanelLeftOpen, RadioTower,
+  MonitorSmartphone, PanelLeftClose, PanelLeftOpen, RadioTower, Truck, Navigation,
 } from 'lucide-vue-next'
 import { auth, justLoggedIn, logout as endSession, logoutEverywhere } from './auth'
 import './theme'  // pins the light theme
@@ -198,7 +198,8 @@ const navGroups = [
   {
     key: 'user', label: 'Users & Access',
     items: [
-      { to: '/users', label: 'Users', icon: Users },
+      { to: '/dealers', label: 'Dealers', icon: Truck },
+      { to: '/pilots', label: 'Pilots', icon: Navigation },
     ],
   },
   {

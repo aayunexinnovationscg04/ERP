@@ -1,13 +1,13 @@
 <template>
-  <PageHeader :icon="Users" title="Users" description="Accounts for every portal. Change roles and companies inline. Use View as to open a dealer's or pilot's portal exactly as they see it (view only).">
-    <button type="button" class="btn btn-primary" @click="openCreate"><UserPlus :size="16" /> New user</button>
+  <PageHeader>
+    <button type="button" class="btn btn-primary" @click="openCreate"><UserPlus :size="16" /> New {{ kindLabel.toLowerCase() }}</button>
   </PageHeader>
 
   <div class="stats">
-    <StatCard label="Total users" :value="fmt(users.length)" :icon="Users" tone="navy" :loading="loading" />
-    <StatCard label="Active accounts" :value="fmt(activeCount)" :icon="UserCheck" tone="green" :loading="loading" />
-    <StatCard label="Disabled" :value="fmt(users.length - activeCount)" :icon="UserX" :tone="users.length - activeCount ? 'amber' : 'navy'" :loading="loading" />
-    <StatCard label="Read-only accounts" :value="fmt(readOnlyCount)" :icon="Eye" tone="info" :loading="loading" sub="Non-admins without edit rights" />
+    <StatCard :label="kindLabel + 's'" :value="fmt(people.length)" :icon="kindIcon" tone="navy" :loading="loading" />
+    <StatCard label="Active" :value="fmt(activeCount)" :icon="UserCheck" tone="green" :loading="loading" />
+    <StatCard label="Disabled" :value="fmt(people.length - activeCount)" :icon="UserX" :tone="people.length - activeCount ? 'amber' : 'navy'" :loading="loading" />
+    <StatCard label="View only (can't edit)" :value="fmt(readOnlyCount)" :icon="Eye" tone="info" :loading="loading" />
   </div>
 
   <div class="card">
@@ -16,10 +16,6 @@
         <Search :size="16" />
         <input v-model="q" class="input" type="search" placeholder="Search username, email or phone" aria-label="Search users" />
       </label>
-      <select v-model="roleFilter" class="select" aria-label="Filter by role">
-        <option value="">All roles</option>
-        <option v-for="r in roles" :key="r" :value="r">{{ roleLabel(r) }}</option>
-      </select>
       <select v-model="companyFilter" class="select" aria-label="Filter by company">
         <option value="">All companies</option>
         <option value="none">No company</option>
@@ -30,13 +26,13 @@
     <div class="table-wrap">
       <table class="table stack users-table">
         <thead>
-          <tr><th>User</th><th>Role</th><th>Company</th><th class="t-center">Can edit</th><th class="t-center">Active</th><th class="col-login">Last sign-in</th><th class="t-right">View</th></tr>
+          <tr><th>{{ kindLabel }}</th><th v-if="isDealers">Role</th><th>Company</th><th class="t-center">Can edit</th><th class="t-center">Active</th><th class="col-login">Last sign-in</th><th class="t-right">Actions</th></tr>
         </thead>
-        <TableSkeleton v-if="loading" :cols="7" :rows="6" />
+        <TableSkeleton v-if="loading" :cols="cols" :rows="6" />
         <tbody v-else-if="!filtered.length">
-          <tr class="table-empty"><td colspan="7">
-            <EmptyState v-if="!users.length" :icon="Users" title="No users yet" text="Create the first account to get started.">
-              <button type="button" class="btn btn-primary" @click="openCreate"><UserPlus :size="16" /> New user</button>
+          <tr class="table-empty"><td :colspan="cols">
+            <EmptyState v-if="!people.length" :icon="kindIcon" :title="`No ${kindLabel.toLowerCase()}s yet`" text="Create the first account to get started.">
+              <button type="button" class="btn btn-primary" @click="openCreate"><UserPlus :size="16" /> New {{ kindLabel.toLowerCase() }}</button>
             </EmptyState>
             <EmptyState v-else :icon="Search" title="No matching users" text="Try a different search or filter.">
               <button type="button" class="btn" @click="clearFilters">Clear filters</button>
@@ -55,28 +51,19 @@
                 </div>
               </div>
             </td>
-            <td data-label="Role">
-              <select
-                :value="u.role" class="select select-sm role-select" :class="'r-' + u.role" :disabled="isSelf(u) || busyId === u.id"
-                :title="isSelf(u) ? 'You cannot change your own role' : 'Change role'" aria-label="Role"
-                @change="patch(u, { role: $event.target.value }, 'Role updated')"
-              >
-                <option v-for="r in roles" :key="r" :value="r">{{ roleLabel(r) }}</option>
-              </select>
-            </td>
+            <td v-if="isDealers" data-label="Role"><span class="role-badge" :class="'r-' + u.role">{{ roleLabel(u.role) }}</span></td>
             <td data-label="Company">
               <select
                 :value="u.company ?? ''" class="select select-sm" :disabled="busyId === u.id" aria-label="Company"
                 @change="patch(u, { company: $event.target.value || null }, 'Company updated')"
               >
-                <option value="">No company</option>
+                <option value="" disabled>Select a company</option>
                 <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
               </select>
             </td>
             <td data-label="Can edit" class="t-center">
-              <span v-if="u.role === 'admin'" class="muted" title="Admins always have full access">Always</span>
               <ToggleSwitch
-                v-else :model-value="u.can_edit" :disabled="busyId === u.id" :aria-label="`Allow ${u.username} to edit`"
+                :model-value="u.can_edit" :disabled="busyId === u.id" :aria-label="`Allow ${u.username} to edit`"
                 @change="(v) => patch(u, { can_edit: v }, v ? 'Edit rights granted' : 'Account set to read-only')"
               />
             </td>
@@ -88,13 +75,18 @@
               />
             </td>
             <td data-label="Last sign-in" class="nowrap muted col-login" :title="u.last_login ? fmtDateTime(u.last_login) : ''">{{ relTime(u.last_login) }}</td>
-            <td data-label="View" class="t-right">
-              <button v-if="u.role !== 'admin'" type="button" class="btn btn-sm access-btn" :disabled="!u.is_active || viewingId === u.id"
-                      :title="u.is_active ? `Open ${u.username}'s portal in a new tab (view only)` : 'Account is disabled'"
-                      :aria-label="`View as ${u.username}`" @click="viewAs(u)">
-                <Eye :size="14" /> <span class="access-label">{{ viewingId === u.id ? 'Opening…' : 'View as' }}</span>
-              </button>
-              <span v-else class="muted">—</span>
+            <td data-label="Actions" class="t-right">
+              <div class="row-actions">
+                <button type="button" class="btn btn-sm access-btn" :disabled="!u.is_active || viewingId === u.id"
+                        :title="u.is_active ? `Open ${u.username}'s portal in a new tab (view only)` : 'Account is disabled'"
+                        :aria-label="`View as ${u.username}`" @click="viewAs(u)">
+                  <Eye :size="14" /> <span class="access-label">{{ viewingId === u.id ? 'Opening…' : 'View as' }}</span>
+                </button>
+                <button type="button" class="btn btn-sm access-btn" :title="`Set a new password for ${u.username}`"
+                        :aria-label="`Reset password for ${u.username}`" @click="openReset(u)">
+                  <KeyRound :size="14" /> <span class="access-label">Password</span>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -103,7 +95,7 @@
     <Pager :pager="pager" />
   </div>
 
-  <Modal :open="showCreate" title="New user" description="The user signs in to the portal that matches their role." @close="showCreate = false">
+  <Modal :open="showCreate" :title="`New ${kindLabel.toLowerCase()}`" :description="isDealers ? 'Signs in to the Dealer portal.' : 'Signs in to the Pilot app.'" @close="showCreate = false">
     <form id="user-form" class="form-grid" autocomplete="off" @submit.prevent="create">
       <div class="field">
         <label for="nu-username">Username<span class="req">*</span></label>
@@ -114,16 +106,6 @@
         <input id="nu-password" v-model="nu.password" class="input" type="password" required autocomplete="new-password" />
       </div>
       <div class="field span-2">
-        <span class="field-label" id="nu-role-label">Role<span class="req">*</span></span>
-        <div class="role-pick" role="radiogroup" aria-labelledby="nu-role-label">
-          <button v-for="r in createRoles" :key="r.value" type="button" class="role-opt" :class="{ on: nu.role === r.value }"
-                  role="radio" :aria-checked="nu.role === r.value" @click="nu.role = r.value">
-            <span class="role-opt-ic"><component :is="r.icon" :size="18" /></span>
-            <span class="role-opt-text"><strong>{{ r.label }}</strong><small>{{ r.hint }}</small></span>
-          </button>
-        </div>
-      </div>
-      <div class="field span-2">
         <label for="nu-company">Company<span class="req">*</span></label>
         <select id="nu-company" v-model="nu.company" class="select" required>
           <option :value="null" disabled>Select a company</option>
@@ -131,19 +113,42 @@
         </select>
       </div>
       <div class="field">
-        <label for="nu-email">Email</label>
-        <input id="nu-email" v-model="nu.email" class="input" type="email" autocomplete="off" placeholder="Optional" />
+        <label for="nu-phone">Phone<span class="req">*</span></label>
+        <input id="nu-phone" v-model="nu.phone" class="input" type="tel" inputmode="tel" autocomplete="off" required placeholder="10-digit mobile number" />
       </div>
       <div class="field">
-        <label for="nu-phone">Phone</label>
-        <input id="nu-phone" v-model="nu.phone" class="input" type="tel" autocomplete="off" placeholder="Optional" />
+        <label for="nu-email">Email</label>
+        <input id="nu-email" v-model="nu.email" class="input" type="email" autocomplete="off" placeholder="Optional" />
       </div>
       <div v-if="msg" class="form-error span-2"><CircleAlert :size="16" /> {{ msg }}</div>
     </form>
     <template #footer>
       <button type="button" class="btn" @click="showCreate = false">Cancel</button>
-      <button type="submit" form="user-form" class="btn btn-primary" :disabled="creating || !nu.username || !nu.password">
-        {{ creating ? 'Creating…' : 'Create user' }}
+      <button type="submit" form="user-form" class="btn btn-primary" :disabled="creating || !nu.username || !nu.password || !nu.phone">
+        {{ creating ? 'Creating…' : `Create ${kindLabel.toLowerCase()}` }}
+      </button>
+    </template>
+  </Modal>
+
+  <Modal :open="!!resetting" :title="`New password for ${resetting?.username}`" description="They'll be signed out everywhere and must use the new password." size="sm" @close="resetting = null">
+    <form id="reset-form" class="form-grid" autocomplete="off" @submit.prevent="savePassword">
+      <div class="field span-2">
+        <label for="rp-password">New password<span class="req">*</span></label>
+        <div class="pw-row">
+          <input id="rp-password" v-model="newPassword" class="input" :type="showNewPw ? 'text' : 'password'" autocomplete="new-password" required minlength="8" />
+          <button type="button" class="btn" :aria-label="showNewPw ? 'Hide password' : 'Show password'" @click="showNewPw = !showNewPw">
+            <component :is="showNewPw ? EyeOff : Eye" :size="16" />
+          </button>
+          <button type="button" class="btn" title="Generate a strong password" aria-label="Generate a strong password" @click="generatePassword"><Wand2 :size="16" /></button>
+        </div>
+        <span class="help">At least 8 characters.</span>
+      </div>
+      <div v-if="resetMsg" class="form-error span-2"><CircleAlert :size="16" /> {{ resetMsg }}</div>
+    </form>
+    <template #footer>
+      <button type="button" class="btn" @click="resetting = null">Cancel</button>
+      <button type="submit" form="reset-form" class="btn btn-primary" :disabled="savingPw || newPassword.length < 8">
+        {{ savingPw ? 'Saving…' : 'Set password' }}
       </button>
     </template>
   </Modal>
@@ -159,7 +164,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Users, UserPlus, UserCheck, UserX, Eye, Search, X, CircleAlert, Truck, Navigation } from 'lucide-vue-next'
+import { Users, UserPlus, UserCheck, UserX, Eye, EyeOff, KeyRound, Wand2, Search, X, CircleAlert, Truck, Navigation } from 'lucide-vue-next'
 import { getUsers, createUser, updateUser, getCompanies, viewAsTicket } from '../api'
 import { auth } from '../auth'
 import { fmt, fmtDateTime, relTime, roleLabel, apiError } from '../format'
@@ -174,25 +179,32 @@ import ToggleSwitch from '../components/ToggleSwitch.vue'
 import Pager from '../components/Pager.vue'
 import { usePaging } from '../paging'
 
+// One page, two sections: /dealers (dealers + managers) and /pilots.
+const props = defineProps({ kind: { type: String, default: 'dealer' } })
+const isDealers = computed(() => props.kind !== 'pilot')
+const kindLabel = computed(() => (isDealers.value ? 'Dealer' : 'Pilot'))
+const kindIcon = computed(() => (isDealers.value ? Truck : Navigation))
+const kindRoles = computed(() => (isDealers.value ? ['dealer', 'manager'] : ['pilot']))
+const cols = computed(() => (isDealers.value ? 7 : 6))
+
 const route = useRoute()
-const roles = ['dealer', 'manager', 'pilot', 'admin']
 const users = ref([]); const companies = ref([])
 const loading = ref(true)
 const busyId = ref(null)
 
 const q = ref('')
-const roleFilter = ref('')
 const companyFilter = ref(route.query.company ? String(route.query.company) : '')
 watch(() => route.query.company, (c) => { companyFilter.value = c ? String(c) : '' })
-const filtersOn = computed(() => q.value || roleFilter.value || companyFilter.value)
-function clearFilters() { q.value = ''; roleFilter.value = ''; companyFilter.value = '' }
+const filtersOn = computed(() => q.value || companyFilter.value)
+function clearFilters() { q.value = ''; companyFilter.value = '' }
+watch(() => props.kind, () => { q.value = '' })
 
-const activeCount = computed(() => users.value.filter((u) => u.is_active).length)
-const readOnlyCount = computed(() => users.value.filter((u) => u.role !== 'admin' && !u.can_edit).length)
+const people = computed(() => users.value.filter((u) => kindRoles.value.includes(u.role)))
+const activeCount = computed(() => people.value.filter((u) => u.is_active).length)
+const readOnlyCount = computed(() => people.value.filter((u) => !u.can_edit).length)
 const filtered = computed(() => {
   const term = q.value.trim().toLowerCase()
-  return users.value.filter((u) => {
-    if (roleFilter.value && u.role !== roleFilter.value) return false
+  return people.value.filter((u) => {
     if (companyFilter.value === 'none' && u.company) return false
     if (companyFilter.value && companyFilter.value !== 'none' && String(u.company) !== companyFilter.value) return false
     if (term && ![u.username, u.email, u.phone].some((f) => (f || '').toLowerCase().includes(term))) return false
@@ -211,26 +223,44 @@ async function load() {
 
 // ---- create ----
 const showCreate = ref(false); const msg = ref(''); const creating = ref(false)
-const blank = () => ({ username: '', password: '', role: 'dealer', company: null, email: '', phone: '' })
+// The section decides the role (Dealers -> dealer, Pilots -> pilot); company and phone are required.
+const blank = () => ({ username: '', password: '', role: isDealers.value ? 'dealer' : 'pilot', company: null, email: '', phone: '' })
 const nu = ref(blank())
 function openCreate() { nu.value = blank(); msg.value = ''; showCreate.value = true }
-// New accounts are dealers or pilots only, and always belong to a company.
-const createRoles = [
-  { value: 'dealer', label: 'Dealer', hint: 'Dealer portal', icon: Truck },
-  { value: 'pilot', label: 'Pilot', hint: 'Pilot app', icon: Navigation },
-]
 async function create() {
   msg.value = ''
-  if (!nu.value.company) { msg.value = 'Choose the company this user belongs to.'; return }
+  if (!nu.value.company) { msg.value = 'Choose the company this account belongs to.'; return }
+  if (!/^\+?[0-9][0-9 -]{8,18}[0-9]$/.test(nu.value.phone.trim())) { msg.value = 'Enter a valid phone number (10–15 digits).'; return }
   creating.value = true
   try {
     await createUser({ ...nu.value, username: nu.value.username.trim() })
     showCreate.value = false
-    toast.success(`User ${nu.value.username} created`)
+    toast.success(`${kindLabel.value} ${nu.value.username} created`)
     await load()
   } catch (e) {
     msg.value = apiError(e, 'Could not create the user.')
   } finally { creating.value = false }
+}
+
+// ---- password reset: the admin sets a new one, no old password needed ----
+const resetting = ref(null); const newPassword = ref(''); const showNewPw = ref(false)
+const savingPw = ref(false); const resetMsg = ref('')
+function openReset(u) { resetting.value = u; newPassword.value = ''; showNewPw.value = false; resetMsg.value = '' }
+function generatePassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+  const bytes = crypto.getRandomValues(new Uint8Array(12))
+  newPassword.value = Array.from(bytes, (b) => chars[b % chars.length]).join('')
+  showNewPw.value = true
+}
+async function savePassword() {
+  resetMsg.value = ''; savingPw.value = true
+  try {
+    await updateUser(resetting.value.id, { password: newPassword.value })
+    toast.success(`Password updated for ${resetting.value.username}`)
+    resetting.value = null
+  } catch (e) {
+    resetMsg.value = apiError(e, 'Could not update the password.')
+  } finally { savingPw.value = false }
 }
 
 // ---- view as: open the user's own portal in a new tab, read-only ----
@@ -289,43 +319,31 @@ const pagedRows = pager.rows
 </script>
 
 <style scoped>
-/* new-user role picker: two large options, easy to tap on phones */
-.role-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.role-opt {
-  display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 12px; text-align: left;
-  border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text);
-  font: inherit; cursor: pointer; box-shadow: none; transform: none;
-}
-.role-opt:hover { border-color: var(--muted-2); transform: none; }
-.role-opt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--brand-ring); }
-.role-opt.on { border-color: var(--brand); background: var(--brand-soft); }
-.role-opt-ic { flex: none; width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; background: var(--surface-3); color: var(--muted); }
-.role-opt.on .role-opt-ic { background: var(--brand); color: #FFFFFF; }
-.role-opt-text { display: flex; flex-direction: column; line-height: 1.25; }
-.role-opt-text strong { font-size: .9rem; }
-.role-opt-text small { font-size: .75rem; color: var(--muted); }
-.role-select { font-weight: 700; width: auto; min-width: 118px; border-color: transparent; }
-.role-select.r-admin { background-color: var(--role-admin-soft); color: var(--role-admin); }
-.role-select.r-dealer { background-color: var(--role-dealer-soft); color: var(--role-dealer); }
-.role-select.r-manager { background-color: var(--role-manager-soft); color: var(--role-manager); }
-.role-select.r-pilot { background-color: var(--role-pilot-soft); color: var(--role-pilot); }
-.role-select:disabled { opacity: 1; cursor: default; background-image: none; padding-right: 10px; }
-.users-table td .select-sm:not(.role-select) { width: auto; min-width: 150px; max-width: 200px; }
+/* read-only role badge (roles can't be changed) */
+.role-badge { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+.role-badge.r-dealer { background: var(--role-dealer-soft); color: var(--role-dealer); }
+.role-badge.r-manager { background: var(--role-manager-soft); color: var(--role-manager); }
+.role-badge.r-pilot { background: var(--role-pilot-soft); color: var(--role-pilot); }
+.row-actions { display: inline-flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
+.pw-row { display: flex; gap: 6px; }
+.pw-row .input { flex: 1; min-width: 0; }
+.pw-row .btn { flex: none; width: 44px; padding: 0; justify-content: center; }
+.users-table td .select-sm { width: auto; min-width: 150px; max-width: 200px; }
 .login-inline { display: none; }
 @media (max-width: 1180px) and (min-width: 721px) {
   .users-table .col-login { display: none; }
   .login-inline { display: block; }
-  .users-table td .select-sm:not(.role-select) { min-width: 0; max-width: 150px; }
-  .role-select { min-width: 104px; }
+  .users-table td .select-sm { min-width: 0; max-width: 150px; }
 }
-@media (max-width: 1320px) and (min-width: 721px) {
+@media (max-width: 1480px) and (min-width: 721px) {
   .users-table .access-label { display: none; }
   .users-table .access-btn { width: 36px; padding: 0; }
   .users-table th, .users-table td { padding-left: 12px; padding-right: 12px; }
 }
 .row-off .t-primary { color: var(--muted); }
 @media (max-width: 720px) {
-  .users-table td .select-sm:not(.role-select), .users-table td .role-select { min-width: 0; width: 100%; max-width: 100%; }
+  .users-table td .select-sm { min-width: 0; width: 100%; max-width: 100%; }
+  .row-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
   .users-table .access-btn { width: 100%; justify-content: center; min-height: 40px; }
 }
 </style>

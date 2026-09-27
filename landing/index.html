@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Fuel Guard X — Choose your portal</title>
+<title>Choose your portal | Fuel Guard X | AAYUNEX INNOVATIONS OPC Pvt Ltd.</title>
 <meta name="description" content="Sign in to Fuel Guard X by AAYUNEX INNOVATIONS OPC Pvt Ltd. — Dealer Portal for fleet owners, Pilot App for drivers." />
 <meta name="theme-color" content="#0B1F33" />
 <link rel="icon" type="image/png" href="/assets/aayunex-logo.png" />
@@ -44,8 +44,8 @@
   .wrap { width: 100%; max-width: 1040px; margin: 0 auto; }
   .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 0; }
   .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-  .brand-mark { width: 42px; height: 42px; border-radius: 10px; background: #FFFFFF; display: grid; place-items: center; flex: none; }
-  .brand-mark img { width: 32px; height: 32px; object-fit: contain; }
+  .brand-mark { width: 52px; height: 52px; border-radius: 12px; background: #FFFFFF; display: grid; place-items: center; flex: none; }
+  .brand-mark img { width: 46px; height: 46px; object-fit: contain; }
   .brand strong { display: block; font-size: 1.05rem; font-weight: 800; color: #FFFFFF; letter-spacing: -.01em; }
   .brand small { display: block; font-size: .78rem; color: #94A6BD; }
   .site-link { font-size: .86rem; font-weight: 600; color: #B6C3D4; text-decoration: none; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--navy-700); }
@@ -81,16 +81,29 @@
   .card:hover .open { background: var(--flame-strong); }
   .host { margin: -8px 0 0; text-align: center; font-size: .8rem; color: var(--muted); }
 
-  footer { padding: 28px 16px calc(24px + env(safe-area-inset-bottom)); }
-  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; font-size: .84rem; color: var(--muted); }
-  footer a { color: var(--muted); font-weight: 600; text-decoration: none; }
-  footer a:hover { color: var(--flame); }
 
   @media (max-width: 760px) {
     .cards { grid-template-columns: 1fr; gap: 16px; }
     .site-link { display: none; }
     .band { padding-bottom: 100px; }
     main { margin-top: -72px; }
+  }
+  /* Laptop screens at 100% zoom (e.g. 1366x657, 1536x730): keep the whole page,
+     footer included, inside one screen without scrolling. */
+  @media (min-width: 761px) and (max-height: 820px) {
+    .top { padding: 12px 0; }
+    .hero { padding-top: 14px; }
+    .eyebrow { margin-bottom: 8px; }
+    h1 { font-size: clamp(1.9rem, 1.2rem + 1.6vw, 2.5rem); }
+    .lead { margin-top: 8px; font-size: .95rem; }
+    .band { padding-bottom: 92px; }
+    main { margin-top: -72px; }
+    .card { gap: 12px; padding: 20px 24px; }
+    .icon { width: 46px; height: 46px; }
+    .card p.desc { font-size: .9rem; line-height: 1.5; }
+    .card ul { gap: 6px; }
+    .open { height: 44px; }
+    .host { margin-top: -4px; }
   }
   @media (prefers-reduced-motion: reduce) { .card, .card:hover { transition: none; transform: none; } }
 </style>
@@ -100,7 +113,7 @@
     <div class="wrap">
       <header class="top">
         <a class="brand" href="/" aria-label="Fuel Guard X home">
-          <span class="brand-mark"><img src="/assets/aayunex-logo.png" alt="" width="32" height="32" /></span>
+          <span class="brand-mark"><img src="/assets/aayunex-logo.png" alt="AAYUNEX INNOVATIONS OPC Pvt Ltd. logo" width="46" height="46" /></span>
           <span><strong>Fuel Guard X</strong><small>by AAYUNEX INNOVATIONS OPC Pvt Ltd.</small></span>
         </a>
         <a class="site-link" href="https://aayunexinnovations.com/">aayunexinnovations.com</a>
@@ -153,11 +166,5 @@
     </div>
   </main>
 
-  <footer>
-    <div class="wrap">
-      <span>© 2025 AAYUNEX INNOVATIONS OPC Pvt Ltd. All rights reserved.</span>
-      <a href="https://aayunexinnovations.com/contact.html">Need help signing in? Contact us</a>
-    </div>
-  </footer>
 </body>
 </html>

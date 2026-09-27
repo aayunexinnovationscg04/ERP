@@ -48,7 +48,7 @@
               <span class="badge" :class="c.status === 'active' ? 'success' : 'danger'"><span class="bdot"></span>{{ c.status === 'active' ? 'Active' : 'Suspended' }}</span>
             </td>
             <td data-label="Users" class="t-right num">
-              <router-link :to="{ path: '/users', query: { company: c.id } }" class="num" title="View this company's users">{{ usersByCompany[c.id] || 0 }}</router-link>
+              <router-link :to="{ path: '/dealers', query: { company: c.id } }" class="num" title="View this company's dealers">{{ usersByCompany[c.id] || 0 }}</router-link>
             </td>
             <td data-label="Registered" class="nowrap muted">{{ fmtDate(c.created_at) }}</td>
             <td data-label="Actions" class="t-right">

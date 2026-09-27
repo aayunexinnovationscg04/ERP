@@ -23,7 +23,9 @@ const routes = [
   { path: '/:pathMatch(.*)*', redirect: '/' }, // removed or unknown pages (e.g. old /roles links)
   { path: '/companies', component: Companies },
   { path: '/company-analytics', component: CompanyAnalytics },
-  { path: '/users', component: Users },
+  { path: '/users', redirect: (to) => ({ path: '/dealers', query: to.query }) },
+  { path: '/dealers', component: Users, props: { kind: 'dealer' } },
+  { path: '/pilots', component: Users, props: { kind: 'pilot' } },
   { path: '/fleet-monitoring', component: FleetMonitoring },
   { path: '/devices', component: Devices },
   { path: '/device-data', component: DeviceData },
