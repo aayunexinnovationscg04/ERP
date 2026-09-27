@@ -39,7 +39,7 @@
           <span class="avatar">{{ initial }}</span>
           <div class="sb-user-text"><strong>{{ username }}</strong><small>Platform admin</small></div>
         </div>
-        <button type="button" class="sb-icon-btn" @click="logout" title="Sign out" aria-label="Sign out"><LogOut :size="17" /></button>
+        <button type="button" class="sb-icon-btn sb-logout" @click="logout" title="Sign out" aria-label="Sign out"><LogOut :size="17" /></button>
       </div>
     </aside>
 
@@ -113,7 +113,7 @@ import { motion, AnimatePresence } from 'motion-v'
 import {
   Menu, X, Users, Activity, ChevronDown, ChevronRight, LogOut,
   Building2, ChartColumn, Radar, Cpu, ScrollText, ShieldAlert, ChartLine,
-  MonitorSmartphone, PanelLeftClose, PanelLeftOpen,
+  MonitorSmartphone, PanelLeftClose, PanelLeftOpen, RadioTower,
 } from 'lucide-vue-next'
 import { auth, justLoggedIn, logout as endSession, logoutEverywhere } from './auth'
 import './theme'  // pins the light theme
@@ -206,6 +206,7 @@ const navGroups = [
     items: [
       { to: '/fleet-monitoring', label: 'Fleet Overview', icon: Radar },
       { to: '/devices', label: 'Devices', icon: Cpu },
+      { to: '/device-data', label: 'Device data', icon: RadioTower },
     ],
   },
   {

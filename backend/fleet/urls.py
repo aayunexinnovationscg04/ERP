@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .ingest_admin import IngestDevicesView, IngestPacketsView
 from .pilot_views import (PilotAlertsView, PilotSummaryView,
                           PilotTelemetryView, PilotTripsView,
                           PilotVehicleView)
@@ -22,4 +23,7 @@ urlpatterns = router.urls + [
     path("pilot/vehicle/telemetry", PilotTelemetryView.as_view()),
     path("pilot/trips", PilotTripsView.as_view()),
     path("pilot/alerts", PilotAlertsView.as_view()),
+    # Admin: devices reporting in and the packets they send
+    path("admin/ingest/devices", IngestDevicesView.as_view()),
+    path("admin/ingest/devices/<int:pk>/packets", IngestPacketsView.as_view()),
 ]

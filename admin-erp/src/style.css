@@ -214,6 +214,9 @@ input[type=checkbox], input[type=radio] { width: 16px; height: 16px; accent-colo
 }
 .sb-icon-btn:hover { background: var(--navy-800); color: var(--sb-strong); }
 .sb-icon-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--flame-500); }
+/* sign out: solid red */
+.sb-logout { background: var(--danger-solid); border-color: var(--danger-solid); color: #FFFFFF; }
+.sb-logout:hover { background: var(--danger-solid-hover); border-color: var(--danger-solid-hover); color: #FFFFFF; }
 
 /* collapsed icon rail (desktop): logo + toggle stacked, icons only */
 .app.collapsed .sb-brand { flex-direction: column; justify-content: center; gap: 6px; height: auto; padding: 10px 0; }
@@ -563,6 +566,7 @@ tr.group-row:hover { background: transparent; }
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg);
 }
 .modal.sm { max-width: 420px; }
+.modal.lg { max-width: 760px; }
 .modal-head { display: flex; align-items: flex-start; gap: 12px; padding: 18px 20px 14px; border-bottom: 1px solid var(--border); }
 .modal-head h2 { font-size: 1.05rem; font-weight: 800; }
 .modal-head p { font-size: .8125rem; color: var(--muted); margin-top: 3px; }

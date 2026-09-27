@@ -40,6 +40,9 @@ export const updateCompany = (id, body) => api.patch(`/admin/companies/${id}/`, 
 export const getUsers = (params = {}) => list('/admin/users/', params)
 export const createUser = (body) => api.post('/admin/users/', body).then((r) => r.data)
 export const updateUser = (id, body) => api.patch(`/admin/users/${id}/`, body).then((r) => r.data)
+// Device data: devices reporting through the receiver, and their packets.
+export const getIngestDevices = () => api.get('/admin/ingest/devices').then((r) => r.data)
+export const getIngestPackets = (id, limit = 50) => api.get(`/admin/ingest/devices/${id}/packets`, { params: { limit } }).then((r) => r.data)
 // One-time ticket to open a user's portal in a new tab, view-only.
 export const viewAsTicket = (id) => api.post(`/admin/users/${id}/view-as/`).then((r) => r.data)
 export const getHealth = () => api.get('/admin/health').then((r) => r.data)

@@ -4,6 +4,12 @@ Contract preserved from the old receiver so no re-flashing is needed:
   POST /api/telemetry   header  X-Auth: <ingest token>   body: JSON telemetry
 Permissive: any content type is accepted and stored; nothing is rejected on shape.
 Commands queued for the device ride back in the reply, exactly-once.
+
+Devices post to the receiver dashboard (the one address they are flashed with);
+the receiver forwards every packet here in real time with X-Device-Id,
+X-Forwarded-For (the device's IP) and X-Receiver-Seq. The seq is stored as
+raw['_seq'] - the same marker the sync_receiver catch-up job uses - so a packet
+that arrives both ways is stored once.
 """
 
 import hmac
@@ -96,6 +102,13 @@ class TelemetryIngestView(APIView):
         client_ip = _client_ip(request)
         device, _ = Device.objects.get_or_create(device_id=device_id)
 
+        seq = request.META.get("HTTP_X_RECEIVER_SEQ", "").strip()
+        seq = int(seq) if seq.isdigit() else None
+        if seq is not None and Telemetry.objects.filter(device=device, raw___seq=seq).exists():
+            # already stored (by the catch-up sync); still hand back queued commands
+            return Response({"ok": True, "device_id": device_id, "received": len(raw),
+                             "duplicate": True, "commands": self._drain(device)})
+
         lat = _num(parsed, "latitude", "lat")
         lng = _num(parsed, "longitude", "lng", "lon")
         sats = _num(parsed, "satellites", "sats")
@@ -104,6 +117,8 @@ class TelemetryIngestView(APIView):
         raw_store = dict(parsed) if parsed else {"_text": text[:2000]}
         raw_store["_client_ip"] = client_ip
         raw_store["_id_source"] = id_source
+        if seq is not None:
+            raw_store["_seq"] = seq
 
         t = Telemetry.objects.create(
             device=device,
@@ -128,23 +143,21 @@ class TelemetryIngestView(APIView):
             import logging
             logging.getLogger("ingest").exception("derivation failed for telemetry %s", t.pk)
 
-        # Drain queued commands for this device (exactly-once).
-        pending = list(Command.objects.filter(device=device, status=Command.Status.QUEUED).order_by("created_at"))
-        commands = []
-        if pending:
-            now = timezone.now()
-            for c in pending:
-                commands.append({
-                    "id": c.id, "payload": c.payload,
-                    "content_type": c.content_type, "ts": int(c.created_at.timestamp() * 1000),
-                })
-            Command.objects.filter(pk__in=[c.id for c in pending]).update(
-                status=Command.Status.DELIVERED, delivered_at=now
-            )
-
         return Response({
             "ok": True,
             "device_id": device_id,
             "received": len(raw),
-            "commands": commands,
+            "commands": self._drain(device),
         })
+
+    @staticmethod
+    def _drain(device):
+        """Queued commands for this device, marked delivered (exactly-once)."""
+        pending = list(Command.objects.filter(device=device, status=Command.Status.QUEUED).order_by("created_at"))
+        if not pending:
+            return []
+        Command.objects.filter(pk__in=[c.id for c in pending]).update(
+            status=Command.Status.DELIVERED, delivered_at=timezone.now()
+        )
+        return [{"id": c.id, "payload": c.payload, "content_type": c.content_type,
+                 "ts": int(c.created_at.timestamp() * 1000), "source": "erp"} for c in pending]
