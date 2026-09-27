@@ -1,118 +1,115 @@
 <template>
-  <div class="topbar">
-    <h1>Geofences</h1>
-    <button v-if="canWrite" class="primary ico" @click="toggleCreate">
+  <PageHeader title="Geofences" description="Zones that trigger an alert when a vehicle enters a restricted area or leaves an allowed one.">
+    <button v-if="canWrite" :class="createMode ? '' : 'primary'" @click="toggleCreate">
       <component :is="createMode ? X : Plus" :size="16" />
       {{ createMode ? 'Cancel' : 'New zone' }}
     </button>
-    <p v-else class="viewonly"><Lock :size="14" /> View-only — ask an admin to enable editing.</p>
-  </div>
+  </PageHeader>
+  <p v-if="!canWrite" class="notice amber" style="margin:-4px 0 16px"><Lock :size="16" /> View only — ask an admin to enable editing to add or change zones.</p>
 
-  <!-- loading skeleton -->
   <div v-if="loading" class="grid-2">
-    <div><div class="skel sk-map"></div></div>
-    <div>
-      <p class="section-title">Zones</p>
-      <div class="skel sk-row" v-for="n in 5" :key="n"></div>
-    </div>
+    <div class="skel sk-map"></div>
+    <div class="card card-body"><div class="skel sk-row" v-for="n in 5" :key="n"></div></div>
   </div>
 
   <div v-else class="grid-2">
-    <!-- MAP + create controls -->
-    <div>
-      <div v-if="createMode" class="card" style="padding:14px 16px; margin-bottom:14px">
-        <p class="section-title" style="margin-top:0">New circular zone</p>
-        <p class="muted ico" style="font-size:13px; margin:0 0 12px">
-          <MapPin :size="15" />
-          {{ draft.lat == null ? 'Click the map to drop the zone centre.' : 'Drag the marker or click again to move the centre.' }}
-        </p>
-        <div class="gf-form">
-          <label>
-            <span class="muted">Name</span>
-            <input v-model="draft.name" placeholder="e.g. Depot yard" />
-          </label>
-          <label>
-            <span class="muted">Radius (m)</span>
-            <input v-model.number="draft.radius_m" type="number" min="10" step="10" />
-          </label>
-          <label>
-            <span class="muted">Purpose</span>
-            <select v-model="draft.purpose">
-              <option value="allowed">Allowed</option>
-              <option value="restricted">Restricted</option>
-              <option value="customer_site">Customer site</option>
-            </select>
-          </label>
+    <div class="stack">
+      <div v-if="createMode" class="card gf-create">
+        <div class="card-head">
+          <div class="card-head-title"><CircleDashed :size="17" /><div><h2>New circular zone</h2>
+            <div class="card-sub">{{ draft.lat == null ? 'Step 1 — click the map to drop the zone centre.' : 'Drag the marker or click again to move the centre.' }}</div></div></div>
+          <span class="badge" :class="draft.lat == null ? 'idle' : 'active'">{{ draft.lat == null ? 'Centre not set' : 'Centre set' }}</span>
         </div>
-        <div class="row" style="margin-top:12px">
-          <button class="primary ico" :disabled="!canSave || saving" @click="save">
-            <Save :size="16" /> {{ saving ? 'Saving…' : 'Save zone' }}
-          </button>
-          <span v-if="saveErr" class="err" style="margin:0">{{ saveErr }}</span>
+        <div class="card-body">
+          <div class="gf-form">
+            <label class="field gf-name">
+              <span>Zone name</span>
+              <input v-model="draft.name" placeholder="e.g. Depot yard" maxlength="80" />
+            </label>
+            <label class="field">
+              <span>Radius (metres)</span>
+              <input v-model.number="draft.radius_m" type="number" min="10" step="10" inputmode="numeric" />
+            </label>
+            <label class="field">
+              <span>Purpose</span>
+              <select v-model="draft.purpose">
+                <option value="allowed">Allowed</option>
+                <option value="restricted">Restricted</option>
+                <option value="customer_site">Customer site</option>
+              </select>
+            </label>
+          </div>
+          <div class="row wrap" style="margin-top:14px">
+            <button class="primary" :disabled="!canSave || saving" @click="save">
+              <Save :size="16" /> {{ saving ? 'Saving…' : 'Save zone' }}
+            </button>
+            <span v-if="saveErr" class="err">{{ saveErr }}</span>
+          </div>
         </div>
       </div>
 
-      <div ref="mapEl" class="map"></div>
-
-      <div class="row" style="gap:16px; margin-top:10px; flex-wrap:wrap">
-        <span class="ico muted" style="font-size:12px"><i class="gf-swatch" style="background:#3ddc97"></i> Allowed</span>
-        <span class="ico muted" style="font-size:12px"><i class="gf-swatch" style="background:#fb7185"></i> Restricted</span>
-        <span class="ico muted" style="font-size:12px"><i class="gf-swatch" style="background:#4da3ff"></i> Customer site</span>
+      <div class="card flush">
+        <div class="card-head">
+          <div class="card-head-title"><MapIcon :size="17" /><h2>Zone map</h2></div>
+          <div class="map-legend">
+            <span><i class="swatch" :style="{ background: PURPOSE.allowed.color }"></i>Allowed</span>
+            <span><i class="swatch" :style="{ background: PURPOSE.restricted.color }"></i>Restricted</span>
+            <span><i class="swatch" :style="{ background: PURPOSE.customer_site.color }"></i>Customer site</span>
+          </div>
+        </div>
+        <div ref="mapEl" class="map" :class="{ picking: createMode }"></div>
       </div>
     </div>
 
-    <!-- LIST -->
-    <div>
-      <p class="section-title">Zones ({{ zones.length }})</p>
-
-      <div v-if="!zones.length" class="card empty">
-        <MapPin :size="30" class="icon-lg" style="color:var(--muted)" />
-        <div style="margin-top:8px">No zones yet.</div>
-        <div class="muted" style="font-size:13px; margin-top:4px">
-          Use “New zone” to draw your first geofence on the map.
-        </div>
+    <div class="card flush">
+      <div class="card-head">
+        <div class="card-head-title"><MapPin :size="17" /><div><h2>Zones</h2>
+          <div class="card-sub">{{ zones.length }} total · {{ zones.filter((z) => z.active).length }} active</div></div></div>
       </div>
 
-      <div v-else class="card" style="padding:6px 0">
-        <table>
-          <tbody>
-            <tr v-for="z in zones" :key="z.id" class="clickable" @click="focusZone(z)">
-              <td>
-                <span class="row-with-chip">
-                  <span class="icon-chip" :class="purposeChip(z.purpose)">
-                    <component :is="purposeIcon(z.purpose)" :size="16" />
-                  </span>
-                  <span>
-                    <div style="font-weight:600">{{ z.name }}</div>
-                    <div class="muted" style="font-size:12px">
-                      {{ z.kind }}<span v-if="z.kind === 'circle' && z.radius_m"> · {{ Math.round(z.radius_m) }} m</span>
-                    </div>
-                  </span>
-                </span>
-              </td>
-              <td><span class="badge" :style="badgeStyle(z.purpose)">{{ purposeLabel(z.purpose) }}</span></td>
-              <td @click.stop>
-                <button v-if="canWrite" class="ico" :class="{ primary: z.active }" @click="toggleActive(z)">
-                  <component :is="z.active ? Eye : EyeOff" :size="15" />
-                  {{ z.active ? 'Active' : 'Off' }}
-                </button>
-                <span v-else class="badge" :class="{ active: z.active, off: !z.active }">{{ z.active ? 'Active' : 'Off' }}</span>
-              </td>
-              <td @click.stop style="text-align:right">
-                <button v-if="canWrite" class="ico" @click="remove(z)"><Trash2 :size="15" /></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <EmptyState v-if="!zones.length" :icon="MapPin" title="No zones yet"
+        :text="canWrite ? 'Use “New zone”, then click the map to draw your first geofence.' : 'No geofences have been set up for your fleet.'">
+        <button v-if="canWrite && !createMode" class="primary" @click="toggleCreate"><Plus :size="16" /> New zone</button>
+      </EmptyState>
+
+      <div v-else class="list">
+        <div v-for="z in zones" :key="z.id" class="list-row clickable gf-row" role="button" tabindex="0"
+             @click="focusZone(z)" @keydown.enter="focusZone(z)">
+          <span class="icon-chip" :class="purposeChip(z.purpose)"><component :is="purposeIcon(z.purpose)" :size="16" /></span>
+          <span class="grow">
+            <div class="title">{{ z.name }}</div>
+            <div class="sub">{{ purposeLabel(z.purpose) }} · {{ z.kind }}<span v-if="z.kind === 'circle' && z.radius_m"> · {{ Math.round(z.radius_m) }} m</span></div>
+          </span>
+          <template v-if="canWrite">
+            <button type="button" class="sm gf-toggle" :class="{ on: z.active }" :title="z.active ? 'Turn zone off' : 'Turn zone on'"
+                    role="switch" :aria-checked="z.active" @click.stop="toggleActive(z)">
+              <span class="sw"><span></span></span>{{ z.active ? 'On' : 'Off' }}
+            </button>
+            <button type="button" class="ghost icon-btn sm gf-del" title="Delete zone" aria-label="Delete zone" @click.stop="confirmDel = z"><Trash2 :size="15" /></button>
+          </template>
+          <span v-else class="badge" :class="z.active ? 'active' : 'off'">{{ z.active ? 'Active' : 'Off' }}</span>
+        </div>
       </div>
     </div>
   </div>
+
+  <Modal v-if="confirmDel" title="Delete zone?" @close="confirmDel = null">
+    <p style="margin:0 0 6px">“<b>{{ confirmDel.name }}</b>” will be removed and stop generating alerts.</p>
+    <p class="muted" style="font-size:13px">This cannot be undone.</p>
+    <div class="row" style="margin-top:18px;justify-content:flex-end">
+      <button type="button" @click="confirmDel = null">Cancel</button>
+      <button type="button" class="danger-solid" @click="remove(confirmDel)"><Trash2 :size="15" /> Delete zone</button>
+    </div>
+  </Modal>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import L from 'leaflet'
-import { Plus, X, Save, MapPin, Trash2, Eye, EyeOff, Lock, ShieldCheck, Ban, Building2 } from 'lucide-vue-next'
+import { Plus, X, Save, MapPin, Trash2, Lock, ShieldCheck, Ban, Building2, CircleDashed, Map as MapIcon } from 'lucide-vue-next'
+import PageHeader from '../components/PageHeader.vue'
+import EmptyState from '../components/EmptyState.vue'
+import Modal from '../components/Modal.vue'
 import { getGeofences, createGeofence, updateGeofence, deleteGeofence } from '../api'
 import { auth } from '../auth'
 import { TILE_URL, TILE_ATTRIBUTION, TILE_SUBDOMAINS } from '../tiles'
@@ -120,29 +117,28 @@ import { toast } from '../toast'
 
 const canWrite = computed(() => auth.user?.may_write !== false)
 
+// Leaflet needs literal colors — these are the shared palette values
+// (green / red / sky from tokens.css), readable on light and dimmed tiles.
 const PURPOSE = {
-  allowed:       { label: 'Allowed',       color: '#3ddc97', soft: 'rgba(16,185,129,.20)' },
-  restricted:    { label: 'Restricted',    color: '#fb7185', soft: 'rgba(244,63,94,.20)' },
-  customer_site: { label: 'Customer site', color: '#4da3ff', soft: 'rgba(59,130,246,.20)' },
+  allowed:       { label: 'Allowed',       color: '#059669' },
+  restricted:    { label: 'Restricted',    color: '#DC2626' },
+  customer_site: { label: 'Customer site', color: '#0284C7' },
 }
-function purposeColor(p) { return PURPOSE[p]?.color || '#93a0bd' }
+function purposeColor(p) { return PURPOSE[p]?.color || '#64748B' }
 function purposeLabel(p) { return PURPOSE[p]?.label || p }
 // Row identity by purpose — an "allowed" zone and a "restricted" one should
 // not look like the same pin with only the badge text differing.
 const PURPOSE_ICON = { allowed: ShieldCheck, restricted: Ban, customer_site: Building2 }
-const PURPOSE_CHIP = { allowed: 'green', restricted: 'crit', customer_site: 'blue' }
+const PURPOSE_CHIP = { allowed: 'green', restricted: 'red', customer_site: 'blue' }
 function purposeIcon(p) { return PURPOSE_ICON[p] || MapPin }
 function purposeChip(p) { return PURPOSE_CHIP[p] || 'gray' }
-function badgeStyle(p) {
-  const m = PURPOSE[p]
-  return m ? `background:${m.soft};color:${m.color}` : ''
-}
 
 const loading = ref(true)
 const zones = ref([])
 const createMode = ref(false)
 const saving = ref(false)
 const saveErr = ref('')
+const confirmDel = ref(null)
 const draft = ref({ name: '', radius_m: 300, purpose: 'allowed', lat: null, lng: null })
 
 const mapEl = ref(null)
@@ -180,6 +176,8 @@ function drawZones() {
 }
 
 function focusZone(z) {
+  if (!map) return
+  if (matchMedia('(max-width: 1199px)').matches) mapEl.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   const b = boundsById[z.id]
   if (b && b.isValid()) map.fitBounds(b.pad(0.4), { maxZoom: 16 })
 }
@@ -245,7 +243,7 @@ async function toggleActive(z) {
 }
 
 async function remove(z) {
-  if (!confirm(`Delete zone “${z.name}”? This cannot be undone.`)) return
+  confirmDel.value = null
   try {
     await deleteGeofence(z.id)
     zones.value = zones.value.filter((x) => x.id !== z.id)
@@ -269,7 +267,7 @@ async function load() {
 
 function initMap() {
   if (map || !mapEl.value) return
-  map = L.map(mapEl.value, { zoomControl: true }).setView([21.145, 81.664], 12)
+  map = L.map(mapEl.value, { zoomControl: true }).setView([21.145, 79.088], 12)
   L.tileLayer(TILE_URL, { subdomains: TILE_SUBDOMAINS, maxZoom: 20, attribution: TILE_ATTRIBUTION }).addTo(map)
   zoneLayer = L.layerGroup().addTo(map)
   draftLayer = L.layerGroup().addTo(map)
@@ -292,11 +290,16 @@ watch(() => [draft.value.radius_m, draft.value.purpose], () => {
 onMounted(load)
 onBeforeUnmount(() => { if (map) map.remove() })
 </script>
-
 <style scoped>
-.gf-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
-.gf-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; }
-.gf-form label:first-child { grid-column: 1 / -1; }
-.gf-swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
-.row-with-chip { display: flex; align-items: center; gap: 10px; }
+.gf-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.gf-name { grid-column: 1 / -1; }
+.map.picking { cursor: crosshair; }
+.map.picking :deep(.leaflet-container), .map.picking:deep(.leaflet-grab) { cursor: crosshair; }
+.gf-toggle { gap: 8px; min-width: 76px; justify-content: flex-start; }
+.sw { width: 28px; height: 16px; border-radius: 999px; background: var(--border-strong); position: relative; flex: none; transition: background var(--dur) var(--ease); }
+.sw span { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #FFFFFF; transition: transform var(--dur) var(--ease); }
+.gf-toggle.on .sw { background: var(--green); }
+.gf-toggle.on .sw span { transform: translateX(12px); }
+.gf-del:hover { color: var(--red); background: var(--red-soft); }
+@media (max-width: 480px) { .gf-form { grid-template-columns: 1fr; } }
 </style>

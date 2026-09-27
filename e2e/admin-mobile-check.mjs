@@ -1,11 +1,12 @@
 // Verify admin-erp mobile UX against the local dev server (not prod).
 import { chromium } from 'playwright';
 import fs from 'fs';
+import { portalUrl } from './portals.mjs';
 
-const BASE = 'http://127.0.0.1:5175/admin/';
+const BASE = portalUrl('admin');
 const SHOTS = '/tmp/claude-0/-root/f5d22171-f394-46dc-86a0-d1cf4d84238b/scratchpad/shots';
 fs.mkdirSync(SHOTS, { recursive: true });
-const CREDS = JSON.parse(fs.readFileSync('/root/erp/e2e/creds.json'));
+const CREDS = JSON.parse(fs.readFileSync('/root/aayunex_innovations/ERP/e2e/creds.json'));
 
 const WIDTHS = [
   { w: 360, h: 780, label: '360' },
@@ -45,7 +46,7 @@ async function run() {
     await p.waitForTimeout(400);
 
     for (const [label, route] of ROUTES) {
-      await p.goto(`${BASE}#${route}`, { waitUntil: 'networkidle' }).catch(() => {});
+      await p.goto(portalUrl('admin', route), { waitUntil: 'networkidle' }).catch(() => {});
       await p.waitForTimeout(500);
       const m = await p.evaluate(() => ({
         scrollW: document.documentElement.scrollWidth,
@@ -62,7 +63,7 @@ async function run() {
 
     // open the full-screen mobile menu on phone widths only, screenshot open + closed states
     if (vp.w <= 430) {
-      await p.goto(`${BASE}#/users`, { waitUntil: 'networkidle' });
+      await p.goto(portalUrl('admin', '/users'), { waitUntil: 'networkidle' });
       await p.waitForTimeout(300);
       const burger = p.locator('.hamburger');
       await burger.first().click();
@@ -86,7 +87,7 @@ async function run() {
       // reopen, click a nav group + a link, confirm it navigates and closes
       await burger.first().click();
       await p.waitForTimeout(400);
-      const rolesLink = p.locator('a[href*="#/roles"]');
+      const rolesLink = p.locator('a[href$="/roles"]');
       if (await rolesLink.count()) {
         // accordion group for roles might need opening
         await rolesLink.first().click({ trial: false }).catch(() => {});

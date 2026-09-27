@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from core.permissions import (CanWriteOrReadOnly, CompanyScopedQuerysetMixin,
-                              IsDealerOrAdmin)
+                              IsDealerOrAdmin, ModuleAccess)
 
 from .models import Alert
 from .serializers import AlertSerializer
@@ -12,7 +12,9 @@ from .serializers import AlertSerializer
 
 class AlertViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     # read for dealers/managers; the `acknowledge` write action needs may_write
-    permission_classes = [IsDealerOrAdmin, CanWriteOrReadOnly]
+    # Alerts also appear on the dashboard, fuel detail and pilot detail screens.
+    required_modules = {"alerts", "dashboard", "fuel", "drivers"}
+    permission_classes = [IsDealerOrAdmin, ModuleAccess, CanWriteOrReadOnly]
     serializer_class = AlertSerializer
 
     def get_queryset(self):

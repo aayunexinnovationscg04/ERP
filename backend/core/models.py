@@ -51,10 +51,18 @@ class User(AbstractUser):
         help_text="If on, this user may make changes (create/edit/delete). "
                   "Admins can always edit regardless of this flag.",
     )
+    # Embedded in every JWT as "sv". Bumping it (password/role/company/active
+    # change, or "sign out everywhere") instantly invalidates all issued tokens.
+    session_version = models.PositiveIntegerField(default=0, editable=False)
 
     @property
     def may_write(self):
-        return self.role == self.Role.ADMIN or self.can_edit
+        if self.role == self.Role.ADMIN:
+            return True
+        # A suspended company is read-only for everyone in it, whatever can_edit says.
+        if self.company_id and self.company.status == Company.Status.SUSPENDED:
+            return False
+        return self.can_edit
 
     def __str__(self):
         return f"{self.username} ({self.role})"

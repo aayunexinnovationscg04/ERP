@@ -1,89 +1,109 @@
 <template>
-  <div class="topbar">
-    <div class="row" style="gap:12px">
-      <button type="button" class="back-btn" @click="$router.back()" title="Back">
-        <ArrowLeft :size="17" />
-      </button>
-      <h1><router-link to="/pilots" class="muted">Pilots</router-link> / {{ d?.name || '…' }}</h1>
-    </div>
+  <PageHeader :title="d ? d.name : 'Pilot'" :back="{ to: '/pilots', label: 'Pilots' }">
+    <template #description>
+      <span v-if="d">{{ d.assigned_vehicle ? 'Driving ' + d.assigned_vehicle.local_name + ' · ' + d.assigned_vehicle.registration_number : 'No vehicle assigned' }}</span>
+      <span v-else>&nbsp;</span>
+    </template>
+    <a v-if="d?.phone" :href="`tel:${d.phone}`" class="btn"><Phone :size="16" /> Call</a>
+  </PageHeader>
+
+  <div v-if="loading">
+    <div class="kpis"><div class="skel sk-chip" v-for="n in 4" :key="n"></div></div>
+    <div class="skel sk-hero"></div>
   </div>
 
-  <div v-if="loading" class="card" style="padding:16px">
-    <div class="skel skel-line lg"></div>
-    <div class="skel skel-line md"></div>
-    <div class="skel skel-line sm"></div>
-  </div>
+  <EmptyState v-else-if="!d" class="card" :icon="IdCard" title="Pilot not found">
+    <router-link to="/pilots" class="btn">Back to pilots</router-link>
+  </EmptyState>
 
   <template v-else>
-    <p class="section-title">Assigned Pilot</p>
-    <div class="card" style="padding:16px 18px">
-      <div class="kvs">
-        <div><span class="muted">Name</span><b>{{ d.name }}</b></div>
-        <div><span class="muted">Phone</span><b>{{ d.phone || '—' }}</b></div>
-        <div><span class="muted">License</span><b>{{ d.license_no || '—' }}</b></div>
-        <div>
-          <span class="muted">Assigned vehicle</span>
-          <b v-if="d.assigned_vehicle">
-            <router-link :to="`/vehicles/${d.assigned_vehicle.id}`">
-              {{ d.assigned_vehicle.local_name }} · {{ d.assigned_vehicle.registration_number }}
-            </router-link>
-          </b>
-          <b v-else class="muted">Not assigned</b>
+    <div class="kpis">
+      <StatTile label="Attendance (recorded days)" :value="attPct == null ? '—' : attPct" :unit="attPct == null ? '' : '%'" :icon="CalendarCheck" tone="green"
+        :sub="`${attCounts.present} present of ${d.attendance?.length || 0}`" />
+      <StatTile label="Absences" :value="attCounts.absent" :icon="CalendarX" :tone="attCounts.absent ? 'crit' : 'gray'" />
+      <StatTile label="Overspeed violations" :value="overspeed.length" :icon="Gauge" :tone="overspeed.length ? 'amber' : 'gray'" sub="On current vehicle" />
+      <StatTile label="Monthly salary" :value="d.monthly_salary ? '₹' + Number(d.monthly_salary).toLocaleString('en-IN') : '—'" :icon="Wallet" tone="navy"
+        :sub="d.monthly_salary ? '' : 'Not set by admin'" />
+    </div>
+
+    <div class="grid-2">
+      <div class="card flush">
+        <div class="card-head"><div class="card-head-title"><CalendarCheck :size="17" /><h2>Attendance</h2></div></div>
+        <div v-if="d.attendance?.length" class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Status</th><th class="hide-sm">Notes</th></tr></thead>
+            <tbody>
+              <tr v-for="a in d.attendance" :key="a.id">
+                <td class="nowrap">{{ fmtDate(a.date) }}</td>
+                <td><span class="badge" :class="attendanceBadge[a.status]">{{ a.status_label }}</span></td>
+                <td class="hide-sm muted">{{ a.notes || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <EmptyState v-else compact :icon="CalendarCheck" title="No attendance recorded yet" />
+      </div>
+
+      <div class="stack">
+        <div class="card">
+          <div class="card-head"><div class="card-head-title"><IdCard :size="17" /><h2>Profile</h2></div></div>
+          <div class="card-body">
+            <div class="kvs">
+              <div><span class="k">Name</span><span class="v">{{ d.name }}</span></div>
+              <div><span class="k">Phone</span><span class="v">{{ d.phone || '—' }}</span></div>
+              <div><span class="k">Licence</span><span class="v">{{ d.license_no || '—' }}</span></div>
+              <div><span class="k">Vehicle</span>
+                <span class="v" v-if="d.assigned_vehicle"><router-link :to="`/vehicles/${d.assigned_vehicle.id}`">{{ d.assigned_vehicle.local_name }}</router-link></span>
+                <span class="v muted" v-else>Not assigned</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card flush">
+          <div class="card-head"><div class="card-head-title"><Gauge :size="17" /><h2>Overspeed violations</h2></div></div>
+          <div v-if="overspeed.length" class="list">
+            <div v-for="a in overspeed" :key="a.id" class="list-row">
+              <span class="grow">
+                <div class="title" v-if="a.meta?.speed_kmph != null">{{ a.meta.speed_kmph }} km/h <span class="muted" style="font-weight:500" v-if="a.meta.limit != null">· limit {{ a.meta.limit }}</span></div>
+                <div class="title" v-else>{{ a.title }}</div>
+                <div class="sub">{{ new Date(a.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) }}</div>
+              </span>
+              <span class="badge" :class="a.status === 'open' ? 'critical' : 'offline'">{{ a.status }}</span>
+            </div>
+          </div>
+          <EmptyState v-else compact :icon="ShieldCheck"
+            :title="d.assigned_vehicle ? 'No overspeed violations' : 'No vehicle assigned'"
+            :text="d.assigned_vehicle ? 'Nothing recorded on their current vehicle.' : 'Nothing to check yet.'" />
         </div>
       </div>
-    </div>
-
-    <p class="section-title">Pilot Attendance</p>
-    <div class="card" style="padding:6px 0">
-      <table>
-        <thead><tr><th>Date</th><th>Status</th><th>Notes</th></tr></thead>
-        <tbody>
-          <tr v-for="a in d.attendance" :key="a.id" :class="attendanceBadge[a.status]">
-            <td>{{ a.date }}</td>
-            <td><span class="badge" :class="attendanceBadge[a.status]">{{ a.status_label }}</span></td>
-            <td class="muted">{{ a.notes || '—' }}</td>
-          </tr>
-          <tr v-if="!d.attendance?.length"><td colspan="3" class="muted" style="padding:14px">No attendance recorded yet.</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p class="section-title">Overspeed Violations</p>
-    <div class="card" style="padding:6px 0">
-      <table>
-        <thead><tr><th>When</th><th>Speed</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr v-for="a in overspeed" :key="a.id" :class="a.status === 'open' ? 'critical' : 'offline'">
-            <td>{{ new Date(a.created_at).toLocaleString() }}</td>
-            <td>{{ a.meta?.speed_kmph }} km/h <span class="muted">(limit {{ a.meta?.limit }})</span></td>
-            <td><span class="badge" :class="a.status === 'open' ? 'critical' : 'offline'">{{ a.status }}</span></td>
-          </tr>
-          <tr v-if="!overspeed.length"><td colspan="3" class="muted" style="padding:14px">
-            {{ d.assigned_vehicle ? 'No overspeed violations on their current vehicle.' : 'No vehicle assigned — nothing to check.' }}
-          </td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p class="section-title">Pilot Salary Information</p>
-    <div class="card" style="padding:16px 18px">
-      <div class="fh-value" v-if="d.monthly_salary">₹{{ fmt(d.monthly_salary, 0) }} <span class="fh-unit">/ month</span></div>
-      <p v-else class="muted" style="margin:0">Not set — ask an admin to add it in Django Admin.</p>
     </div>
   </template>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import { ArrowLeft } from 'lucide-vue-next'
+import { computed, onMounted, ref } from 'vue'
+import { Phone, IdCard, CalendarCheck, CalendarX, Gauge, Wallet, ShieldCheck } from 'lucide-vue-next'
 import { getPilot, getAlerts } from '../api'
-import { fmt } from '../util'
+import PageHeader from '../components/PageHeader.vue'
+import StatTile from '../components/StatTile.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const props = defineProps({ id: [String, Number] })
 const d = ref(null)
 const overspeed = ref([])
 const loading = ref(true)
 const attendanceBadge = { present: 'active', absent: 'critical', half_day: 'idle', leave: 'offline' }
+
+const attCounts = computed(() => {
+  const c = { present: 0, absent: 0 }
+  ;(d.value?.attendance || []).forEach((a) => { if (a.status in c) c[a.status]++ })
+  return c
+})
+const attPct = computed(() => {
+  const n = d.value?.attendance?.length
+  return n ? Math.round((attCounts.value.present / n) * 100) : null
+})
+function fmtDate(s) { return new Date(s + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' }) }
 
 async function load() {
   try {
@@ -96,20 +116,3 @@ async function load() {
 }
 onMounted(load)
 </script>
-
-<style scoped>
-.back-btn {
-  flex: none; width: 34px; height: 34px; padding: 0; display: grid; place-items: center;
-  border-radius: var(--radius-sm); color: var(--text);
-}
-.back-btn:hover { background: var(--surface-2); }
-
-.kvs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
-.kvs div { display: flex; flex-direction: column; gap: 2px; }
-.kvs b { font-size: 15px; color: var(--ink-strong); }
-
-.fh-value { font-size: 26px; font-weight: 800; letter-spacing: -.01em; color: var(--teal); }
-.fh-unit { font-size: 14px; font-weight: 600; color: var(--muted); }
-
-.card + .section-title { margin-top: 28px; }
-</style>

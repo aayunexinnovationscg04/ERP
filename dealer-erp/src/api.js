@@ -1,33 +1,26 @@
 import axios from 'axios'
-import { auth, setAuth, clearAuth } from './auth'
+import { auth, ensureFreshToken, refreshSession } from './auth'
 
 const api = axios.create({ baseURL: '/api' })
 
-// Attach the access token.
-api.interceptors.request.use((config) => {
+// Attach the in-memory access token (renewed first if it is about to expire).
+api.interceptors.request.use(async (config) => {
+  await ensureFreshToken()
   if (auth.access) config.headers.Authorization = `Bearer ${auth.access}`
   return config
 })
 
-// On 401, try one refresh, then replay; otherwise log out.
-let refreshing = null
+// On 401, refresh once (shared across concurrent requests) and replay. If the
+// session can't be renewed, auth.js ends it and the router shows the login.
 api.interceptors.response.use(
   (r) => r,
   async (error) => {
     const { response, config } = error
-    if (response?.status === 401 && auth.refresh && !config._retried) {
+    if (response?.status === 401 && config && !config._retried && auth.isAuthed) {
       config._retried = true
-      try {
-        refreshing = refreshing || axios.post('/api/auth/refresh', { refresh: auth.refresh })
-        const { data } = await refreshing
-        refreshing = null
-        setAuth({ access: data.access })
-        config.headers.Authorization = `Bearer ${data.access}`
+      if (await refreshSession()) {
+        config.headers.Authorization = `Bearer ${auth.access}`
         return api(config)
-      } catch (e) {
-        refreshing = null
-        clearAuth()
-        if (location.hash !== '#/login') location.hash = '#/login'
       }
     }
     return Promise.reject(error)
@@ -37,8 +30,6 @@ api.interceptors.response.use(
 export default api
 
 // --- endpoint helpers ---
-export const login = (username, password) =>
-  api.post('/auth/login', { username, password }).then((r) => r.data)
 export const getMe = () => api.get('/auth/me').then((r) => r.data)
 export const getVehicles = (params = {}) =>
   api.get('/vehicles/', { params }).then((r) => r.data.results || r.data)

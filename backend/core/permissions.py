@@ -29,6 +29,31 @@ class CanWriteOrReadOnly(BasePermission):
         return bool(getattr(u, "may_write", False))
 
 
+class ModuleAccess(BasePermission):
+    """Enforce Role Management / per-user module access on the API itself.
+
+    A view lists the modules that legitimately need its data in
+    `required_modules`; the caller must have at least one of them (see
+    core.access.effective_modules). Admins always pass. Views without
+    `required_modules` are unaffected.
+    """
+
+    message = "Your account does not have access to this section."
+
+    def has_permission(self, request, view):
+        needed = getattr(view, "required_modules", None)
+        u = request.user
+        if not needed or not (u and u.is_authenticated):
+            return bool(u and u.is_authenticated)
+        if u.role == User.Role.ADMIN:
+            return True
+        allowed = getattr(request, "_fgx_modules", None)
+        if allowed is None:  # resolve once per request
+            from core.access import effective_modules
+            allowed = request._fgx_modules = set(effective_modules(u))
+        return bool(allowed & set(needed))
+
+
 class IsAdmin(BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated

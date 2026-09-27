@@ -5,7 +5,7 @@ to show on day one. Idempotent-ish: skips telemetry already imported (tracked by
 the raw['_seq'] marker from the source log).
 
     .venv/bin/python manage.py backfill_events \
-        --path /root/receiver-dashboard/data/events.jsonl [--company <slug>]
+        --path /root/aayunex_innovations/receiver_dashboard/data/events.jsonl [--company <slug>]
 """
 
 import datetime
@@ -18,7 +18,7 @@ from core.models import Company
 from fleet.derivation import process_telemetry
 from fleet.models import Device, Telemetry
 
-DEFAULT_PATH = "/root/receiver-dashboard/data/events.jsonl"
+DEFAULT_PATH = "/root/aayunex_innovations/receiver_dashboard/data/events.jsonl"
 
 
 def _num(d, *keys):

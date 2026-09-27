@@ -1,0 +1,217 @@
+/* ============================================================================
+   Fuel Guard X — shared design tokens (all three portals import this file)
+
+   Identity: professional fleet-operations console. Colors come from the
+   Aayunex logo — midnight navy, flame orange, sky blue — used as SOLID fills.
+   No gradients, no glows: every legacy gradient/glow token below resolves to a
+   flat color or `none`, so older component CSS renders flat automatically.
+
+     navy   #0B1F33 / #102A43   structure: sidebars, brand panels, headings
+     flame  #EA580C             the one action color: primary buttons, focus, active nav
+     sky    #0284C7             data + information: links, map routes, info badges
+
+   Token names are the union of what the admin/dealer/pilot stylesheets already
+   reference, so each app's components pick up the system without renames.
+   Change a value here once and all three portals follow.
+   ========================================================================== */
+
+html {
+  /* Theme-invariant tokens. Selector is `html`, not `:root`: esbuild's CSS
+     minifier merges a bare `:root {}` into an adjacent `:root[data-theme]`
+     block, which would scope these to one theme only. */
+  --font-ui: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: var(--font-ui);
+  --font-head: var(--font-ui);
+  --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  --fs-2xl: clamp(1.375rem, 1.1rem + .9vw, 1.75rem);
+  --fs-xl: clamp(1.125rem, 1rem + .5vw, 1.35rem);
+  --fs-lg: 1.05rem;
+  --fs-md: .95rem;
+  --fs-sm: .8125rem;
+  --fs-xs: .72rem;
+
+  /* Disciplined geometry: firm, not bubbly. */
+  --radius: 10px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --radius-pill: 999px;
+
+  --ease: cubic-bezier(.4, 0, .2, 1);
+  --dur: .16s;
+
+  --sidebar-w: clamp(15.5rem, 13rem + 6vw, 17rem);
+  --content-pad-x: clamp(1rem, .6rem + 1.6vw, 1.9rem);
+  --content-pad-y: clamp(.9rem, .6rem + 1vw, 1.6rem);
+  --topbar-h: 56px;
+  --tabbar-h: 64px;
+
+  /* Brand constants (same in both themes). */
+  --navy-950: #071524;
+  --navy-900: #0B1F33;
+  --navy-800: #102A43;
+  --navy-700: #1B3A5C;
+  --navy-600: #264B73;
+  --flame-600: #EA580C;
+  --flame-700: #C2410C;
+  --flame-500: #F97316;
+  /* Solid fill for destructive buttons (white text) — same in both themes. */
+  --danger-solid: #DC2626;
+  --danger-solid-hover: #B91C1C;
+  --sky-600: #0284C7;
+  --sky-400: #38BDF8;
+
+  /* Dark "ink" shell used by sidebars in both themes. */
+  --ink-950: var(--navy-950);
+  --ink-900: var(--navy-900);
+  --ink-800: var(--navy-800);
+  --ink-border: rgba(255, 255, 255, .08);
+  --ink-text: #F1F5F9;
+  --ink-muted: #94A6BD;
+  --night-1: var(--navy-900);
+  --night-2: var(--navy-800);
+  --night-3: var(--navy-700);
+}
+
+/* ---------------------------------------------------------------- light --- */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --brand: #EA580C;
+  --brand-strong: #C2410C;
+  --brand-bright: #F97316;
+  --brand-dim: #FDBA74;
+  --brand-ink: #FFFFFF;
+  --brand-soft: #FFF1E7;
+  --brand-soft-ink: #9A3412;
+  --brand-ring: rgba(234, 88, 12, .22);
+
+  --bg: #F3F5F8;
+  --surface: #FFFFFF;
+  --surface-2: #F8FAFC;
+  --surface-3: #EEF2F6;
+  --field-bg: #FFFFFF;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --text: #0F1B2D;
+  --ink-strong: #0B1F33;
+  --muted: #5B6B80;
+  --muted-2: #8A97A8;
+  --panel: var(--surface);
+  --panel-2: var(--surface-2);
+
+  /* Status — solid text/dot on a light tint. */
+  --green: #047857;  --green-strong: #065F46; --green-soft: #E7F6EF;
+  --amber: #B45309;  --amber-strong: #92400E; --amber-soft: #FEF3E2;
+  --red: #DC2626;    --red-soft: #FDECEC;
+  --crit: #BE123C;   --crit-strong: #9F1239;  --crit-soft: #FDE8ED;
+  --danger: #DC2626; --danger-soft: #FDECEC;  --danger-ring: rgba(220, 38, 38, .22);
+  --slate: #64748B;  --slate-soft: #EEF2F6;
+  --gray: #64748B;   --gray-soft: #EEF2F6;
+  --info: #0369A1;   --info-soft: #E6F3FB;
+  --blue: #0369A1;   --blue-soft: #E6F3FB;
+  --cyan: #0E7490;   --cyan-strong: #155E75;  --cyan-soft: #E4F5F8;
+  --teal: #0F766E;   --teal-soft: #E3F4F2;
+  --violet: #5B4BC4; --violet-strong: #4338CA; --violet-soft: #EEEDFB;
+
+  /* Roles — four distinct, muted hues. */
+  --role-admin: #102A43;   --role-admin-soft: #E6ECF3;
+  --role-dealer: #C2410C;  --role-dealer-soft: #FFF1E7;
+  --role-manager: #0F766E; --role-manager-soft: #E3F4F2;
+  --role-pilot: #0369A1;   --role-pilot-soft: #E6F3FB;
+
+  /* Module-group accents (Role Management matrix). */
+  --grp-1: #102A43; --grp-1-soft: #E6ECF3;
+  --grp-2: #0F766E; --grp-2-soft: #E3F4F2;
+  --grp-3: #B45309; --grp-3-soft: #FEF3E2;
+  --grp-4: #0369A1; --grp-4-soft: #E6F3FB;
+  --grp-5: #BE123C; --grp-5-soft: #FDE8ED;
+  --grp-6: #047857; --grp-6-soft: #E7F6EF;
+
+  --shadow-sm: 0 1px 2px rgba(15, 27, 45, .06);
+  --shadow-md: 0 4px 12px rgba(15, 27, 45, .08);
+  --shadow-lg: 0 12px 32px rgba(15, 27, 45, .12);
+  --shadow-brand: none;
+
+  --tabbar-bg: #FFFFFF;
+  --tabbar-shadow: 0 -1px 0 #E2E8F0;
+}
+
+/* ----------------------------------------------------------------- dark --- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --brand: #F97316;
+  --brand-strong: #EA580C;
+  --brand-bright: #FB923C;
+  --brand-dim: #9A3412;
+  --brand-ink: #FFFFFF;
+  --brand-soft: #2A1A10;
+  --brand-soft-ink: #FDBA74;
+  --brand-ring: rgba(249, 115, 22, .30);
+
+  --bg: #0A1422;
+  --surface: #0F1C2E;
+  --surface-2: #132338;
+  --surface-3: #192C45;
+  --field-bg: #0C1829;
+  --border: #1F3350;
+  --border-strong: #2B4468;
+  --text: #E6EDF5;
+  --ink-strong: #F8FAFC;
+  --muted: #93A3B8;
+  --muted-2: #6B7D95;
+  --panel: var(--surface);
+  --panel-2: var(--surface-2);
+
+  --green: #34D399;  --green-strong: #10B981; --green-soft: #0D2A22;
+  --amber: #FBBF24;  --amber-strong: #F59E0B; --amber-soft: #2B2212;
+  --red: #F87171;    --red-soft: #2E1618;
+  --crit: #FB7185;   --crit-strong: #F43F5E;  --crit-soft: #2E1520;
+  --danger: #F87171; --danger-soft: #2E1618;  --danger-ring: rgba(248, 113, 113, .30);
+  --slate: #94A3B8;  --slate-soft: #192C45;
+  --gray: #94A3B8;   --gray-soft: #192C45;
+  --info: #38BDF8;   --info-soft: #0E2638;
+  --blue: #38BDF8;   --blue-soft: #0E2638;
+  --cyan: #22D3EE;   --cyan-strong: #06B6D4;  --cyan-soft: #0C2931;
+  --teal: #2DD4BF;   --teal-soft: #0C2A28;
+  --violet: #A5B4FC; --violet-strong: #818CF8; --violet-soft: #1C1F3D;
+
+  --role-admin: #CBD5E1;   --role-admin-soft: #1B2B42;
+  --role-dealer: #FB923C;  --role-dealer-soft: #2A1A10;
+  --role-manager: #2DD4BF; --role-manager-soft: #0C2A28;
+  --role-pilot: #38BDF8;   --role-pilot-soft: #0E2638;
+
+  --grp-1: #CBD5E1; --grp-1-soft: #1B2B42;
+  --grp-2: #2DD4BF; --grp-2-soft: #0C2A28;
+  --grp-3: #FBBF24; --grp-3-soft: #2B2212;
+  --grp-4: #38BDF8; --grp-4-soft: #0E2638;
+  --grp-5: #FB7185; --grp-5-soft: #2E1520;
+  --grp-6: #34D399; --grp-6-soft: #0D2A22;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, .35);
+  --shadow-lg: 0 14px 36px rgba(0, 0, 0, .45);
+  --shadow-brand: none;
+
+  --tabbar-bg: #0F1C2E;
+  --tabbar-shadow: 0 -1px 0 #1F3350;
+}
+
+/* ------------------------------------------- legacy gradient/glow tokens --- */
+/* Older component CSS still references these. They are deliberately flat. */
+:root[data-theme="light"], :root[data-theme="dark"] {
+  --accent-grad: var(--brand);
+  --accent-glow: transparent;
+  --bg-grad: var(--bg);
+  --night-grad: var(--navy-900);
+  --grad-violet: var(--violet);
+  --grad-amber: var(--amber);
+  --grad-crit: var(--crit);
+  --glow-blue: none;
+  --glow-violet: none;
+  --glow-cyan: none;
+  --glow-green: none;
+  --glow-amber: none;
+  --glow-crit: none;
+}

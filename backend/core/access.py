@@ -1,17 +1,22 @@
 """Resolve a user's effective module access.
 
-Precedence:  per-user override  >  role default (RolePermission)  >  False.
+Precedence:  per-user override  >  role default (RolePermission)  >  DEFAULT_ACCESS.
 Admin is always all-access (cannot be locked out of the platform).
 """
 
 from .models import RolePermission, User, UserModuleOverride
-from .modules import MODULE_KEYS
+from .modules import DEFAULT_ACCESS, MODULE_KEYS
 
 
 def role_defaults(role):
-    """{module: allowed} for a role, from RolePermission (missing => False)."""
+    """{module: allowed} for a role, from RolePermission.
+
+    A module with no saved row falls back to the built-in DEFAULT_ACCESS, so a
+    fresh database (or a newly added module) never locks a role out.
+    """
     rows = {rp.module: rp.allowed for rp in RolePermission.objects.filter(role=role)}
-    return {m: rows.get(m, False) for m in MODULE_KEYS}
+    defaults = set(DEFAULT_ACCESS.get(role, []))
+    return {m: rows.get(m, m in defaults) for m in MODULE_KEYS}
 
 
 def effective_modules(user):

@@ -11,5 +11,7 @@ npx playwright install chromium
 cp creds.example.json creds.json   # then fill in real pilot passwords (gitignored)
 node run.mjs
 ```
-Screenshots land in `e2e/shots/` (gitignored). Override with `SHOTS=/path` and `BASE=https://...`.
+Screenshots land in `e2e/shots/` (gitignored). Override with `SHOTS=/path`.
+Portals are the production subdomains by default (`https://dealer|pilot|admin.aayunexinnovations.com`);
+set `LOCAL=1` to target the Vite dev servers on :5173/:5174/:5175 instead (see `portals.mjs`).
 Credentials load from `creds.json` (gitignored) or env vars DEALER_PASS / ADMIN_PASS / PILOT_PASS.

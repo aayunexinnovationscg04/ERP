@@ -1,103 +1,142 @@
 <template>
-  <div class="topbar">
-    <div class="heading">
-      <span class="eyebrow">Platform / Company Management</span>
-      <h1 class="ico"><BarChart :size="20" /> Company Analytics</h1>
-    </div>
-  </div>
-  <p class="hint">Per-company usage and growth, presentational until a dedicated analytics aggregation service lands.</p>
+  <PageHeader :icon="ChartColumn" title="Company Analytics" description="User accounts and sign-in activity for each company, from live platform records." />
 
-  <div v-if="loading" class="grid-2">
-    <div class="card" style="padding:16px"><div class="skel skel-line md"></div><div class="skel sk-row" v-for="n in 5" :key="n"></div></div>
-    <div class="card" style="padding:16px"><div class="skel skel-line md"></div><div class="skel sk-row" v-for="n in 5" :key="n"></div></div>
+  <div class="stats">
+    <StatCard label="Companies" :value="fmt(companies.length)" :icon="Building2" tone="navy" :loading="loading" />
+    <StatCard label="Company users" :value="fmt(totals.users)" :icon="Users" tone="info" :loading="loading" :sub="loading ? '' : `${fmt(totals.active)} active accounts`" />
+    <StatCard label="Signed in, last 30 days" :value="fmt(totals.recent)" :icon="LogIn" tone="green" :loading="loading" :sub="loading ? '' : pctText(totals.recent, totals.users) + ' of company users'" />
+    <StatCard label="Never signed in" :value="fmt(totals.never)" :icon="UserX" :tone="totals.never ? 'amber' : 'navy'" :loading="loading" />
   </div>
 
-  <div v-else class="grid-2">
-    <div class="card" style="padding:16px">
-      <p class="section-title" style="margin-bottom:14px">Active users by company (30d)</p>
-      <div v-if="rows.length" class="barchart">
-        <div class="brow" v-for="d in rows" :key="d.id">
-          <span class="blabel" :title="d.name">{{ d.name }}</span>
-          <svg class="btrack" width="100%" height="12" role="img" :aria-label="`${d.name}: ${d.activeUsers} active users`">
-            <rect width="100%" height="12" rx="3" fill="var(--surface-3)" />
-            <rect :width="pct(d.activeUsers) + '%'" height="12" rx="3" fill="var(--brand)" />
-          </svg>
-          <span class="bval">{{ d.activeUsers }}</span>
+  <div class="grid-2">
+    <section class="card">
+      <div class="card-head">
+        <div><h2>Users by company</h2><div class="sub">Accounts per company, split by role</div></div>
+      </div>
+      <div class="card-body">
+        <div v-if="loading" class="bars"><div v-for="n in 4" :key="n" class="skel skel-row"></div></div>
+        <EmptyState v-else-if="!rows.length" :icon="Building2" title="No companies yet" />
+        <template v-else>
+          <div class="bars">
+            <div v-for="d in rows" :key="d.id" class="bar-row" :title="`${d.name}: ${d.dealer} dealer, ${d.manager} manager, ${d.pilot} pilot`">
+              <span class="bar-label">{{ d.name }}</span>
+              <div class="bar-track">
+                <div :style="{ display: 'flex', gap: '2px', height: '100%', width: (d.users / maxUsers * 100) + '%' }">
+                  <span v-for="r in roleKeys" v-show="d[r]" :key="r" class="bar-fill" :style="{ flex: d[r], background: roleColor[r] }"></span>
+                </div>
+              </div>
+              <span class="bar-val">{{ d.users }}</span>
+            </div>
+          </div>
+          <div class="legend">
+            <span v-for="r in roleKeys" :key="r"><i :style="{ background: roleColor[r] }"></i>{{ roleLabel(r) }}</span>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div><h2>Sign-in activity</h2><div class="sub">Share of each company's users who signed in during the last 30 days</div></div>
+      </div>
+      <div class="card-body">
+        <div v-if="loading" class="bars"><div v-for="n in 4" :key="n" class="skel skel-row"></div></div>
+        <EmptyState v-else-if="!rows.length" :icon="Building2" title="No companies yet" />
+        <div v-else class="bars">
+          <div v-for="d in rows" :key="d.id" class="bar-row" :title="`${d.name}: ${d.recent} of ${d.users} users`">
+            <span class="bar-label">{{ d.name }}</span>
+            <div class="bar-track"><span class="bar-fill" :style="{ width: (d.users ? d.recent / d.users * 100 : 0) + '%', background: 'var(--green)' }"></span></div>
+            <span class="bar-val">{{ d.users ? Math.round(d.recent / d.users * 100) + '%' : '—' }}</span>
+          </div>
         </div>
       </div>
-      <div v-else class="empty">No companies yet</div>
-    </div>
-
-    <div class="card" style="padding:16px">
-      <p class="section-title" style="margin-bottom:14px">Fleet growth (month over month)</p>
-      <div v-if="rows.length" class="barchart">
-        <div class="brow" v-for="d in rows" :key="d.id">
-          <span class="blabel" :title="d.name">{{ d.name }}</span>
-          <svg class="btrack" width="100%" height="12" role="img" :aria-label="`${d.name}: ${d.growth}% growth`">
-            <rect width="100%" height="12" rx="3" fill="var(--surface-3)" />
-            <rect :width="growthPct(d.growth) + '%'" height="12" rx="3" :fill="d.growth >= 0 ? 'var(--green)' : 'var(--red)'" />
-          </svg>
-          <span class="bval" :style="{ color: d.growth >= 0 ? 'var(--green)' : 'var(--red)' }">{{ d.growth >= 0 ? '+' : '' }}{{ d.growth }}%</span>
-        </div>
-      </div>
-      <div v-else class="empty">No companies yet</div>
-    </div>
+    </section>
   </div>
 
-  <div class="card" style="padding:6px 0;margin-top:18px" v-if="!loading">
-    <table>
-      <thead><tr><th>Company</th><th>Active users</th><th>Sessions (30d)</th><th>Avg. session</th><th>Fleet growth</th></tr></thead>
-      <tbody v-if="!rows.length"><tr><td colspan="5" class="muted" style="text-align:center;padding:22px">No companies registered yet.</td></tr></tbody>
-      <tbody v-else>
-        <tr v-for="d in rows" :key="d.id">
-          <td>{{ d.name }}</td>
-          <td class="num">{{ d.activeUsers }}</td>
-          <td class="num">{{ d.sessions.toLocaleString() }}</td>
-          <td class="num">{{ d.avgSessionMin }} min</td>
-          <td class="num" :style="{ color: d.growth >= 0 ? 'var(--green)' : 'var(--red)' }">{{ d.growth >= 0 ? '+' : '' }}{{ d.growth }}%</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <section class="card mt">
+    <div class="card-head"><div><h2>Company breakdown</h2></div></div>
+    <div class="table-wrap">
+      <table class="table stack breakdown">
+        <thead>
+          <tr>
+            <th>Company</th><th>Status</th><th class="t-right">Users</th><th class="t-right">Dealers</th>
+            <th class="t-right">Managers</th><th class="t-right">Pilots</th><th class="t-right">Active 30d</th><th>Last sign-in</th>
+          </tr>
+        </thead>
+        <TableSkeleton v-if="loading" :cols="8" :rows="4" />
+        <tbody v-else-if="!rows.length">
+          <tr class="table-empty"><td colspan="8"><EmptyState :icon="Building2" title="No companies registered yet" /></td></tr>
+        </tbody>
+        <tbody v-else>
+          <tr v-for="d in rows" :key="d.id">
+            <td class="cell-head"><span class="t-primary">{{ d.name }}</span></td>
+            <td data-label="Status"><span class="badge" :class="d.status === 'active' ? 'success' : 'danger'"><span class="bdot"></span>{{ d.status === 'active' ? 'Active' : 'Suspended' }}</span></td>
+            <td data-label="Users" class="t-right num t-primary">{{ d.users }}</td>
+            <td data-label="Dealers" class="t-right num">{{ d.dealer }}</td>
+            <td data-label="Managers" class="t-right num">{{ d.manager }}</td>
+            <td data-label="Pilots" class="t-right num">{{ d.pilot }}</td>
+            <td data-label="Active 30d" class="t-right num">{{ d.recent }}</td>
+            <td data-label="Last sign-in" class="nowrap muted" :title="d.lastLogin ? fmtDateTime(d.lastLogin) : ''">{{ d.lastLogin ? relTime(d.lastLogin) : 'Never' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { BarChart } from 'lucide-vue-next'
-import { getCompanies } from '../api'
+import { ChartColumn, Building2, Users, LogIn, UserX } from 'lucide-vue-next'
+import { getCompanies, getUsers } from '../api'
+import { fmt, fmtDateTime, relTime, roleLabel } from '../format'
+import { toast } from '../toast'
+import PageHeader from '../components/PageHeader.vue'
+import StatCard from '../components/StatCard.vue'
+import EmptyState from '../components/EmptyState.vue'
+import TableSkeleton from '../components/TableSkeleton.vue'
 
 const companies = ref([])
+const users = ref([])
 const loading = ref(true)
-
-function seeded(seed) {
-  const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453
-  return x - Math.floor(x)
-}
+const roleKeys = ['dealer', 'manager', 'pilot']
+const roleColor = { dealer: 'var(--role-dealer)', manager: 'var(--role-manager)', pilot: 'var(--role-pilot)' }
+const MONTH = 30 * 24 * 3600 * 1000
 
 const rows = computed(() => companies.value.map((c) => {
-  const activeUsers = 4 + Math.floor(seeded(c.id * 3 + 1) * 60)
-  const sessions = activeUsers * (8 + Math.floor(seeded(c.id * 5 + 2) * 20))
-  const avgSessionMin = 6 + Math.floor(seeded(c.id * 7 + 3) * 24)
-  const growth = Math.round((seeded(c.id * 11 + 4) * 40 - 14) * 10) / 10
-  return { id: c.id, name: c.name, activeUsers, sessions, avgSessionMin, growth }
-}))
-const maxActive = computed(() => Math.max(1, ...rows.value.map((d) => d.activeUsers)))
-const maxGrowthAbs = computed(() => Math.max(1, ...rows.value.map((d) => Math.abs(d.growth))))
-function pct(n) { return Math.max(4, (n / maxActive.value) * 100) }
-function growthPct(n) { return Math.max(4, (Math.abs(n) / maxGrowthAbs.value) * 100) }
+  const us = users.value.filter((u) => u.company === c.id)
+  const logins = us.map((u) => u.last_login).filter(Boolean).sort()
+  return {
+    id: c.id, name: c.name, status: c.status,
+    users: us.length,
+    dealer: us.filter((u) => u.role === 'dealer').length,
+    manager: us.filter((u) => u.role === 'manager').length,
+    pilot: us.filter((u) => u.role === 'pilot').length,
+    active: us.filter((u) => u.is_active).length,
+    recent: us.filter((u) => u.last_login && Date.now() - new Date(u.last_login) < MONTH).length,
+    never: us.filter((u) => !u.last_login).length,
+    lastLogin: logins[logins.length - 1] || null,
+  }
+}).sort((a, b) => b.users - a.users || a.name.localeCompare(b.name)))
+
+const totals = computed(() => rows.value.reduce((t, d) => ({
+  users: t.users + d.users, active: t.active + d.active, recent: t.recent + d.recent, never: t.never + d.never,
+}), { users: 0, active: 0, recent: 0, never: 0 }))
+const maxUsers = computed(() => Math.max(1, ...rows.value.map((d) => d.users)))
+const pctText = (n, of) => (of ? Math.round((n / of) * 100) + '%' : '0%')
 
 async function load() {
-  try { companies.value = await getCompanies() } finally { loading.value = false }
+  try {
+    ;[companies.value, users.value] = await Promise.all([getCompanies(), getUsers()])
+  } catch (e) {
+    toast.error('Could not load company analytics')
+  } finally { loading.value = false }
 }
 onMounted(load)
 </script>
 
 <style scoped>
-.barchart { display: flex; flex-direction: column; gap: 13px; }
-.brow { display: grid; grid-template-columns: 100px 1fr 40px; align-items: center; gap: 12px; }
-.blabel { font-size: 12px; font-weight: 700; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bval { font-size: 13px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
-.btrack { display: block; }
-.empty { color: var(--muted); font-size: 13px; text-align: center; padding: 16px 0; }
-@media (max-width: 480px) { .brow { grid-template-columns: 76px 1fr 34px; gap: 8px; } }
+@media (max-width: 1240px) and (min-width: 721px) {
+  .breakdown th, .breakdown td { padding-left: 10px; padding-right: 10px; }
+  .breakdown th { letter-spacing: .02em; }
+}
 </style>

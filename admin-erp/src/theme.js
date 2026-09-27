@@ -2,9 +2,12 @@ import { ref } from 'vue'
 
 const STORAGE_KEY = 'fgx_theme'
 
+// The user's explicit choice wins; otherwise follow the device setting.
 function getInitialTheme() {
-  const stored = localStorage.getItem(STORAGE_KEY)
-  return stored === 'light' ? 'light' : 'dark'
+  let stored = null
+  try { stored = localStorage.getItem(STORAGE_KEY) } catch (e) { /* storage blocked */ }
+  if (stored === 'light' || stored === 'dark') return stored
+  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 const theme = ref(getInitialTheme())
@@ -23,7 +26,7 @@ function applyTheme(next) {
 
   theme.value = next
   root.setAttribute('data-theme', next)
-  localStorage.setItem(STORAGE_KEY, next)
+  try { localStorage.setItem(STORAGE_KEY, next) } catch (e) { /* storage blocked */ }
 }
 
 export function useTheme() {

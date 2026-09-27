@@ -19,16 +19,20 @@ http://31.42.125.144, http://:80 {
 }
 
 # ---- Fuel Guard X ERP (automatic Let's Encrypt HTTPS) ----
-# ONE subdomain serves all three ERPs via path routing on nginx :8090:
-#   /dealer/       -> Owner / Company ERP
-#   /admin/        -> Super Admin ERP
-#   /pilot/        -> Driver ERP (placeholder for now)
-#   /api/ + /django-admin/ -> Django backend + admin panel
-#   /              -> redirects to /dealer/
-# Caddy auto-issues + renews the cert and redirects HTTP->HTTPS.
-erp.aayunexinnovations.com {
+# One subdomain per portal; nginx on 127.0.0.1:8090 routes by Host header:
+#   erp.     -> landing page ("choose your portal") + 301s for old /dealer/ /pilot/ /admin/ links
+#   dealer.  -> Dealer ERP     (+ /api/)
+#   pilot.   -> Pilot ERP      (+ /api/)
+#   admin.   -> Admin ERP      (+ /api/ + /django-admin/)
+# Caddy obtains and renews a certificate for every hostname below on its own
+# (ACME / Let's Encrypt) and redirects HTTP -> HTTPS, so certbot is not needed.
+(fuelguardx_erp) {
 	# HSTS belongs at the TLS terminator. Other security headers come from nginx.
 	header Strict-Transport-Security "max-age=31536000"
 	header -Server
+	encode zstd gzip
 	reverse_proxy 127.0.0.1:8090
+}
+erp.aayunexinnovations.com, dealer.aayunexinnovations.com, pilot.aayunexinnovations.com, admin.aayunexinnovations.com {
+	import fuelguardx_erp
 }

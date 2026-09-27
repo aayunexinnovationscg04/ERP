@@ -3,103 +3,148 @@
   <WelcomeGate v-if="justLoggedIn" :name="welcomeName" @done="justLoggedIn = false" />
   <div v-if="isLogin"><router-view /></div>
   <div v-else class="app" :class="{ collapsed }">
-    <div class="mobilebar">
-      <button class="hamburger" @click="menuOpen = true" aria-label="Open menu"><Menu :size="22" /></button>
-      <div class="brand">
-        <img class="brand-logo" src="./assets/logo.png" alt="" />
-        <div class="brand-text"><span class="brand-sub">Aayunex Innovations</span><span class="brand-title">Admin</span></div>
-      </div>
-    </div>
-    <aside class="sidebar" :class="{ open: menuOpen }">
-      <div class="brand">
-        <img class="brand-logo" src="./assets/logo.png" alt="Fuel Guard X" />
-        <div class="brand-text">
-          <span class="brand-sub">Aayunex Innovations</span>
-          <span class="brand-title">Control Tower</span>
+    <div class="scrim" :class="{ show: menuOpen }" @click="menuOpen = false" aria-hidden="true"></div>
+
+    <aside class="sidebar" :class="{ open: menuOpen }" aria-label="Main navigation">
+      <div class="sb-brand">
+        <span class="sb-logo"><img :src="brandMark" alt="" /></span>
+        <div class="sb-name">
+          <strong>Fuel Guard X</strong>
+          <small>Admin Console</small>
         </div>
-        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
-        </button>
-        <button class="mobile-close-btn" @click="menuOpen = false" title="Close menu" aria-label="Close menu">
-          <X :size="20" />
-        </button>
+        <button type="button" class="sb-close" @click="menuOpen = false" aria-label="Close menu"><X :size="20" /></button>
       </div>
-      <nav class="nav">
-        <template v-for="(g, gi) in navGroups" :key="g.key">
-          <div class="nav-group" :class="{ collapsed: !isExpanded(g) }">
+
+      <nav class="sb-nav">
+        <div v-for="g in navGroups" :key="g.key" class="sb-group">
+          <div class="sb-group-label">{{ g.label }}</div>
+          <router-link
+            v-for="item in g.items" :key="item.to" :to="item.to" class="sb-link"
+            :title="collapsed ? item.label : undefined" @click="menuOpen = false"
+          >
+            <component :is="item.icon" :size="18" />
+            <span class="label">{{ item.label }}</span>
+          </router-link>
+        </div>
+      </nav>
+
+      <div class="sb-foot">
+        <div class="sb-user" :title="collapsed ? username : undefined">
+          <span class="avatar">{{ initial }}</span>
+          <div class="sb-user-text"><strong>{{ username }}</strong><small>Platform admin</small></div>
+        </div>
+        <button type="button" class="sb-icon-btn" @click="logout" title="Sign out" aria-label="Sign out"><LogOut :size="17" /></button>
+      </div>
+    </aside>
+
+    <div class="main-col">
+      <header class="topbar">
+        <button type="button" class="tb-btn tb-menu" @click="menuOpen = true" aria-label="Open menu"><Menu :size="22" /></button>
+        <button
+          type="button" class="tb-btn sb-collapse" @click="collapsed = !collapsed"
+          :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        >
+          <component :is="collapsed ? PanelLeftOpen : PanelLeftClose" :size="18" />
+        </button>
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <template v-if="current.group">
+            <span class="c-group">{{ current.group }}</span>
+            <ChevronRight class="c-sep" :size="14" />
+          </template>
+          <span class="c-page">{{ current.page }}</span>
+        </nav>
+        <div class="tb-spacer"></div>
+        <div class="tb-right">
+          <button
+            type="button" class="tb-btn" @click="toggleTheme"
+            :title="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+            :aria-label="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+          >
+            <Sun v-if="theme === 'dark'" :size="18" />
+            <Moon v-else :size="18" />
+          </button>
+          <div class="user-menu" ref="userMenuEl">
             <button
-              type="button" class="nav-group-head" @click="toggleGroup(g)"
-              :aria-expanded="isExpanded(g)"
+              type="button" class="user-trigger" @click="userMenu = !userMenu"
+              :aria-expanded="userMenu" aria-haspopup="menu" aria-label="Account menu"
             >
-              <span class="grp-ic"><component :is="g.icon" :size="15" /></span>
-              <span class="nav-group-label">{{ g.label }}</span>
-              <span class="chev"><ChevronDown :size="14" /></span>
+              <span class="avatar">{{ initial }}</span>
+              <span class="ut-name">{{ username }}</span>
+              <ChevronDown :size="15" />
             </button>
-            <div class="nav-group-items" v-show="isExpanded(g)">
-              <router-link v-for="item in g.items" :key="item.to" :to="item.to" :title="item.label" @click="menuOpen = false">
-                <span class="ic"><component :is="item.icon" :size="18" /></span> <span class="label">{{ item.label }}</span>
-              </router-link>
+            <div v-if="userMenu" class="menu" role="menu">
+              <div class="menu-head">
+                <strong>{{ username }}</strong>
+                <small>Platform administrator</small>
+              </div>
+              <button type="button" class="menu-item" role="menuitem" @click="toggleTheme(); userMenu = false">
+                <component :is="theme === 'dark' ? Sun : Moon" :size="16" />
+                {{ theme === 'dark' ? 'Light theme' : 'Dark theme' }}
+              </button>
+              <button type="button" class="menu-item" role="menuitem" @click="askLogoutAll">
+                <MonitorSmartphone :size="16" /> Sign out of all devices
+              </button>
+              <button type="button" class="menu-item danger" role="menuitem" @click="logout">
+                <LogOut :size="16" /> Sign out
+              </button>
             </div>
           </div>
-          <div class="nav-divider" v-if="gi < navGroups.length - 1"></div>
-        </template>
-      </nav>
-      <div class="sidebar-controls">
-        <button
-          type="button" class="theme-toggle" @click="toggleTheme"
-          :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
-          :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
-        >
-          <Sun v-if="theme === 'dark'" :size="16" />
-          <Moon v-else :size="16" />
-        </button>
-      </div>
-      <button class="logout-btn" style="margin-top:12px" @click="logout" title="Log out">
-        <PowerOff :size="16" class="ic" /><span class="label">Log out</span>
-      </button>
-    </aside>
-    <main class="main">
-      <PageSkeleton v-if="showRouteSkeleton" />
-      <AnimatePresence v-else mode="wait">
-        <motion.div
-          :key="$route.fullPath"
-          :initial="{ opacity: 0, y: reduced ? 0 : 8 }"
-          :animate="{ opacity: 1, y: 0 }"
-          :exit="{ opacity: 0, y: reduced ? 0 : -6 }"
-          :transition="{ duration: reduced ? 0 : 0.18, ease: [0.4, 0, 0.2, 1] }"
-        >
-          <router-view />
-        </motion.div>
-      </AnimatePresence>
-    </main>
+        </div>
+      </header>
+
+      <main class="content">
+        <PageSkeleton v-if="showRouteSkeleton" />
+        <AnimatePresence v-else mode="wait">
+          <motion.div
+            :key="$route.fullPath"
+            :initial="{ opacity: 0, y: reduced ? 0 : 4 }"
+            :animate="{ opacity: 1, y: 0 }"
+            :exit="{ opacity: 0 }"
+            :transition="{ duration: reduced ? 0 : 0.14, ease: [0.4, 0, 0.2, 1] }"
+          >
+            <router-view />
+          </motion.div>
+        </AnimatePresence>
+      </main>
+    </div>
+
+    <ConfirmDialog
+      :open="confirmLogoutAll" title="Sign out of all devices?" tone="warn" confirm-label="Sign out everywhere"
+      :busy="loggingOut" @cancel="confirmLogoutAll = false" @confirm="logoutAll"
+    >
+      This ends every admin, dealer and pilot session signed in with <b>{{ username }}</b>, on every browser and device — including this one.
+    </ConfirmDialog>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { motion, AnimatePresence } from 'motion-v'
 import {
-  Menu, X, Users, KeyRound, Activity, Sun, Moon, ChevronDown, ChevronsLeft, ChevronsRight, PowerOff,
-  Building2, BarChart, Truck, Radar, Cpu, Server, ScrollText,
-  ShieldAlert, Flame, ChartLine,
+  Menu, X, Users, KeyRound, Activity, Sun, Moon, ChevronDown, ChevronRight, LogOut,
+  Building2, ChartColumn, Radar, Cpu, ScrollText, ShieldAlert, ChartLine,
+  PanelLeftClose, PanelLeftOpen, MonitorSmartphone,
 } from 'lucide-vue-next'
-import { auth, clearAuth, justLoggedIn } from './auth'
+import { auth, justLoggedIn, logout as endSession, logoutEverywhere } from './auth'
 import { useTheme } from './theme'
 import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
 import PageSkeleton from './components/PageSkeleton.vue'
+import ConfirmDialog from './components/ConfirmDialog.vue'
+import brandMark from '@shared/design/brand/fgx-mark.png'
+
 const route = useRoute(); const router = useRouter()
 const isLogin = computed(() => route.path === '/login')
+const username = computed(() => auth.user?.username || 'admin')
+const initial = computed(() => username.value.charAt(0).toUpperCase())
 const welcomeName = computed(() => {
   const u = auth.user?.username
   return u ? u.charAt(0).toUpperCase() + u.slice(1) : 'Admin'
 })
 
-// Route-level chunks are lazy (see router.js) — most resolve fast enough
-// that this never shows, but a slow/first-time chunk fetch gets a skeleton
-// instead of a frozen page. The 150ms show-delay avoids a flash of skeleton
-// for the common case where the chunk is already cached/instant.
+// Route chunks are lazy (router.js). A slow first-time chunk fetch shows a
+// skeleton after 150ms instead of a frozen page.
 const showRouteSkeleton = ref(false)
 let skeletonShowTimer = null
 router.beforeEach((to) => {
@@ -111,94 +156,95 @@ router.afterEach(() => {
   clearTimeout(skeletonShowTimer)
   showRouteSkeleton.value = false
 })
+
 const menuOpen = ref(false)
+const userMenu = ref(false)
+const userMenuEl = ref(null)
 const collapsed = ref(localStorage.getItem('fgx-admin-sidebar-collapsed') === '1')
 watch(collapsed, (v) => localStorage.setItem('fgx-admin-sidebar-collapsed', v ? '1' : '0'))
 const { theme, toggleTheme } = useTheme()
 const reduced = typeof window !== 'undefined' && window.matchMedia
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
   : false
-watch(() => route.path, () => { menuOpen.value = false })
-// full-screen mobile menu is a real takeover — lock the page underneath from
-// scrolling while it's open, same as any modal/sheet would, and let Escape
-// close it like the (now-removed) backdrop click used to.
-watch(menuOpen, (v) => {
-  if (typeof document !== 'undefined') document.body.style.overflow = v ? 'hidden' : ''
-})
-function onKeydown(e) { if (e.key === 'Escape' && menuOpen.value) menuOpen.value = false }
-if (typeof window !== 'undefined') window.addEventListener('keydown', onKeydown)
-function logout() { clearAuth(); router.push('/login') }
 
-// ---- grouped, collapsible sidebar nav ----
+watch(() => route.path, () => {
+  menuOpen.value = false; userMenu.value = false
+  // the document is the scroller: start each page at the top
+  window.scrollTo({ top: 0, left: 0 })
+})
+// The mobile drawer is modal: lock page scroll underneath while it's open.
+watch(menuOpen, (v) => { document.body.style.overflow = v ? 'hidden' : '' })
+
+function onKeydown(e) {
+  if (e.key !== 'Escape') return
+  menuOpen.value = false
+  userMenu.value = false
+}
+function onDocClick(e) {
+  if (userMenu.value && userMenuEl.value && !userMenuEl.value.contains(e.target)) userMenu.value = false
+}
+onMounted(() => { window.addEventListener('keydown', onKeydown); document.addEventListener('click', onDocClick) })
+onBeforeUnmount(() => { window.removeEventListener('keydown', onKeydown); document.removeEventListener('click', onDocClick) })
+
+async function logout() { userMenu.value = false; await endSession(); router.push('/login') }
+
+const confirmLogoutAll = ref(false)
+const loggingOut = ref(false)
+function askLogoutAll() { userMenu.value = false; confirmLogoutAll.value = true }
+async function logoutAll() {
+  loggingOut.value = true
+  try { await logoutEverywhere() } catch (e) { /* session is cleared locally either way */ }
+  loggingOut.value = false
+  confirmLogoutAll.value = false
+  router.push('/login')
+}
+
 const navGroups = [
   {
-    key: 'company', label: 'Company Management', icon: Building2,
+    key: 'company', label: 'Companies',
     items: [
       { to: '/companies', label: 'Companies', icon: Building2 },
-      { to: '/company-analytics', label: 'Company Analytics', icon: BarChart },
+      { to: '/company-analytics', label: 'Company Analytics', icon: ChartColumn },
     ],
   },
   {
-    key: 'user', label: 'User Management', icon: Users,
+    key: 'user', label: 'Users & Access',
     items: [
       { to: '/users', label: 'Users', icon: Users },
       { to: '/roles', label: 'Role Management', icon: KeyRound },
     ],
   },
   {
-    key: 'fleet', label: 'Global Fleet Monitoring', icon: Truck,
+    key: 'fleet', label: 'Fleet & Devices',
     items: [
       { to: '/fleet-monitoring', label: 'Fleet Overview', icon: Radar },
-    ],
-  },
-  {
-    key: 'device', label: 'Device Management', icon: Cpu,
-    items: [
       { to: '/devices', label: 'Devices', icon: Cpu },
     ],
   },
   {
-    key: 'platform', label: 'Platform Monitoring', icon: Server,
+    key: 'security', label: 'Security & Analytics',
+    items: [
+      { to: '/security-analytics', label: 'Fraud & Theft Alerts', icon: ShieldAlert },
+      { to: '/reports', label: 'Global Reports', icon: ChartLine },
+    ],
+  },
+  {
+    key: 'platform', label: 'Platform',
     items: [
       { to: '/platform', label: 'Platform Health', icon: Activity },
       { to: '/platform-logs', label: 'Audit & Error Logs', icon: ScrollText },
     ],
   },
-  {
-    key: 'security', label: 'Security & Analytics', icon: ShieldAlert,
-    items: [
-      { to: '/security-analytics', label: 'Fraud & Fuel Theft Analytics', icon: Flame },
-      { to: '/reports', label: 'Global Reports', icon: ChartLine },
-    ],
-  },
 ]
 
-const GROUP_STORAGE_KEY = 'fgx_admin_nav_groups'
-function groupHasActiveRoute(g) {
-  return g.items.some((i) => route.path === i.to || route.path.startsWith(i.to + '/'))
-}
-
-// Accordion: at most ONE group open at a time, so the sidebar never grows
-// tall enough to need scrolling — opening a group closes whichever was open.
-// Navigating to a page auto-opens its group (so the active link is never
-// hidden on arrival), but after that the toggle is a real toggle — clicking
-// an already-open group (including the active one) closes it, same as any
-// other group. It doesn't force back open just because you're still on that
-// route; it only re-opens on the NEXT navigation into that section.
-const initialGroup = navGroups.find(groupHasActiveRoute)?.key
-  ?? localStorage.getItem(GROUP_STORAGE_KEY)
-  ?? navGroups[0].key
-const openGroupKey = ref(initialGroup)
-watch(openGroupKey, (v) => localStorage.setItem(GROUP_STORAGE_KEY, v || ''))
-watch(() => route.path, () => {
-  const g = navGroups.find(groupHasActiveRoute)
-  if (g) openGroupKey.value = g.key
+const current = computed(() => {
+  if (route.path.startsWith('/users/') && route.path.endsWith('/permissions')) {
+    return { group: 'Users', page: 'Access overrides' }
+  }
+  for (const g of navGroups) {
+    const item = g.items.find((i) => route.path === i.to || route.path.startsWith(i.to + '/'))
+    if (item) return { group: g.label, page: item.label }
+  }
+  return { group: '', page: 'Admin Console' }
 })
-
-function isExpanded(g) {
-  return openGroupKey.value === g.key
-}
-function toggleGroup(g) {
-  openGroupKey.value = openGroupKey.value === g.key ? null : g.key
-}
 </script>

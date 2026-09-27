@@ -1,49 +1,66 @@
 <template>
-  <div class="topbar">
-    <h1>Challans &amp; Invoices</h1>
-    <div class="row seg">
-      <button :class="{ primary: tab === 'challans' }" @click="tab = 'challans'">Challans</button>
-      <button :class="{ primary: tab === 'invoices' }" @click="tab = 'invoices'">Invoices</button>
+  <PageHeader title="Challans & Invoices" description="Delivery challans issued against trips and customer invoices with payment status." preview>
+    <div class="seg" role="tablist" aria-label="Document type">
+      <button role="tab" :aria-selected="tab === 'challans'" :class="{ on: tab === 'challans' }" @click="tab = 'challans'">Challans</button>
+      <button role="tab" :aria-selected="tab === 'invoices'" :class="{ on: tab === 'invoices' }" @click="tab = 'invoices'">Invoices</button>
+    </div>
+  </PageHeader>
+
+  <div class="kpis" v-if="tab === 'invoices'">
+    <StatTile label="Invoiced" :value="'₹' + inr(invTotal)" :icon="Receipt" tone="navy" :sub="`${invoices.length} invoices`" />
+    <StatTile label="Paid" :value="'₹' + inr(invPaid)" :icon="CheckCircle2" tone="green" />
+    <StatTile label="Outstanding" :value="'₹' + inr(invTotal - invPaid)" :icon="Clock3" tone="crit" />
+  </div>
+  <div class="kpis" v-else>
+    <StatTile label="Challans" :value="challans.length" :icon="FileText" tone="navy" />
+    <StatTile label="Delivered" :value="challans.filter((c) => c.statusLabel === 'Delivered').length" :icon="CheckCircle2" tone="green" />
+    <StatTile label="In transit" :value="challans.filter((c) => c.statusLabel === 'In transit').length" :icon="Truck" tone="amber" />
+  </div>
+
+  <div v-if="tab === 'challans'" class="card flush">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Challan</th><th>Customer</th><th>Truck</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr v-for="c in challans" :key="c.id">
+            <td class="cell-main nowrap">{{ c.no }}</td>
+            <td class="nowrap">{{ c.customer }}</td>
+            <td class="nowrap muted">{{ c.vehicle }}</td>
+            <td class="nowrap muted">{{ c.date }}</td>
+            <td><span class="badge" :class="c.rowClass">{{ c.statusLabel }}</span></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <div v-if="tab === 'challans'" class="card" style="padding:6px 0">
-    <table>
-      <thead><tr><th>Challan No.</th><th>Customer</th><th>Truck</th><th>Date</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr v-for="c in challans" :key="c.id" :class="c.rowClass">
-          <td style="font-weight:600">{{ c.no }}</td>
-          <td>{{ c.customer }}</td>
-          <td class="muted">{{ c.vehicle }}</td>
-          <td class="muted">{{ c.date }}</td>
-          <td><span class="badge" :class="c.rowClass">{{ c.statusLabel }}</span></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div v-else class="card" style="padding:6px 0">
-    <table>
-      <thead><tr><th>Invoice No.</th><th>Customer</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr v-for="inv in invoices" :key="inv.id" :class="inv.rowClass">
-          <td style="font-weight:600">{{ inv.no }}</td>
-          <td>{{ inv.customer }}</td>
-          <td>₹{{ fmt(inv.amount, 0) }}</td>
-          <td class="muted">{{ inv.date }}</td>
-          <td><span class="badge" :class="inv.rowClass">{{ inv.statusLabel }}</span></td>
-        </tr>
-      </tbody>
-    </table>
+  <div v-else class="card flush">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Invoice</th><th>Customer</th><th class="num">Amount</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr v-for="inv in invoices" :key="inv.id">
+            <td class="cell-main nowrap">{{ inv.no }}</td>
+            <td class="nowrap">{{ inv.customer }}</td>
+            <td class="num cell-main">₹{{ inr(inv.amount) }}</td>
+            <td class="nowrap muted">{{ inv.date }}</td>
+            <td><span class="badge" :class="inv.rowClass">{{ inv.statusLabel }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import { Receipt, CheckCircle2, Clock3, FileText, Truck } from 'lucide-vue-next'
+import PageHeader from '../components/PageHeader.vue'
+import StatTile from '../components/StatTile.vue'
 import { MOCK_CUSTOMERS, MOCK_VEHICLES, seededRandom, pick, rangeInt, addDays, fmtDate } from '../mock'
-import { fmt } from '../util'
 
 const tab = ref('challans')
+const inr = (n) => Math.round(n).toLocaleString('en-IN')
 const rng = seededRandom(1414)
 const today = new Date()
 
@@ -69,11 +86,6 @@ const invoices = Array.from({ length: 14 }, (_, i) => {
     statusLabel: st.label, rowClass: st.cls,
   }
 })
+const invTotal = invoices.reduce((a, i) => a + i.amount, 0)
+const invPaid = invoices.filter((i) => i.statusLabel === 'Paid').reduce((a, i) => a + i.amount, 0)
 </script>
-
-<style scoped>
-.seg { background: var(--surface-2); border: 1px solid var(--border); padding: 3px; border-radius: var(--radius-pill); gap: 2px; }
-.seg button { border: none; background: none; padding: 7px 16px; border-radius: var(--radius-pill); }
-.seg button.primary { box-shadow: none; }
-.seg button:not(.primary):hover { background: var(--surface-3); }
-</style>

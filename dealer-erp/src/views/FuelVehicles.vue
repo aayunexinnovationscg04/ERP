@@ -1,64 +1,104 @@
 <template>
-  <div class="topbar">
-    <h1>Fuel</h1>
-    <span class="muted">{{ vehicles.length }} vehicle(s)</span>
+  <PageHeader title="Fuel Overview" description="Tank level of every vehicle. Open one to see refills, theft alerts and usage trends.">
+    <router-link to="/alerts" class="btn"><ShieldAlert :size="16" /> Fuel alerts</router-link>
+  </PageHeader>
+
+  <div v-if="loading" class="kpis"><div class="skel sk-chip" v-for="n in 4" :key="n"></div></div>
+  <div v-else class="kpis">
+    <StatTile label="Fuel in tanks" :value="withReading.length ? fmt(totalLitres, 0) : '—'" :unit="withReading.length ? 'L' : ''" :icon="Fuel" tone="brand" :sub="`${withReading.length} of ${vehicles.length} reporting`" />
+    <StatTile label="Average level" :value="avgPct == null ? '—' : avgPct" :unit="avgPct == null ? '' : '%'" :icon="Gauge" tone="blue" />
+    <StatTile label="Low fuel (≤ 15%)" :value="lowCount" :icon="TriangleAlert" :tone="lowCount ? 'crit' : 'gray'" />
+    <StatTile label="No reading yet" :value="vehicles.length - withReading.length" :icon="CircleDashed" tone="gray" />
   </div>
 
-  <div v-if="loading" class="fuel-grid">
-    <div class="skel sk-box" v-for="n in 4" :key="n"></div>
+  <div v-if="loading" class="fuel-grid"><div class="skel sk-box" v-for="n in 6" :key="n"></div></div>
+
+  <div v-else-if="!vehicles.length" class="card">
+    <EmptyState :icon="Fuel" title="No vehicles yet" text="Fuel levels appear once a vehicle's Fuel Guard X sensor starts reporting." />
   </div>
 
-  <div v-else class="fuel-grid">
-    <motion.button type="button" class="fuel-box" v-for="(v, i) in vehicles" :key="v.id"
-            :initial="{ opacity: 0, y: 10 }" :animate="{ opacity: 1, y: 0 }"
-            :transition="{ duration: .22, delay: Math.min(i, 12) * .03, ease: [.4, 0, .2, 1] }"
-            :while-hover="{ y: -3 }" :while-tap="{ scale: .98 }"
-            @click="$router.push(`/fuel/${v.id}`)">
-      <div class="fb-top">
-        <span class="dot" :class="freshness(v)"></span>
-        <span class="fb-name">{{ v.local_name }}</span>
+  <template v-else>
+    <div class="toolbar">
+      <label class="search">
+        <Search :size="16" />
+        <input v-model="q" type="search" placeholder="Search vehicle…" aria-label="Search vehicles" />
+      </label>
+      <div class="seg" role="group" aria-label="Sort">
+        <button :class="{ on: sort === 'level' }" @click="sort = 'level'">Lowest first</button>
+        <button :class="{ on: sort === 'name' }" @click="sort = 'name'">A–Z</button>
       </div>
-      <div class="muted fb-reg">{{ v.registration_number }}</div>
-      <div class="fb-level">
-        <Fuel :size="15" class="fb-ic" :class="levelClass(v)" />
-        <b>{{ fmt(v.latest?.total_litres) }}</b><span class="muted">L</span>
-      </div>
-      <div class="fb-bar"><div class="fb-bar-fill" :class="levelClass(v)" :style="{ width: pct(v) + '%' }"></div></div>
-      <div class="muted fb-cap">{{ v.tank_capacity_litres ? pct(v) + '% of ' + v.tank_capacity_litres + ' L tank' : 'Tank capacity not set' }}</div>
-    </motion.button>
-
-    <p v-if="!vehicles.length" class="muted">No vehicles yet.</p>
-  </div>
+    </div>
+    <div class="fuel-grid">
+      <router-link v-for="v in shown" :key="v.id" :to="`/fuel/${v.id}`" class="card fuel-box">
+        <div class="fb-top">
+          <div style="min-width:0">
+            <div class="fb-name">{{ v.local_name }}</div>
+            <div class="fb-reg">{{ v.registration_number }}</div>
+          </div>
+          <span class="badge" :class="levelBadge(v)">{{ levelText(v) }}</span>
+        </div>
+        <div class="fb-level">
+          <template v-if="v.latest?.total_litres != null"><b class="num">{{ fmt(v.latest.total_litres) }}</b><span>L</span></template>
+          <span v-else class="fb-none">No fuel reading yet</span>
+          <span class="fb-pct" v-if="hasPct(v)">{{ pct(v) }}%</span>
+        </div>
+        <div class="meter"><span :class="levelClass(v)" :style="{ width: pct(v) + '%' }"></span></div>
+        <div class="fb-foot">
+          <span>{{ v.tank_capacity_litres ? v.tank_capacity_litres + ' L tank' : 'Tank size not set' }}</span>
+          <span class="ico" style="gap:6px"><span class="dot" :class="freshness(v)"></span>{{ ago(v.latest?.received_at) }}</span>
+        </div>
+      </router-link>
+    </div>
+    <EmptyState v-if="!shown.length" compact :icon="SearchX" title="No matching vehicles" />
+  </template>
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, ref } from 'vue'
-import { Fuel } from 'lucide-vue-next'
-import { motion } from 'motion-v'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { Fuel, Gauge, TriangleAlert, CircleDashed, Search, SearchX, ShieldAlert } from 'lucide-vue-next'
 import { getVehicles } from '../api'
-import { freshness, fmt } from '../util'
+import { freshness, fmt, ago } from '../util'
+import PageHeader from '../components/PageHeader.vue'
+import StatTile from '../components/StatTile.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const vehicles = ref([])
 const loading = ref(true)
+const q = ref('')
+const sort = ref('level')
 let timer
 
+const hasPct = (v) => !!v.tank_capacity_litres && v.latest?.total_litres != null
 function pct(v) {
-  if (!v.tank_capacity_litres || v.latest?.total_litres == null) return 0
+  if (!hasPct(v)) return 0
   return Math.max(0, Math.min(100, Math.round((v.latest.total_litres / v.tank_capacity_litres) * 100)))
 }
-
-// The tile's own fuel level decides its accent, not just its text — a near-
-// empty tank reads visually urgent (crit) rather than the same violet as a
-// full one with only the number differing. Only color-code when there's an
-// actual sensor reading — a vehicle with no telemetry yet (total_litres
-// null) stays neutral instead of misreading as "critically empty".
+// Colour only when there's a real reading — no telemetry stays neutral.
 function levelClass(v) {
-  if (!v.tank_capacity_litres || v.latest?.total_litres == null) return ''
+  if (!hasPct(v)) return 'gray'
   const p = pct(v)
-  if (p <= 15) return 'crit'
-  if (p <= 40) return 'amber'
-  return ''
+  return p <= 15 ? 'crit' : p <= 40 ? 'amber' : 'green'
 }
+function levelBadge(v) { return { gray: 'offline', crit: 'critical', amber: 'idle', green: 'active' }[levelClass(v)] }
+function levelText(v) {
+  if (v.latest?.total_litres == null) return 'No reading'
+  if (!v.tank_capacity_litres) return 'Reading'
+  return { crit: 'Low', amber: 'Medium', green: 'Good' }[levelClass(v)]
+}
+
+const withReading = computed(() => vehicles.value.filter((v) => v.latest?.total_litres != null))
+const totalLitres = computed(() => withReading.value.reduce((s, v) => s + Number(v.latest.total_litres), 0))
+const avgPct = computed(() => {
+  const w = vehicles.value.filter(hasPct)
+  return w.length ? Math.round(w.reduce((s, v) => s + pct(v), 0) / w.length) : null
+})
+const lowCount = computed(() => vehicles.value.filter((v) => hasPct(v) && pct(v) <= 15).length)
+const shown = computed(() => {
+  const t = q.value.trim().toLowerCase()
+  const list = vehicles.value.filter((v) => !t || [v.local_name, v.registration_number].some((x) => x?.toLowerCase().includes(t)))
+  if (sort.value === 'name') return [...list].sort((a, b) => a.local_name.localeCompare(b.local_name, undefined, { numeric: true }))
+  return [...list].sort((a, b) => (hasPct(b) - hasPct(a)) || (pct(a) - pct(b)))
+})
 
 async function load() {
   try { vehicles.value = await getVehicles() }
@@ -70,35 +110,17 @@ onBeforeUnmount(() => clearInterval(timer))
 </script>
 
 <style scoped>
-/* Fixed-ish tile width (not 1fr) so a single vehicle doesn't stretch into one
-   giant box — each tile stays a compact card and the grid just adds more of
-   them as vehicles are added. */
-.fuel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 240px)); gap: 14px; }
-.sk-box { height: 128px; border-radius: var(--radius); }
-
-.fuel-box {
-  text-align: left; background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 18px 20px;
-  display: flex; flex-direction: column; gap: 3px;
-  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease), border-color var(--dur) var(--ease);
-}
-.fuel-box:hover { box-shadow: 0 10px 26px rgba(139,92,246,.22), var(--shadow-md); border-color: var(--violet); transform: translateY(-2px); }
-.fuel-box:active { transform: translateY(0) scale(.99); }
-
-.fb-top { display: flex; align-items: center; gap: 0; }
-.fb-name { font-weight: 700; font-size: 15.5px; color: var(--ink-strong); }
-.fb-reg { font-size: 12px; margin-bottom: 10px; }
-
-.fb-level { display: flex; align-items: baseline; gap: 8px; }
-.fb-ic { color: var(--violet); flex: none; align-self: center; }
-.fb-ic.amber { color: var(--amber); }
-.fb-ic.crit { color: var(--crit); }
-.fb-level b { font-size: 22px; font-weight: 800; letter-spacing: -.01em; color: var(--ink-strong); }
-.fb-level .muted { font-size: 12.5px; }
-
-.fb-bar { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 8px; }
-.fb-bar-fill { height: 100%; background: var(--grad-violet); border-radius: 999px; transition: width var(--dur) var(--ease); }
-.fb-bar-fill.amber { background: var(--grad-amber); }
-.fb-bar-fill.crit { background: var(--grad-crit); }
-.fb-cap { font-size: 11.5px; margin-top: 5px; }
+.fuel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.fuel-box { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; color: inherit; transition: border-color var(--dur) var(--ease); }
+.fuel-box:hover { border-color: var(--brand); text-decoration: none; }
+.fb-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.fb-name { font-weight: 700; font-size: 15px; color: var(--ink-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fb-reg { font-size: 12px; color: var(--muted); }
+.fb-level { display: flex; align-items: baseline; gap: 4px; }
+.fb-level b { font-size: 26px; font-weight: 800; letter-spacing: -.02em; color: var(--ink-strong); }
+.fb-level > span { font-size: 13px; color: var(--muted); font-weight: 600; }
+.fb-none { font-size: 14px !important; color: var(--muted); font-weight: 600; line-height: 36px; }
+.fb-level .fb-pct { margin-left: auto; font-size: 13px; color: var(--text); font-weight: 700; }
+.fb-foot { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+@media (max-width: 720px) { .fuel-grid { grid-template-columns: 1fr; } }
 </style>

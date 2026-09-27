@@ -1,64 +1,83 @@
 <template>
-  <h1>Alerts</h1>
-  <div class="muted" style="margin-bottom:14px">Safety &amp; security notices for your truck</div>
+  <div class="page-head">
+    <div class="ph-text">
+      <h1>Alerts</h1>
+      <div class="ph-sub">
+        <template v-if="!loading && alerts.length">{{ openCount }} open · {{ alerts.length }} total</template>
+        <template v-else>Safety &amp; security notices for your truck</template>
+      </div>
+    </div>
+  </div>
 
-  <div v-if="!loading && alerts.length" class="filter-chips">
-    <button v-for="c in CATEGORIES" :key="c.key" class="filter-chip" :class="{ active: activeCat === c.key }" @click="activeCat = c.key">
-      {{ c.label }}<span v-if="c.key !== 'all'" class="filter-chip-count">{{ countFor(c) }}</span>
+  <div v-if="!loading && alerts.length" class="filter-chips" role="toolbar" aria-label="Filter alerts">
+    <button v-for="c in CATEGORIES" :key="c.key" type="button" class="filter-chip" :class="{ active: activeCat === c.key }"
+      :aria-pressed="activeCat === c.key" @click="activeCat = c.key">
+      {{ c.label }}<span class="filter-chip-count">{{ countFor(c) }}</span>
     </button>
   </div>
 
   <div v-if="loading">
-    <div v-for="n in 4" :key="n" class="skel sk-item"></div>
-  </div>
-  <div v-else-if="!alerts.length" class="card empty">
-    <CircleCheck :size="34" :stroke-width="1.75" style="color:var(--green)" />
-    <div style="margin-top:8px">No alerts. All clear.</div>
-  </div>
-  <div v-else-if="!filtered.length" class="card empty">
-    <CircleCheck :size="34" :stroke-width="1.75" style="color:var(--muted)" />
-    <div style="margin-top:8px">No {{ activeCatLabel }} alerts right now.</div>
+    <div v-for="n in 4" :key="n" class="skel" style="height:118px; margin-bottom:12px"></div>
   </div>
 
-  <div v-else>
-    <motion.div v-for="(a, i) in filtered" :key="a.id" class="card item"
-      :class="'sev-' + (severityClass(a.severity) || 'info')"
+  <div v-else-if="!alerts.length" class="card empty-state">
+    <span class="empty-ic ok"><ShieldCheck :size="34" :stroke-width="1.75" /></span>
+    <h2>All clear</h2>
+    <p>No alerts for your truck. Overspeed, fuel and security warnings will appear here the moment they're raised.</p>
+  </div>
+
+  <div v-else-if="!filtered.length" class="card empty-state">
+    <span class="empty-ic"><CircleCheck :size="34" :stroke-width="1.75" /></span>
+    <h2>No {{ activeCatLabel }} alerts</h2>
+    <p>Nothing in this category right now.</p>
+    <div class="empty-actions"><button type="button" class="btn" @click="activeCat = 'all'">Show all alerts</button></div>
+  </div>
+
+  <div v-else class="alert-list">
+    <motion.article v-for="(a, i) in filtered" :key="a.id" class="card alert-card" :class="'sev-' + sev(a.severity)"
       :initial="{ opacity: 0, y: reduced ? 0 : 8 }" :animate="{ opacity: 1, y: 0 }"
       :transition="{ duration: reduced ? 0 : 0.22, delay: reduced ? 0 : Math.min(i, 8) * 0.03, ease: EASE }">
-      <div class="item-row">
-        <span class="item-ic" :class="severityClass(a.severity) || 'info'">
-          <component :is="severityIcon(a.severity)" :size="17" :stroke-width="2.25" />
+      <div class="ac-top">
+        <span class="row-ic" :class="SEV_TONE[sev(a.severity)]">
+          <component :is="SEV_ICON[sev(a.severity)]" :size="20" :stroke-width="2.25" />
         </span>
-        <div>
-          <div class="t">{{ a.title || a.type }}</div>
-          <div class="d">{{ a.message }}</div>
-          <div class="d">{{ when(a.created_at) }}</div>
+        <div class="ac-main">
+          <div class="ac-title">{{ a.title || a.type_label || a.type }}</div>
+          <div class="ac-meta">
+            <template v-if="a.title && a.type_label && a.title !== a.type_label"><span>{{ a.type_label }}</span><span class="sep">·</span></template>
+            <time :datetime="a.created_at" :title="dateTime(a.created_at)">{{ timeAgo(a.created_at) }}</time>
+          </div>
         </div>
+        <span class="badge" :class="SEV_BADGE[sev(a.severity)]">{{ SEV_LABEL[sev(a.severity)] }}</span>
       </div>
-      <div style="text-align:right; align-self:flex-start">
-        <span class="badge" :class="a.severity"><span class="dot"></span>{{ a.severity }}</span>
-        <div class="d" style="margin-top:6px">{{ a.status }}</div>
+      <p v-if="a.message" class="ac-msg">{{ a.message }}</p>
+      <div class="ac-foot">
+        <span class="badge" :class="STATUS_BADGE[a.status] || 'neutral'"><span class="dot"></span>{{ STATUS_LABEL[a.status] || a.status }}</span>
+        <span class="muted ac-when">{{ dateTime(a.created_at) }}</span>
+        <span class="spacer"></span>
+        <a v-if="a.lat != null && a.lng != null" class="btn btn-sm btn-ghost ac-map"
+          :href="`https://www.google.com/maps/search/?api=1&query=${a.lat},${a.lng}`" target="_blank" rel="noopener">
+          <MapPin :size="16" :stroke-width="2.25" /> Location
+        </a>
       </div>
-    </motion.div>
+    </motion.article>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { motion } from 'motion-v'
-import { CircleCheck, TriangleAlert, ShieldAlert, Info } from 'lucide-vue-next'
+import { CircleCheck, TriangleAlert, ShieldAlert, Info, ShieldCheck, MapPin } from 'lucide-vue-next'
 import { getMyAlerts } from '../api'
+import { timeAgo, dateTime } from '../format'
 import { usePrefersReducedMotion, EASE } from '../motion'
 
 const reduced = usePrefersReducedMotion()
 const loading = ref(true)
 const alerts = ref([])
 
-// Category filter chips — derived entirely from the alert `type`/`severity`
-// fields the pilot alerts endpoint already returns (Alert.Type in the
-// backend model), no new data source. "Emergency" has no dedicated backend
-// type today, so it's mapped to critical-severity alerts of any type — the
-// closest existing signal for "this needs immediate attention".
+// Category chips come from the alert `type`/`severity` the endpoint returns.
+// "Emergency" has no dedicated backend type, so it maps to critical severity.
 const CATEGORIES = [
   { key: 'all', label: 'All' },
   { key: 'overspeed', label: 'Overspeed', types: ['overspeed'] },
@@ -81,24 +100,38 @@ const filtered = computed(() => {
   const c = CATEGORIES.find((x) => x.key === activeCat.value) || CATEGORIES[0]
   return alerts.value.filter((a) => matchesCategory(a, c))
 })
+const openCount = computed(() => alerts.value.filter((a) => a.status === 'open').length)
 
-function when(s) { return s ? new Date(s).toLocaleString() : '—' }
-function severityClass(sev) {
-  if (sev === 'critical') return 'critical'
-  if (sev === 'warning') return 'warning'
-  return ''
-}
-// severity now drives the icon glyph too, not just its color — so a critical
-// alert and an informational one look genuinely different at a glance, the
-// same fix philosophy applied to the trips list
-function severityIcon(sev) {
-  if (sev === 'critical') return ShieldAlert
-  if (sev === 'warning') return TriangleAlert
-  return Info
-}
+function sev(s) { return s === 'critical' || s === 'warning' ? s : 'info' }
+const SEV_ICON = { critical: ShieldAlert, warning: TriangleAlert, info: Info }
+const SEV_TONE = { critical: 'ic-red', warning: 'ic-amber', info: 'ic-info' }
+const SEV_BADGE = { critical: 'critical', warning: 'warning', info: 'info' }
+const SEV_LABEL = { critical: 'Critical', warning: 'Warning', info: 'Info' }
+const STATUS_BADGE = { open: 'brand', acknowledged: 'neutral', resolved: 'valid' }
+const STATUS_LABEL = { open: 'Open', acknowledged: 'Acknowledged', resolved: 'Resolved' }
 
 onMounted(async () => {
-  try { alerts.value = await getMyAlerts() } catch (e) { /* ignore */ }
+  try { alerts.value = await getMyAlerts() } catch (e) { /* show empty state */ }
   finally { loading.value = false }
 })
 </script>
+
+<style scoped>
+.alert-list { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1100px) { .alert-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+
+.alert-card { padding: 16px; border-left: 4px solid var(--border-strong); display: flex; flex-direction: column; gap: 12px; }
+.alert-card.sev-critical { border-left-color: var(--crit); }
+.alert-card.sev-warning { border-left-color: var(--amber); }
+.alert-card.sev-info { border-left-color: var(--info); }
+.ac-top { display: flex; align-items: flex-start; gap: 12px; }
+.ac-main { flex: 1; min-width: 0; }
+.ac-title { font-weight: 800; font-size: 1rem; color: var(--ink-strong); line-height: 1.3; }
+.ac-meta { color: var(--muted); font-size: .8125rem; font-weight: 600; margin-top: 3px; }
+.ac-meta .sep { margin: 0 6px; color: var(--muted-2); }
+.ac-msg { color: var(--text); font-size: .9375rem; line-height: 1.5; }
+.ac-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.ac-when { font-size: .8125rem; }
+.ac-map { margin: -4px -8px -4px 0; color: var(--info); }
+@media (max-width: 400px) { .ac-when { display: none; } }
+</style>

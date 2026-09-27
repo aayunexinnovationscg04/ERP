@@ -1,46 +1,35 @@
 <template>
-  <div class="topbar">
-    <h1>Route Optimization</h1>
-    <span class="muted ico"><Sparkles :size="13" /> AI-suggested routes based on traffic &amp; fuel patterns</span>
-  </div>
+  <PageHeader title="Route Optimization" description="Suggested route changes per truck with the time and fuel they could save each week." preview />
 
   <div class="kpis">
-    <motion.div class="card kpi glow-green hero" :while-hover="{ y: -2 }">
-      <span class="icon-chip lg green ic"><Clock :size="20" class="icon-lg" /></span><div class="n">{{ fmt(totalTimeSaved, 0) }} min</div><div class="l">Potential time saved / week</div>
-    </motion.div>
-    <motion.div class="card kpi glow-violet" :while-hover="{ y: -2 }">
-      <span class="icon-chip lg violet ic"><Fuel :size="20" class="icon-lg" /></span><div class="n">{{ fmt(totalFuelSaved, 0) }} L</div><div class="l">Potential fuel saved / week</div>
-    </motion.div>
-    <motion.div class="card kpi glow-blue" :while-hover="{ y: -2 }">
-      <span class="icon-chip lg blue ic"><Compass :size="20" class="icon-lg" /></span><div class="n">{{ suggestions.length }}</div><div class="l">Suggested routes</div>
-    </motion.div>
+    <StatTile label="Time saved / week" :value="fmt(totalTimeSaved, 0)" unit="min" :icon="Clock" tone="green" />
+    <StatTile label="Fuel saved / week" :value="fmt(totalFuelSaved, 0)" unit="L" :icon="Fuel" tone="brand" />
+    <StatTile label="Suggestions" :value="suggestions.length" :icon="Compass" tone="blue" />
   </div>
 
-  <div class="ro-list">
-    <motion.div class="card ro-row" v-for="(s, i) in suggestions" :key="s.id"
-                :initial="{ opacity: 0, y: 8 }" :animate="{ opacity: 1, y: 0 }"
-                :transition="{ duration: .2, delay: Math.min(i, 12) * .025, ease: [.4, 0, .2, 1] }">
-      <span class="icon-chip lg blue ro-ic"><Route :size="20" class="icon-lg" /></span>
-      <div class="ro-body">
-        <div class="ro-head">
-          <b>{{ s.vehicleName }}</b>
-          <span class="muted">{{ s.from }} → {{ s.to }}</span>
-        </div>
-        <p class="muted ro-desc">{{ s.suggestion }}</p>
-        <div class="row ro-savings">
-          <span class="badge active ico"><Clock :size="12" /> Save {{ s.timeSaved }} min</span>
-          <span class="badge info ico"><Fuel :size="12" /> Save {{ fmt(s.fuelSaved, 1) }} L</span>
-          <span class="muted" style="font-size:12px">{{ s.confidence }}% confidence</span>
+  <div class="card flush">
+    <div class="list">
+      <div class="list-row ro-row" v-for="s in suggestions" :key="s.id">
+        <span class="icon-chip blue"><Route :size="17" /></span>
+        <div class="grow">
+          <div class="ro-head"><b>{{ s.vehicleName }}</b><span class="muted">{{ s.from }} → {{ s.to }}</span></div>
+          <p class="ro-desc">{{ s.suggestion }}</p>
+          <div class="ro-savings">
+            <span class="badge active plain"><Clock :size="12" /> Save {{ s.timeSaved }} min</span>
+            <span class="badge brand plain"><Fuel :size="12" /> Save {{ fmt(s.fuelSaved, 1) }} L</span>
+            <span class="muted" style="font-size:12px">{{ s.confidence }}% confidence</span>
+          </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { Sparkles, Clock, Fuel, Compass, Route } from 'lucide-vue-next'
-import { motion } from 'motion-v'
+import { Clock, Fuel, Compass, Route } from 'lucide-vue-next'
+import PageHeader from '../components/PageHeader.vue'
+import StatTile from '../components/StatTile.vue'
 import { MOCK_VEHICLES, seededRandom, pick, rangeInt, range } from '../mock'
 import { fmt } from '../util'
 
@@ -73,13 +62,11 @@ const suggestions = MOCK_VEHICLES.map((v, i) => {
 const totalTimeSaved = computed(() => suggestions.reduce((s, r) => s + r.timeSaved, 0))
 const totalFuelSaved = computed(() => suggestions.reduce((s, r) => s + r.fuelSaved, 0))
 </script>
-
 <style scoped>
-.ro-list { display: flex; flex-direction: column; gap: 12px; }
-.ro-row { padding: 16px 18px; display: flex; gap: 14px; align-items: flex-start; }
-.ro-ic { flex: none; }
-.ro-body { flex: 1; min-width: 0; }
-.ro-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 14.5px; }
-.ro-desc { font-size: 13px; margin: 4px 0 10px; }
-.ro-savings { gap: 10px; flex-wrap: wrap; }
+.ro-row { align-items: flex-start; padding: 16px 18px; }
+.ro-head { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; font-size: 14px; }
+.ro-head b { color: var(--ink-strong); }
+.ro-head .muted { font-size: 13px; }
+.ro-desc { font-size: 13px; margin: 4px 0 10px; color: var(--text); }
+.ro-savings { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 </style>

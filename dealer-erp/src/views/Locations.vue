@@ -1,79 +1,97 @@
 <template>
-  <div class="topbar">
-    <h1>Locations</h1>
-    <span class="muted">{{ vehicles.length }} vehicle(s)</span>
+  <PageHeader title="Live Map" description="Where every vehicle is right now. Positions refresh every 15 seconds." />
+
+  <div v-if="loading" class="lm-layout">
+    <div class="skel sk-map lm-map-skel"></div>
+    <div class="card card-body"><div class="skel sk-row" v-for="n in 6" :key="n"></div></div>
   </div>
 
-  <div v-if="loading" style="padding:2px 0">
-    <div class="skel sk-row" v-for="n in 4" :key="n"></div>
+  <div v-else-if="!vehicles.length" class="card">
+    <EmptyState :icon="LocateFixed" title="No vehicles to show"
+      text="Vehicles appear on the map once a Fuel Guard X device is linked to your company and reports a GPS fix." />
   </div>
 
-  <div v-else class="loc-list">
-    <div class="card loc-card" v-for="v in vehicles" :key="v.id">
-      <div class="loc-row">
-        <div class="loc-name">
-          <span class="icon-chip" :class="locChip(v)">
-            <MapPin :size="16" />
-          </span>
-          <span class="dot" :class="freshness(v)"></span>
-          <button type="button" class="local-name-btn" @click="renaming = v" title="Rename">
-            {{ v.local_name }} <Pencil :size="12" class="pencil" />
-          </button>
-          <span class="muted loc-reg">{{ v.registration_number }}</span>
+  <div v-else class="lm-layout">
+    <div class="card flush lm-map-card">
+      <div class="card-head">
+        <div class="card-head-title"><LocateFixed :size="17" /><div><h2>{{ focused ? focused.local_name : 'All vehicles' }}</h2>
+          <div class="card-sub">{{ focused ? focused.registration_number + ' · updated ' + ago(focused.latest?.received_at) : markers.length + ' of ' + vehicles.length + ' with a GPS fix' }}</div></div></div>
+        <button v-if="focusId != null" type="button" class="sm" @click="focusId = null"><Maximize2 :size="14" /> Show all</button>
+        <div v-else class="map-legend">
+          <span><i class="swatch" style="background:#059669"></i>Active</span>
+          <span><i class="swatch" style="background:#D97706"></i>Idle</span>
+          <span><i class="swatch" style="background:#64748B"></i>Offline</span>
         </div>
-        <button type="button" class="see-loc-btn" @click="toggle(v)">
-          <component :is="shownId === v.id ? ChevronUp : MapPin" :size="15" />
-          {{ shownId === v.id ? 'Hide' : 'See current location' }}
-        </button>
       </div>
-
-      <div v-if="shownId === v.id" class="loc-detail">
-        <template v-if="v.latest?.has_gps_fix">
-          <FleetMap :markers="[{ id: v.id, lat: v.latest.latitude, lng: v.latest.longitude, label: v.local_name }]" />
-          <div class="coord-row">
-            <div><span class="muted">Latitude</span><b>{{ v.latest.latitude.toFixed(6) }}</b></div>
-            <div><span class="muted">Longitude</span><b>{{ v.latest.longitude.toFixed(6) }}</b></div>
-            <div><span class="muted">Updated</span><b>{{ ago(v.latest.received_at) }}</b></div>
-          </div>
-        </template>
-        <p v-else class="muted" style="margin:0">No GPS fix on file yet for this truck.</p>
+      <FleetMap :markers="markers" :focus="focusId" map-class="lm-map" @select="(id) => (focusId = id)" />
+      <div v-if="focused?.latest?.has_gps_fix" class="coord-row">
+        <div><span class="k">Latitude</span><b class="num">{{ Number(focused.latest.latitude).toFixed(6) }}</b></div>
+        <div><span class="k">Longitude</span><b class="num">{{ Number(focused.latest.longitude).toFixed(6) }}</b></div>
+        <div><span class="k">Speed</span><b class="num">{{ fmt(focused.latest.speed_kmph, 0) }} km/h</b></div>
+        <router-link :to="`/vehicles/${focused.id}`" class="btn sm" style="margin-left:auto">Open vehicle <ChevronRight :size="14" /></router-link>
       </div>
     </div>
 
-    <p v-if="!vehicles.length" class="muted">No vehicles yet.</p>
+    <div class="card flush lm-list-card">
+      <div class="card-head">
+        <label class="search" style="max-width:none">
+          <Search :size="16" />
+          <input v-model="q" type="search" placeholder="Find a vehicle…" aria-label="Find a vehicle" />
+        </label>
+      </div>
+      <div class="list lm-list">
+        <div v-for="v in shown" :key="v.id" class="list-row clickable" :class="{ sel: v.id === focusId }"
+             role="button" tabindex="0" @click="select(v)" @keydown.enter="select(v)">
+          <span class="dot" :class="freshness(v)"></span>
+          <span class="grow">
+            <div class="title">{{ v.local_name }}</div>
+            <div class="sub">{{ v.registration_number }} · {{ v.latest?.has_gps_fix ? ago(v.latest.received_at) : 'No GPS fix' }}</div>
+          </span>
+          <span class="badge" :class="v.status">{{ v.status }}</span>
+          <button v-if="canWrite" type="button" class="ghost icon-btn sm" title="Rename" aria-label="Rename vehicle" @click.stop="renaming = v"><Pencil :size="14" /></button>
+        </div>
+        <EmptyState v-if="!shown.length" compact :icon="SearchX" title="No match" />
+      </div>
+    </div>
   </div>
 
-  <RenameVehicleModal v-if="renaming" :vehicle="renaming" @close="renaming = null"
-                       @saved="onRenamed" />
+  <RenameVehicleModal v-if="renaming" :vehicle="renaming" @close="renaming = null" @saved="onRenamed" />
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, ref } from 'vue'
-import { MapPin, ChevronUp, Pencil } from 'lucide-vue-next'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { LocateFixed, Pencil, Search, SearchX, Maximize2, ChevronRight } from 'lucide-vue-next'
 import { getVehicles } from '../api'
-import { freshness, ago } from '../util'
+import { auth } from '../auth'
+import { freshness, ago, fmt } from '../util'
 import FleetMap from '../components/FleetMap.vue'
+import PageHeader from '../components/PageHeader.vue'
+import EmptyState from '../components/EmptyState.vue'
 import RenameVehicleModal from '../components/RenameVehicleModal.vue'
 
+const canWrite = computed(() => auth.user?.may_write !== false)
 const vehicles = ref([])
 const loading = ref(true)
-const shownId = ref(null)
+const focusId = ref(null)
 const renaming = ref(null)
+const q = ref('')
 let timer
 
-function toggle(v) { shownId.value = shownId.value === v.id ? null : v.id }
+const markers = computed(() => vehicles.value
+  .filter((v) => v.latest?.has_gps_fix && v.latest.latitude != null)
+  .map((v) => ({ id: v.id, lat: v.latest.latitude, lng: v.latest.longitude, label: v.local_name, status: v.status, speed: fmt(v.latest.speed_kmph, 0) })))
+const focused = computed(() => vehicles.value.find((v) => v.id === focusId.value) || null)
+const shown = computed(() => {
+  const t = q.value.trim().toLowerCase()
+  return t ? vehicles.value.filter((v) => [v.local_name, v.registration_number].some((x) => x?.toLowerCase().includes(t))) : vehicles.value
+})
 
-// Row identity follows the same telemetry recency as the freshness dot —
-// stale/never-seen trucks get a muted chip instead of the live cyan tint.
-function locChip(v) {
-  const f = freshness(v)
-  return f === 'green' || f === 'amber' ? 'cyan' : 'gray'
+function select(v) {
+  focusId.value = focusId.value === v.id ? null : v.id
+  if (focusId.value != null && matchMedia('(max-width: 1199px)').matches) window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function onRenamed(name) {
-  // Look up by id (not the captured `renaming` reference) in case the 15s
-  // poll swapped `vehicles` for a fresh array while the modal was open —
-  // mutating a stale object would silently not show up until the next poll.
   const veh = vehicles.value.find((x) => x.id === renaming.value.id)
   if (veh) veh.local_name = name
   renaming.value = null
@@ -89,36 +107,19 @@ onBeforeUnmount(() => clearInterval(timer))
 </script>
 
 <style scoped>
-.loc-list { display: grid; gap: 12px; }
-.loc-card { padding: 14px 16px; }
-.loc-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.loc-name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
-.loc-reg { font-size: 12.5px; }
-
-.local-name-btn {
-  border: none; background: none; padding: 2px 0; font: inherit; font-size: 15px; font-weight: 700; color: var(--ink-strong);
-  display: inline-flex; align-items: center; gap: 8px;
+.lm-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.lm-map-card :deep(.lm-map) { height: calc(100vh - 250px); min-height: 440px; }
+.lm-map-skel { height: calc(100vh - 250px); min-height: 440px; }
+.lm-list { max-height: calc(100vh - 318px); min-height: 300px; overflow-y: auto; }
+.list-row.sel { background: var(--brand-soft); box-shadow: inset 3px 0 0 var(--brand); }
+.coord-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; padding: 12px 18px; border-top: 1px solid var(--border); }
+.coord-row > div { display: flex; flex-direction: column; gap: 1px; }
+.coord-row .k { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+.coord-row b { color: var(--ink-strong); font-size: 13.5px; }
+@media (max-width: 1199px) {
+  .lm-layout { grid-template-columns: minmax(0, 1fr); }
+  .lm-map-card :deep(.lm-map), .lm-map-skel { height: clamp(280px, 52dvh, 480px); min-height: 0; }
+  .lm-list { max-height: none; min-height: 0; }
 }
-.local-name-btn .pencil { color: var(--muted); opacity: 0; transition: opacity var(--dur) var(--ease); }
-.local-name-btn:hover .pencil { opacity: 1; }
-.local-name-btn:hover { color: var(--cyan); }
-
-.see-loc-btn {
-  display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700;
-  color: var(--cyan); background: var(--cyan-soft); border: 1px solid transparent;
-  padding: 8px 14px; border-radius: var(--radius-pill); flex: none;
-}
-.see-loc-btn:hover { background: rgba(34,211,238,.28); }
-
-.loc-detail { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
-.coord-row {
-  display: flex; flex-wrap: wrap; gap: 10px 24px; margin-top: 12px; font-size: 13.5px;
-}
-.coord-row > div { display: flex; flex-direction: column; gap: 2px; }
-.coord-row b { font-variant-numeric: tabular-nums; }
-
-@media (max-width: 600px) {
-  .see-loc-btn { width: 100%; justify-content: center; }
-  .loc-row { flex-direction: column; align-items: stretch; }
-}
+@media (max-width: 720px) { .coord-row { padding: 12px 14px; } .coord-row .btn { margin-left: 0 !important; width: 100%; } }
 </style>

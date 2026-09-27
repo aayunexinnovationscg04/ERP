@@ -30,7 +30,11 @@ def env_list(key, default=""):
 # --- core ---------------------------------------------------------------
 SECRET_KEY = env("DJANGO_SECRET_KEY", "insecure-dev-key-change-me")
 DEBUG = env_bool("DJANGO_DEBUG", False)
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = env_list(
+    "DJANGO_ALLOWED_HOSTS",
+    "admin.aayunexinnovations.com,dealer.aayunexinnovations.com,"
+    "pilot.aayunexinnovations.com,localhost,127.0.0.1",
+)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -41,6 +45,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # third-party
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     # local
     "core",
@@ -125,7 +130,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # --- DRF + JWT ----------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "core.authentication.SessionJWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
@@ -144,16 +149,25 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "60/min",
         "user": "2000/hour",
-        "login": "10/min",
+        "login": env("THROTTLE_LOGIN", "10/min"),
+        "refresh": env("THROTTLE_REFRESH", "60/min"),
     },
 }
 
 SIMPLE_JWT = {
-    # Short-lived access token; the SPAs silently refresh on 401. Refresh is 7 days.
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
+    # Access token: short-lived, kept only in SPA memory, sent as a Bearer header.
+    # Refresh token: HttpOnly cookie per portal, rotated on every use, old one
+    # blacklisted. Per-portal refresh lifetimes live in core/tokens.py (PORTALS).
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(env("ACCESS_TOKEN_MINUTES", "10"))),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
+
+# Refresh-token cookie. Browsers accept Secure cookies on http://localhost, so
+# this stays on in dev too; only turn it off for plain-HTTP non-localhost setups.
+AUTH_COOKIE_SECURE = env_bool("AUTH_COOKIE_SECURE", True)
 
 # --- CORS ---------------------------------------------------------------
 # In production the SPAs are served same-origin (erp.aayunexinnovations.com), so
@@ -174,7 +188,7 @@ INGEST_TOKEN = env("INGEST_TOKEN", "fuelguardx")
 # turn on the cookie/redirect/HSTS protections that depend on it.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 CSRF_TRUSTED_ORIGINS = env_list(
-    "CSRF_TRUSTED_ORIGINS", "https://erp.aayunexinnovations.com"
+    "CSRF_TRUSTED_ORIGINS", "https://admin.aayunexinnovations.com"  # Django admin lives here
 )
 X_FRAME_OPTIONS = "DENY"                     # no framing of Django admin
 SECURE_CONTENT_TYPE_NOSNIFF = True

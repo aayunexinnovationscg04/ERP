@@ -1,21 +1,22 @@
 <template>
   <Modal title="Rename vehicle" @close="$emit('close')">
-    <p class="muted" style="margin:0 0 14px;font-size:13px">{{ vehicle.registration_number }}</p>
-    <label>
-      <span class="muted">Local name</span>
+    <p class="muted" style="margin:0 0 14px;font-size:13px">
+      Give <b style="color:var(--ink-strong)">{{ vehicle.registration_number }}</b> a short name your team recognises.
+    </p>
+    <label class="field">
+      <span>Local name</span>
       <input v-model="name" maxlength="10" autofocus placeholder="e.g. Loader 2" @keyup.enter="save" />
+      <span class="field-hint">{{ name.length }}/10 characters</span>
     </label>
-    <p class="muted" style="margin:6px 0 0;font-size:12px">{{ name.length }}/10 characters</p>
-    <div class="row" style="margin-top:16px;justify-content:flex-end">
+    <p v-if="err" class="err" style="margin:10px 0 0">{{ err }}</p>
+    <div class="row" style="margin-top:18px;justify-content:flex-end">
       <button type="button" @click="$emit('close')">Cancel</button>
       <button type="button" class="primary" :disabled="!name.trim() || saving" @click="save">
-        {{ saving ? 'Saving…' : 'Save' }}
+        {{ saving ? 'Saving…' : 'Save name' }}
       </button>
     </div>
-    <p v-if="err" class="err" style="margin:10px 0 0">{{ err }}</p>
   </Modal>
 </template>
-
 <script setup>
 import { ref } from 'vue'
 import Modal from './Modal.vue'

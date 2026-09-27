@@ -1,9 +1,10 @@
 import { chromium } from 'playwright';
 import fs from 'fs';
+import { portalUrl } from './portals.mjs';
 
-const BASE = 'http://127.0.0.1:5175/admin/';
+const BASE = portalUrl('admin');
 const SHOTS = '/tmp/claude-0/-root/f5d22171-f394-46dc-86a0-d1cf4d84238b/scratchpad/shots';
-const CREDS = JSON.parse(fs.readFileSync('/root/erp/e2e/creds.json'));
+const CREDS = JSON.parse(fs.readFileSync('/root/aayunex_innovations/ERP/e2e/creds.json'));
 
 async function run() {
   const b = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
@@ -18,7 +19,7 @@ async function run() {
     await p.locator('button.primary').first().click();
     await p.waitForSelector('.main', { state: 'visible' });
     await p.waitForTimeout(400);
-    await p.goto(`${BASE}#/roles`, { waitUntil: 'networkidle' });
+    await p.goto(portalUrl('admin', '/roles'), { waitUntil: 'networkidle' });
     await p.waitForTimeout(400);
     await p.screenshot({ path: `${SHOTS}/desktop-1280-roles.png`, fullPage: true });
     const cardOverflow = await p.locator('.card').first().evaluate(el => getComputedStyle(el).overflowX);
@@ -58,7 +59,7 @@ async function run() {
     await p.locator('input[type=password]').fill(CREDS.admin.pass);
     await p.locator('button.primary').first().click();
     await p.waitForSelector('.main', { state: 'visible' });
-    await p.goto(`${BASE}#/roles`, { waitUntil: 'networkidle' });
+    await p.goto(portalUrl('admin', '/roles'), { waitUntil: 'networkidle' });
     await p.waitForTimeout(400);
     const card = p.locator('.card').filter({ has: p.locator('table') }).first();
     const before = await card.evaluate(el => el.scrollLeft);

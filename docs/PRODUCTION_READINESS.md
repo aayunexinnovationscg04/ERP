@@ -40,7 +40,7 @@ One HTTPS host, path-routed, TLS by Caddy → nginx (loopback) → gunicorn → 
 
 ## 3b. Live data pipeline (device → ERP)
 
-The device posts to the **legacy receiver** (`/root/receiver-dashboard/data/events.jsonl`,
+The device posts to the **legacy receiver** (`/root/aayunex_innovations/receiver_dashboard/data/events.jsonl`,
 append-only). A **bridge** imports new rows into the ERP every 60s so the ERP stays live:
 `fuelguardx-sync.timer` → `manage.py sync_receiver`. Identity is the fixed **`device_id`**
 only (client IP is never used for identity); a byte-offset cursor + `(device,_seq)` dedup make
@@ -98,7 +98,7 @@ journalctl -u fuelguardx -f
 tail -f /var/log/nginx/fuelguardx.error.log
 
 # redeploy a frontend (example: driver)
-cd /root/erp/driver-erp && npm run build && \
+cd /root/aayunex_innovations/ERP/driver-erp && npm run build && \
   rm -rf /var/www/fuelguardx/pilot && cp -r dist /var/www/fuelguardx/pilot && \
   chmod -R a+rX /var/www/fuelguardx/pilot
 

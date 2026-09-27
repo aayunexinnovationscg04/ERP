@@ -10,7 +10,7 @@
       :initial="{ opacity: 0, y: reduced ? 0 : 12 }" :animate="{ opacity: opening ? 0 : 1, y: opening ? (reduced ? 0 : -8) : 0 }"
       :transition="{ duration: reduced ? 0 : (opening ? .28 : .45), ease: [.4, 0, .2, 1] }">
       <span class="wgate-logo"><img :src="logo" alt="" /></span>
-      <div class="wgate-brand">AAYUNEX INNOVATIONS</div>
+      <div class="wgate-brand">Fuel Guard X · Pilot</div>
       <div class="wgate-welcome">Welcome, {{ name }}</div>
       <div class="wgate-loader" aria-hidden="true"><span></span></div>
     </motion.div>
@@ -20,7 +20,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { motion } from 'motion-v'
-import logo from '../assets/logo.png'
+import logo from '@shared/design/brand/fgx-mark.png'
 
 // Entrance transition shown once, right after a successful sign-in: masks
 // the ~1.5s it takes the destination page's own data to load behind a
@@ -47,26 +47,23 @@ onMounted(() => {
 
 <style scoped>
 .wgate { position: fixed; inset: 0; z-index: 900; pointer-events: none; }
-.wgate-panel {
-  position: absolute; top: 0; bottom: 0; width: 50%;
-  background: var(--accent-grad);
-}
+.wgate-panel { position: absolute; top: 0; bottom: 0; width: 50%; background: var(--navy-900); }
 .wgate-left { left: 0; }
 .wgate-right { right: 0; }
 .wgate-content {
   position: absolute; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 10px; color: #fff; text-align: center;
+  align-items: center; justify-content: center; gap: 10px; color: #FFFFFF; text-align: center; padding: 24px;
 }
 .wgate-logo {
-  width: 56px; height: 56px; border-radius: 15px; display: grid; place-items: center;
-  background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.24); margin-bottom: 6px;
+  width: 64px; height: 64px; border-radius: 14px; display: grid; place-items: center;
+  background: #FFFFFF; margin-bottom: 8px;
 }
-.wgate-logo img { width: 34px; height: 34px; object-fit: contain; }
-.wgate-brand { font-size: 13px; font-weight: 800; letter-spacing: .1em; opacity: .88; }
-.wgate-welcome { font-size: clamp(24px, 4vw, 34px); font-weight: 850; letter-spacing: -.02em; }
-.wgate-loader { margin-top: 14px; width: 84px; height: 3px; border-radius: 999px; background: rgba(255,255,255,.22); overflow: hidden; }
+.wgate-logo img { width: 48px; height: 48px; object-fit: contain; }
+.wgate-brand { font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-muted); }
+.wgate-welcome { font-size: clamp(26px, 5vw, 36px); font-weight: 800; letter-spacing: -.02em; }
+.wgate-loader { margin-top: 16px; width: 96px; height: 4px; border-radius: 999px; background: var(--navy-700); overflow: hidden; }
 .wgate-loader span {
-  display: block; width: 40%; height: 100%; border-radius: 999px; background: #fff;
+  display: block; width: 40%; height: 100%; border-radius: 999px; background: var(--flame-500);
   animation: wgate-sweep 1.1s cubic-bezier(.4,0,.2,1) infinite;
 }
 @keyframes wgate-sweep {

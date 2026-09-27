@@ -1,80 +1,106 @@
 <template>
-  <div class="topbar">
-    <h1>Pilots</h1>
-    <span class="muted">{{ pilotCount }} pilot(s)</span>
+  <PageHeader title="Pilots" description="Drivers registered to your fleet and the vehicle each one is currently assigned to." />
+
+  <div v-if="loading" class="kpis"><div class="skel sk-chip" v-for="n in 3" :key="n"></div></div>
+  <div v-else class="kpis">
+    <StatTile label="Pilots" :value="pilots.length" :icon="Users" tone="blue" />
+    <StatTile label="On a vehicle" :value="assignedCount" :icon="UserCheck" tone="green" />
+    <StatTile label="Vehicles without a pilot" :value="unassigned.length" :icon="UserX" :tone="unassigned.length ? 'amber' : 'gray'" />
   </div>
 
-  <div v-if="loading" class="pilot-grid">
-    <div class="skel sk-box" v-for="n in 4" :key="n"></div>
+  <div class="card flush">
+    <div class="card-head" v-if="loading || pilots.length">
+      <label class="search">
+        <Search :size="16" />
+        <input v-model="q" type="search" placeholder="Search name, phone, vehicle…" aria-label="Search pilots" />
+      </label>
+    </div>
+    <div v-if="loading" class="card-body"><div class="skel sk-row" v-for="n in 5" :key="n"></div></div>
+    <EmptyState v-else-if="!pilots.length" :icon="IdCard" title="No pilots yet"
+      text="Pilots added by your administrator will show up here with their assigned vehicle." />
+    <EmptyState v-else-if="!shown.length" compact :icon="SearchX" title="No matching pilots" />
+    <template v-else>
+      <div class="table-wrap hide-sm">
+        <table>
+          <thead><tr><th>Pilot</th><th>Phone</th><th>Licence</th><th>Assigned vehicle</th><th style="width:48px"></th></tr></thead>
+          <tbody>
+            <tr v-for="p in shown" :key="p.id" class="clickable" @click="$router.push(`/pilots/${p.id}`)">
+              <td><div class="cell-with-icon"><span class="p-avatar">{{ initials(p.name) }}</span><span class="cell-main">{{ p.name }}</span></div></td>
+              <td class="nowrap">{{ p.phone || '—' }}</td>
+              <td class="muted">{{ p.license_no || '—' }}</td>
+              <td>
+                <template v-if="p.assigned_vehicle"><div class="cell-main" style="font-weight:600">{{ p.assigned_vehicle.local_name }}</div><div class="cell-sub">{{ p.assigned_vehicle.registration_number }}</div></template>
+                <span v-else class="badge offline">Unassigned</span>
+              </td>
+              <td><router-link :to="`/pilots/${p.id}`" class="row-link" title="Open pilot" @click.stop><ChevronRight :size="17" /></router-link></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="list show-sm">
+        <router-link v-for="p in shown" :key="p.id" :to="`/pilots/${p.id}`" class="list-row">
+          <span class="p-avatar">{{ initials(p.name) }}</span>
+          <span class="grow">
+            <div class="title">{{ p.name }}</div>
+            <div class="sub">{{ p.assigned_vehicle ? p.assigned_vehicle.local_name + ' · ' + p.assigned_vehicle.registration_number : 'No vehicle assigned' }}</div>
+          </span>
+          <ChevronRight :size="17" class="muted" />
+        </router-link>
+      </div>
+    </template>
   </div>
 
-  <div v-else class="pilot-grid">
-    <motion.button type="button" class="pilot-box" v-for="(v, i) in vehicles" :key="v.id"
-            :disabled="!v.active_pilot" :title="v.active_pilot ? 'View pilot' : 'No pilot assigned'"
-            :initial="{ opacity: 0, y: 10 }" :animate="{ opacity: 1, y: 0 }"
-            :transition="{ duration: .22, delay: Math.min(i, 12) * .03, ease: [.4, 0, .2, 1] }"
-            :while-hover="v.active_pilot ? { y: -3 } : {}" :while-tap="v.active_pilot ? { scale: .98 } : {}"
-            @click="v.active_pilot && $router.push(`/pilots/${v.active_pilot.id}`)">
-      <div class="pb-avatar" :class="{ empty: !v.active_pilot }">
-        <component :is="v.active_pilot ? UserRound : UserRoundX" :size="20" class="icon-lg" />
-      </div>
-      <div class="pb-name">{{ v.local_name }}</div>
-      <div class="muted pb-reg"><Truck :size="12" class="pb-reg-ic" />{{ v.registration_number }}</div>
-      <div class="pb-pilot" :class="{ muted: !v.active_pilot }">
-        <template v-if="v.active_pilot"><UserRound :size="13" class="pilot-ic" />{{ v.active_pilot.name }}</template>
-        <template v-else>No pilot assigned</template>
-      </div>
-    </motion.button>
-
-    <p v-if="!vehicles.length" class="muted">No vehicles yet.</p>
+  <div v-if="!loading && unassigned.length" class="card flush section">
+    <div class="card-head"><div class="card-head-title"><UserX :size="17" /><div><h2>Vehicles without a pilot</h2>
+      <div class="card-sub">Pilot assignment is managed by your administrator</div></div></div></div>
+    <div class="list">
+      <router-link v-for="v in unassigned" :key="v.id" :to="`/vehicles/${v.id}`" class="list-row">
+        <span class="icon-chip gray"><Truck :size="16" /></span>
+        <span class="grow"><div class="title">{{ v.local_name }}</div><div class="sub">{{ v.registration_number }}</div></span>
+        <span class="badge" :class="v.status">{{ v.status }}</span>
+      </router-link>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { UserRound, UserRoundX, Truck } from 'lucide-vue-next'
-import { motion } from 'motion-v'
-import { getVehicles } from '../api'
+import { Users, UserCheck, UserX, IdCard, Search, SearchX, ChevronRight, Truck } from 'lucide-vue-next'
+import { getPilots, getVehicles } from '../api'
+import PageHeader from '../components/PageHeader.vue'
+import StatTile from '../components/StatTile.vue'
+import EmptyState from '../components/EmptyState.vue'
 
+const pilots = ref([])
 const vehicles = ref([])
 const loading = ref(true)
-const pilotCount = computed(() => vehicles.value.filter((v) => v.active_pilot).length)
+const q = ref('')
 
-async function load() {
-  try { vehicles.value = await getVehicles() }
-  catch (e) { /* keep last good data */ }
-  finally { loading.value = false }
+const assignedCount = computed(() => pilots.value.filter((p) => p.assigned_vehicle).length)
+const unassigned = computed(() => vehicles.value.filter((v) => !v.active_pilot))
+const shown = computed(() => {
+  const t = q.value.trim().toLowerCase()
+  return pilots.value.filter((p) => !t || [p.name, p.phone, p.license_no, p.assigned_vehicle?.local_name, p.assigned_vehicle?.registration_number]
+    .some((x) => x?.toLowerCase().includes(t)))
+})
+function initials(n) {
+  const parts = (n || '?').trim().split(/\s+/)
+  return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase()
 }
-onMounted(load)
+
+onMounted(async () => {
+  try {
+    const [p, v] = await Promise.all([getPilots(), getVehicles()])
+    pilots.value = p
+    vehicles.value = v
+  } catch (e) { /* keep empty */ }
+  finally { loading.value = false }
+})
 </script>
 
 <style scoped>
-.pilot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 220px)); gap: 18px; }
-.sk-box { height: 170px; border-radius: var(--radius); }
-
-.pilot-box {
-  text-align: center; background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 26px 18px;
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease), border-color var(--dur) var(--ease);
+.p-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: var(--info-soft); color: var(--info); font-size: 12.5px; font-weight: 800;
 }
-.pilot-box:not(:disabled):hover { box-shadow: 0 10px 26px rgba(45,212,191,.2), var(--shadow-md); border-color: var(--teal); transform: translateY(-2px); }
-.pilot-box:not(:disabled):active { transform: translateY(0) scale(.99); }
-.pilot-box:disabled { cursor: default; opacity: .6; }
-
-.pb-avatar {
-  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
-  background: var(--teal-soft); color: var(--teal);
-  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
-}
-.pb-avatar.empty { background: var(--gray-soft); color: var(--gray); }
-.pb-name { font-weight: 700; font-size: 15.5px; margin-top: 2px; color: var(--ink-strong); }
-.pb-reg { font-size: 12px; margin-top: -6px; display: flex; align-items: center; gap: 5px; }
-.pb-reg-ic { flex: none; }
-.pb-pilot {
-  display: flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600;
-  margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--border); width: 100%; justify-content: center;
-}
-.pilot-ic { color: var(--teal); flex: none; }
-.pb-pilot.muted .pilot-ic { display: none; }
 </style>

@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from core.permissions import (CanWriteOrReadOnly, CompanyScopedQuerysetMixin,
-                              IsDealerOrAdmin)
+                              IsDealerOrAdmin, ModuleAccess)
 from ingest.models import Command
 
 from .models import Device, Pilot, Geofence, Telemetry, Trip, Vehicle
@@ -21,7 +21,9 @@ STATUS_VALUES = [c[0] for c in Vehicle.Status.choices]
 
 
 class VehicleViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsDealerOrAdmin]
+    # Vehicle data underpins most dealer screens.
+    required_modules = {"fleet", "live_map", "fuel", "dashboard", "trips", "drivers"}
+    permission_classes = [IsDealerOrAdmin, ModuleAccess]
 
     def get_queryset(self):
         qs = self.scoped(
@@ -46,7 +48,7 @@ class VehicleViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     def get_serializer_class(self):
         return VehicleDetailSerializer if self.action == "retrieve" else VehicleListSerializer
 
-    @action(detail=True, methods=["patch"], permission_classes=[IsDealerOrAdmin, CanWriteOrReadOnly])
+    @action(detail=True, methods=["patch"], permission_classes=[IsDealerOrAdmin, ModuleAccess, CanWriteOrReadOnly])
     def local_name(self, request, pk=None):
         """The only writable field on this otherwise read-only viewset — a
         dealer-facing nickname, separate from the write-gating on everything
@@ -86,7 +88,8 @@ class VehicleViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
 
 
 class TripViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsDealerOrAdmin]
+    required_modules = {"trips", "fuel", "fleet", "reports"}
+    permission_classes = [IsDealerOrAdmin, ModuleAccess]
     serializer_class = TripSerializer
     company_field = "vehicle__company"
 
@@ -96,7 +99,8 @@ class TripViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
 
 class DeviceViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     # read for dealers/managers; the `command` write action needs may_write
-    permission_classes = [IsDealerOrAdmin, CanWriteOrReadOnly]
+    required_modules = {"fleet"}
+    permission_classes = [IsDealerOrAdmin, ModuleAccess, CanWriteOrReadOnly]
     serializer_class = DeviceSerializer
 
     def get_queryset(self):
@@ -115,7 +119,8 @@ class DeviceViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
 
 class GeofenceViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
     # read for dealers/managers; create/update/delete need may_write
-    permission_classes = [IsDealerOrAdmin, CanWriteOrReadOnly]
+    required_modules = {"geofences", "live_map"}
+    permission_classes = [IsDealerOrAdmin, ModuleAccess, CanWriteOrReadOnly]
     serializer_class = GeofenceSerializer
 
     def get_queryset(self):
@@ -126,7 +131,8 @@ class GeofenceViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
 
 
 class DashboardViewSet(CompanyScopedQuerysetMixin, viewsets.ViewSet):
-    permission_classes = [IsDealerOrAdmin]
+    required_modules = {"dashboard"}
+    permission_classes = [IsDealerOrAdmin, ModuleAccess]
 
     def list(self, request):
         vehicles = self.scoped(Vehicle.objects.all())
@@ -159,7 +165,8 @@ class DashboardViewSet(CompanyScopedQuerysetMixin, viewsets.ViewSet):
 
 
 class PilotViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsDealerOrAdmin]
+    required_modules = {"drivers"}
+    permission_classes = [IsDealerOrAdmin, ModuleAccess]
 
     def get_queryset(self):
         return self.scoped(

@@ -1,57 +1,60 @@
 <template>
-  <div class="topbar">
-    <h1>Expense Tracking</h1>
-    <span class="muted">{{ monthLabel }}</span>
-  </div>
+  <PageHeader title="Expenses" :description="`Fleet running costs for ${monthLabel}, by category.`" preview />
 
   <div class="kpis">
-    <motion.div class="card kpi glow-crit hero" :while-hover="{ y: -2 }">
-      <span class="icon-chip lg crit ic"><Wallet :size="20" class="icon-lg" /></span><div class="n">₹{{ fmt(total, 0) }}</div><div class="l">Total this month</div>
-    </motion.div>
-    <motion.div class="card kpi glow-violet" v-for="c in byCategory.slice(0, 3)" :key="c.name" :while-hover="{ y: -2 }">
-      <span class="icon-chip lg violet ic"><component :is="c.icon" :size="20" class="icon-lg" /></span><div class="n">₹{{ fmt(c.total, 0) }}</div><div class="l">{{ c.name }}</div>
-    </motion.div>
+    <StatTile label="Total this month" :value="'₹' + inr(total)" :icon="Wallet" tone="navy" :sub="`${expenses.length} entries`" />
+    <StatTile v-for="c in byCategory.slice(0, 3)" :key="c.name" :label="c.name" :value="'₹' + inr(c.total)" :icon="c.icon" :tone="c.hue"
+      :sub="Math.round(c.total / total * 100) + '% of spend'" />
   </div>
 
-  <p class="section-title">Spend by Category</p>
-  <div class="card" style="padding:18px 20px">
-    <div class="be-cat-row" v-for="c in byCategory" :key="c.name">
-      <span class="icon-chip" :class="c.hue"><component :is="c.icon" :size="15" /></span>
-      <span class="be-cat-name">{{ c.name }}</span>
-      <div class="be-cat-bar"><div class="be-cat-fill" :class="c.hue" :style="{ width: (c.total / maxCat * 100) + '%' }"></div></div>
-      <b class="be-cat-val">₹{{ fmt(c.total, 0) }}</b>
+  <div class="grid-2">
+    <div class="card flush">
+      <div class="card-head"><div class="card-head-title"><ReceiptText :size="17" /><h2>Recent expenses</h2></div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Expense</th><th class="num">Amount</th></tr></thead>
+          <tbody>
+            <tr v-for="e in expenses" :key="e.id">
+              <td class="muted nowrap">{{ e.date }}</td>
+              <td><div class="cell-with-icon"><span class="icon-chip sm gray"><component :is="e.icon" :size="13" /></span>
+                <div><div class="cell-main" style="font-weight:600">{{ e.desc }}</div><div class="cell-sub">{{ e.category }}</div></div></div></td>
+              <td class="num cell-main">₹{{ inr(e.amount) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
 
-  <p class="section-title">Recent Expenses</p>
-  <div class="card" style="padding:6px 0">
-    <table>
-      <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
-      <tbody>
-        <tr v-for="e in expenses" :key="e.id">
-          <td class="muted">{{ e.date }}</td>
-          <td class="ico"><component :is="e.icon" :size="14" class="muted" />{{ e.category }}</td>
-          <td class="muted">{{ e.desc }}</td>
-          <td>₹{{ fmt(e.amount, 0) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="card">
+      <div class="card-head"><div class="card-head-title"><PieChart :size="17" /><h2>Spend by category</h2></div></div>
+      <div class="card-body be-cats">
+        <div class="be-cat" v-for="c in byCategory" :key="c.name">
+          <div class="be-cat-top">
+            <span class="ico"><span class="icon-chip sm" :class="c.hue"><component :is="c.icon" :size="13" /></span>{{ c.name }}</span>
+            <b class="num">₹{{ inr(c.total) }}</b>
+          </div>
+          <div class="meter"><span :class="barClass[c.hue]" :style="{ width: (c.total / maxCat * 100) + '%' }"></span></div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { Wallet, Fuel, Wrench, IdCard, ShieldCheck, MoreHorizontal } from 'lucide-vue-next'
-import { motion } from 'motion-v'
+import { Wallet, Fuel, Wrench, IdCard, ShieldCheck, MoreHorizontal, ReceiptText, PieChart } from 'lucide-vue-next'
+import PageHeader from '../components/PageHeader.vue'
+import StatTile from '../components/StatTile.vue'
 import { MOCK_VEHICLES, seededRandom, pick, rangeInt, addDays, fmtDate } from '../mock'
-import { fmt } from '../util'
 
+const inr = (n) => Math.round(n).toLocaleString('en-IN')
+const barClass = { brand: 'brand', amber: 'amber', teal: 'green', blue: '', gray: 'gray' }
 const monthLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
 const today = new Date()
 const rng = seededRandom(1515)
 
 const CATEGORIES = [
-  { name: 'Fuel', icon: Fuel, hue: 'violet' },
+  { name: 'Fuel', icon: Fuel, hue: 'brand' },
   { name: 'Maintenance', icon: Wrench, hue: 'amber' },
   { name: 'Pilot wages', icon: IdCard, hue: 'teal' },
   { name: 'Insurance & compliance', icon: ShieldCheck, hue: 'blue' },
@@ -82,16 +85,9 @@ const byCategory = computed(() => CATEGORIES.map((c) => ({
 const maxCat = computed(() => Math.max(...byCategory.value.map((c) => c.total), 1))
 const total = computed(() => expenses.reduce((s, e) => s + e.amount, 0))
 </script>
-
 <style scoped>
-.be-cat-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
-.be-cat-name { width: 170px; flex: none; font-weight: 600; font-size: 13.5px; }
-.be-cat-bar { flex: 1; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
-.be-cat-fill { height: 100%; border-radius: 999px; }
-.be-cat-fill.violet { background: var(--violet); }
-.be-cat-fill.amber { background: var(--amber); }
-.be-cat-fill.teal { background: var(--teal); }
-.be-cat-fill.blue { background: var(--blue); }
-.be-cat-fill.gray { background: var(--gray); }
-.be-cat-val { width: 100px; flex: none; text-align: right; }
+.be-cats { display: flex; flex-direction: column; gap: 16px; }
+.be-cat-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13.5px; font-weight: 600; }
+.be-cat-top b { color: var(--ink-strong); }
+.be-cat .meter { height: 8px; }
 </style>

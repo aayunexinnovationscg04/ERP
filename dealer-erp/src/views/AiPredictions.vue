@@ -1,45 +1,27 @@
 <template>
-  <div class="topbar">
-    <h1>AI Predictions</h1>
-    <span class="muted ico"><Sparkles :size="13" /> Estimated from recent telemetry &amp; trip patterns</span>
-  </div>
+  <PageHeader title="AI Predictions" description="Estimated mileage, fuel need, maintenance timing and delay risk per truck." preview />
 
   <div class="ai-grid">
-    <motion.div class="card ai-box" v-for="(p, i) in predictions" :key="p.id"
-                :initial="{ opacity: 0, y: 10 }" :animate="{ opacity: 1, y: 0 }"
-                :transition="{ duration: .22, delay: Math.min(i, 12) * .03, ease: [.4, 0, .2, 1] }">
+    <div class="card ai-box" v-for="p in predictions" :key="p.id">
       <div class="ai-box-head">
         <span class="icon-chip blue"><Truck :size="16" /></span>
         <b>{{ p.vehicleName }}</b>
+        <span class="badge" :class="riskBadge[p.delayRisk]" style="margin-left:auto">{{ p.delayRisk }} risk</span>
       </div>
-      <div class="ai-metric">
-        <span class="icon-chip sm green"><Gauge :size="13" /></span>
-        <span class="ai-metric-label">Mileage prediction</span>
-        <span class="ai-metric-val">{{ fmt(p.mileage) }} km/L</span>
+      <div class="ai-metrics">
+        <div class="ai-metric"><span class="k"><Gauge :size="14" /> Mileage</span><b class="num">{{ fmt(p.mileage) }} km/L</b></div>
+        <div class="ai-metric"><span class="k"><Fuel :size="14" /> Fuel need · 7d</span><b class="num">{{ fmt(p.fuelNeed, 0) }} L</b></div>
+        <div class="ai-metric"><span class="k"><Wrench :size="14" /> Service due</span><b class="num">{{ p.maintenanceDays }} days</b></div>
+        <div class="ai-metric"><span class="k"><Clock :size="14" /> Delay risk</span><b>{{ p.delayRisk }}</b></div>
       </div>
-      <div class="ai-metric">
-        <span class="icon-chip sm violet"><Fuel :size="13" /></span>
-        <span class="ai-metric-label">Fuel need (next 7d)</span>
-        <span class="ai-metric-val">{{ fmt(p.fuelNeed, 0) }} L</span>
-      </div>
-      <div class="ai-metric">
-        <span class="icon-chip sm amber"><Wrench :size="13" /></span>
-        <span class="ai-metric-label">Maintenance due</span>
-        <span class="ai-metric-val">{{ p.maintenanceDays }} days</span>
-      </div>
-      <div class="ai-metric">
-        <span class="icon-chip sm crit"><Clock :size="13" /></span>
-        <span class="ai-metric-label">Delay risk</span>
-        <span class="ai-metric-val" :style="{ color: p.delayRiskColor }">{{ p.delayRisk }}</span>
-      </div>
-      <p class="muted ai-caveat">Predictive estimate — confidence {{ p.confidence }}%.</p>
-    </motion.div>
+      <div class="ai-conf"><span>Confidence</span><div class="meter" style="flex:1"><span :style="{ width: p.confidence + '%' }"></span></div><b class="num">{{ p.confidence }}%</b></div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { Sparkles, Truck, Gauge, Fuel, Wrench, Clock } from 'lucide-vue-next'
-import { motion } from 'motion-v'
+import { Truck, Gauge, Fuel, Wrench, Clock } from 'lucide-vue-next'
+import PageHeader from '../components/PageHeader.vue'
 import { MOCK_VEHICLES, seededRandom, range, rangeInt, pick } from '../mock'
 import { fmt } from '../util'
 
@@ -50,6 +32,7 @@ const RISK = [
   { label: 'High', color: 'var(--crit)' },
 ]
 
+const riskBadge = { Low: 'active', Moderate: 'idle', High: 'critical' }
 const predictions = MOCK_VEHICLES.map((v) => {
   const risk = pick(rng, [RISK[0], RISK[0], RISK[1], RISK[2]])
   return {
@@ -62,13 +45,14 @@ const predictions = MOCK_VEHICLES.map((v) => {
   }
 })
 </script>
-
 <style scoped>
-.ai-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-.ai-box { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
-.ai-box-head { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--ink-strong); margin-bottom: 2px; }
-.ai-metric { display: flex; align-items: center; gap: 9px; font-size: 13px; }
-.ai-metric-label { flex: 1; color: var(--muted); }
-.ai-metric-val { font-weight: 700; color: var(--ink-strong); }
-.ai-caveat { font-size: 11px; margin: 6px 0 0; padding-top: 8px; border-top: 1px solid var(--border); }
+.ai-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.ai-box { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+.ai-box-head { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--ink-strong); }
+.ai-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ai-metric { display: flex; flex-direction: column; gap: 2px; }
+.ai-metric .k { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+.ai-metric b { font-size: 15px; color: var(--ink-strong); }
+.ai-conf { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); padding-top: 12px; border-top: 1px solid var(--border); }
+.ai-conf b { color: var(--text); }
 </style>

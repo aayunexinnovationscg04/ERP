@@ -1,117 +1,210 @@
 <template>
-  <div class="topbar">
-    <div class="heading">
-      <span class="eyebrow">Platform / Security &amp; Analytics</span>
-      <h1 class="ico"><Flame :size="20" /> Fraud &amp; Fuel Theft Analytics</h1>
-    </div>
-  </div>
-  <p class="hint">Flagged incidents across the platform. Illustrative sample — not wired to the derivation engine's alert store yet.</p>
+  <PageHeader :icon="ShieldAlert" title="Fraud & Theft Alerts" description="Alerts raised by the detection engine across every company: fuel theft, tampering, geofence breaches and more.">
+    <span class="ph-meta" v-if="fetchedAt"><Clock :size="13" /> Updated {{ fmtTime(fetchedAt) }}</span>
+    <button type="button" class="btn" :disabled="refreshing" @click="refresh"><RefreshCw :size="16" :class="{ spin: refreshing }" /> Refresh</button>
+  </PageHeader>
 
-  <div class="chiprow">
-    <div class="chip flag"><span class="chip-n num">{{ openCount }}</span><span class="chip-l">Open incidents</span></div>
-    <div class="chip" style="border-top-color:var(--green)"><span class="chip-n num">{{ resolvedCount }}</span><span class="chip-l">Resolved (30d)</span></div>
-    <div class="chip"><span class="chip-n num">{{ incidents.length }}</span><span class="chip-l">Total (30d)</span></div>
+  <div class="stats">
+    <StatCard label="Open alerts" :value="fmt(openCount)" :icon="Siren" :tone="openCount ? 'crit' : 'green'" :loading="loading" />
+    <StatCard label="Critical, open" :value="fmt(critOpen)" :icon="OctagonAlert" :tone="critOpen ? 'red' : 'navy'" :loading="loading" />
+    <StatCard label="Fuel theft & tamper" :value="fmt(theftCount)" :icon="Fuel" :tone="theftCount ? 'amber' : 'navy'" :loading="loading" sub="All statuses" />
+    <StatCard label="Acknowledged / resolved" :value="fmt(alerts.length - openCount)" :icon="CircleCheck" tone="green" :loading="loading" />
   </div>
 
-  <div class="grid-2">
-    <div class="card" style="padding:6px 0">
-      <table>
-        <thead><tr><th>Company</th><th>Type</th><th>Severity</th><th>Detected</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr v-for="inc in incidents" :key="inc.id">
-            <td>{{ inc.company }}<div class="muted" style="font-size:12px">{{ inc.vehicle }}</div></td>
-            <td>{{ inc.type }}</td>
-            <td><span class="badge" :class="sevClass(inc.severity)">{{ inc.severity }}</span></td>
-            <td class="muted">{{ inc.detected }}</td>
-            <td><span class="badge" :class="inc.status === 'open' ? 'critical' : 'active'">{{ inc.status === 'open' ? 'Open' : 'Resolved' }}</span></td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="table-foot">{{ incidents.length }} incidents in the last 30 days</div>
-    </div>
-
-    <div class="card" style="padding:16px">
-      <p class="section-title" style="margin-bottom:6px">Weekly trend</p>
-      <div class="row" style="align-items:baseline;gap:8px;margin-bottom:14px">
-        <span style="font-size:1.6rem;font-weight:800" :style="{ color: trendUp ? 'var(--red)' : 'var(--green)' }">
-          {{ trendUp ? '+' : '' }}{{ trendPct }}%
-        </span>
-        <span class="muted" style="font-size:12.5px">vs. previous 7 days</span>
-      </div>
-      <svg width="100%" height="72" viewBox="0 0 220 72" preserveAspectRatio="none" role="img" aria-label="Weekly flagged-incident trend">
-        <polyline :points="sparkPoints" fill="none" :stroke="trendUp ? 'var(--red)' : 'var(--green)'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-        <circle v-for="(p, i) in sparkDots" :key="i" :cx="p.x" :cy="p.y" r="2.6" :fill="trendUp ? 'var(--red)' : 'var(--green)'" />
-      </svg>
-      <div class="row" style="justify-content:space-between;margin-top:6px">
-        <span class="muted" style="font-size:11px">7 days ago</span>
-        <span class="muted" style="font-size:11px">Today</span>
-      </div>
-
-      <p class="section-title" style="margin:18px 0 10px">By incident type</p>
-      <div class="barchart">
-        <div class="brow" v-for="t in byType" :key="t.type">
-          <span class="blabel">{{ t.type }}</span>
-          <svg class="btrack" width="100%" height="10" role="img" :aria-label="`${t.type}: ${t.count}`">
-            <rect width="100%" height="10" rx="3" fill="var(--surface-3)" />
-            <rect :width="typePct(t.count) + '%'" height="10" rx="3" fill="var(--crit)" />
-          </svg>
-          <span class="bval">{{ t.count }}</span>
+  <div class="grid-main-side sec-grid">
+    <section class="card">
+      <div class="toolbar">
+        <label class="input-icon">
+          <Search :size="16" />
+          <input v-model="q" class="input" type="search" placeholder="Search alerts or vehicles" aria-label="Search alerts" />
+        </label>
+        <div class="seg" role="group" aria-label="Filter by status">
+          <button v-for="f in statusFilters" :key="f.key" type="button" :class="{ on: status === f.key }" @click="status = f.key">
+            {{ f.label }} <span class="count">{{ f.count }}</span>
+          </button>
         </div>
+        <select v-model="severity" class="select" aria-label="Filter by severity">
+          <option value="">All severities</option>
+          <option value="critical">Critical</option>
+          <option value="warning">Warning</option>
+          <option value="info">Info</option>
+        </select>
       </div>
+      <div class="table-wrap">
+        <table class="table stack alerts-table">
+          <thead><tr><th>Alert</th><th>Severity</th><th>Vehicle</th><th>Status</th><th>Raised</th></tr></thead>
+          <TableSkeleton v-if="loading" :cols="5" :rows="6" />
+          <tbody v-else-if="loadError">
+            <tr class="table-empty"><td colspan="5"><EmptyState :icon="CircleAlert" title="Alerts could not be loaded"><button type="button" class="btn" @click="refresh">Try again</button></EmptyState></td></tr>
+          </tbody>
+          <tbody v-else-if="!filtered.length">
+            <tr class="table-empty"><td colspan="5">
+              <EmptyState v-if="!alerts.length" :icon="ShieldCheck" title="No alerts raised" text="Nothing has been flagged across the platform." />
+              <EmptyState v-else :icon="Search" title="No matching alerts" text="Try a different search or filter." />
+            </td></tr>
+          </tbody>
+          <tbody v-else>
+            <tr v-for="a in filtered" :key="a.id">
+              <td class="cell-head">
+                <div class="alert-cell">
+                  <span class="type-ic" :class="a.severity"><component :is="typeIcon(a.type)" :size="16" /></span>
+                  <div style="min-width:0">
+                    <div class="t-primary">{{ a.title }}</div>
+                    <div class="t-secondary">{{ a.type_label }}<template v-if="a.message"> · {{ a.message }}</template></div>
+                  </div>
+                </div>
+              </td>
+              <td data-label="Severity"><span class="badge" :class="sevClass(a.severity)"><span class="bdot"></span>{{ cap(a.severity) }}</span></td>
+              <td data-label="Vehicle" class="mono nowrap">{{ a.vehicle_reg || a.device_id || '—' }}</td>
+              <td data-label="Status"><span class="status-dot" :class="a.status === 'open' ? 'red' : a.status === 'acknowledged' ? 'amber' : 'green'">{{ cap(a.status) }}</span></td>
+              <td data-label="Raised" class="nowrap muted" :title="fmtDateTime(a.created_at)">{{ relTime(a.created_at) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-if="!loading && alerts.length" class="card-foot"><span>Showing {{ filtered.length }} of {{ alerts.length }} alerts</span></div>
+    </section>
+
+    <div class="vstack">
+      <section class="card">
+        <div class="card-head"><div><h2>Last 7 days</h2><div class="sub">Alerts raised per day</div></div><span v-if="!loading" class="t-primary num">{{ weekTotal }}</span></div>
+        <div class="card-body">
+          <div v-if="loading" class="skel skel-block"></div>
+          <div v-else class="cols" role="img" :aria-label="days.map((d) => `${d.label}: ${d.count}`).join(', ')">
+            <div v-for="d in days" :key="d.key" class="col" :title="`${d.full}: ${d.count} alert${d.count === 1 ? '' : 's'}`">
+              <span class="col-val num">{{ d.count || '' }}</span>
+              <div class="col-bar"><span :style="{ height: (d.count / dayMax * 100) + '%' }"></span></div>
+              <span class="col-lbl">{{ d.label }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><div><h2>By type</h2><div class="sub">All alerts on record</div></div></div>
+        <div class="card-body">
+          <div v-if="loading" class="bars"><div class="skel skel-row" v-for="n in 4" :key="n"></div></div>
+          <EmptyState v-else-if="!byType.length" :icon="ShieldCheck" title="No alerts yet" />
+          <div v-else class="bars">
+            <div v-for="t in byType" :key="t.type" class="bar-row">
+              <span class="bar-label" :title="t.label">{{ t.label }}</span>
+              <div class="bar-track"><span class="bar-fill" :style="{ width: (t.count / typeMax * 100) + '%' }"></span></div>
+              <span class="bar-val">{{ t.count }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { Flame } from 'lucide-vue-next'
+import { computed, onMounted, ref } from 'vue'
+import {
+  ShieldAlert, ShieldCheck, Siren, OctagonAlert, Fuel, CircleCheck, CircleAlert, Search, Clock, RefreshCw,
+  Gauge, MapPinOff, FuelIcon, Wrench, WifiOff, Unplug, CirclePause, TriangleAlert,
+} from 'lucide-vue-next'
+import { getAlerts } from '../api'
+import { fmt, fmtTime, fmtDateTime, relTime } from '../format'
+import PageHeader from '../components/PageHeader.vue'
+import StatCard from '../components/StatCard.vue'
+import EmptyState from '../components/EmptyState.vue'
+import TableSkeleton from '../components/TableSkeleton.vue'
 
-function seeded(seed) {
-  const x = Math.sin(seed * 33.7 + 8.1) * 63498.2
-  return x - Math.floor(x)
+const alerts = ref([])
+const loading = ref(true)
+const refreshing = ref(false)
+const loadError = ref(false)
+const fetchedAt = ref(null)
+const q = ref('')
+const status = ref('open')
+const severity = ref('')
+
+const typeIcons = {
+  overspeed: Gauge, geofence_breach: MapPinOff, low_fuel: Fuel, fuel_fill: FuelIcon, fuel_theft: Fuel,
+  tamper: Unplug, device_offline: WifiOff, sensor_fault: Wrench, idle_too_long: CirclePause,
 }
-const companies = ['Everest Logistics', 'Blue Ridge Fuels', 'Coastal Freight Co.', 'Northgate Transport', 'Summit Haulage']
-const types = ['Fuel theft', 'Route deviation', 'Tamper detected', 'Odometer anomaly', 'Unauthorized stop']
-const severities = ['low', 'medium', 'high']
+const typeIcon = (t) => typeIcons[t] || TriangleAlert
+const sevClass = (s) => (s === 'critical' ? 'critical' : s === 'warning' ? 'warning' : 'info')
+const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '—')
+const sevRank = { critical: 0, warning: 1, info: 2 }
 
-const incidents = Array.from({ length: 12 }, (_, i) => {
-  const seed = i + 1
-  const daysAgo = Math.floor(seeded(seed * 3 + 1) * 30)
-  return {
-    id: seed,
-    company: companies[Math.floor(seeded(seed * 5 + 2) * companies.length)],
-    vehicle: `Vehicle ${100 + Math.floor(seeded(seed * 7 + 3) * 80)}`,
-    type: types[Math.floor(seeded(seed * 11 + 4) * types.length)],
-    severity: severities[Math.floor(seeded(seed * 13 + 5) * severities.length)],
-    status: seeded(seed * 17 + 6) > 0.4 ? 'open' : 'resolved',
-    detected: `${daysAgo}d ago`,
+const openCount = computed(() => alerts.value.filter((a) => a.status === 'open').length)
+const critOpen = computed(() => alerts.value.filter((a) => a.status === 'open' && a.severity === 'critical').length)
+const theftCount = computed(() => alerts.value.filter((a) => a.type === 'fuel_theft' || a.type === 'tamper').length)
+const statusFilters = computed(() => [
+  { key: 'open', label: 'Open', count: openCount.value },
+  { key: 'closed', label: 'Handled', count: alerts.value.length - openCount.value },
+  { key: 'all', label: 'All', count: alerts.value.length },
+])
+const filtered = computed(() => {
+  const term = q.value.trim().toLowerCase()
+  return alerts.value
+    .filter((a) => status.value === 'all' || (status.value === 'open' ? a.status === 'open' : a.status !== 'open'))
+    .filter((a) => !severity.value || a.severity === severity.value)
+    .filter((a) => !term || [a.title, a.message, a.vehicle_reg, a.device_id, a.type_label].some((f) => (f || '').toLowerCase().includes(term)))
+    .sort((x, y) => (sevRank[x.severity] ?? 3) - (sevRank[y.severity] ?? 3) || new Date(y.created_at) - new Date(x.created_at))
+})
+
+const byType = computed(() => {
+  const m = {}
+  alerts.value.forEach((a) => { (m[a.type] ||= { type: a.type, label: a.type_label || a.type, count: 0 }).count++ })
+  return Object.values(m).sort((a, b) => b.count - a.count)
+})
+const typeMax = computed(() => Math.max(1, ...byType.value.map((t) => t.count)))
+
+const days = computed(() => {
+  const out = []
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i)
+    const next = new Date(d); next.setDate(next.getDate() + 1)
+    const count = alerts.value.filter((a) => { const t = new Date(a.created_at); return t >= d && t < next }).length
+    out.push({
+      key: d.toISOString(), count,
+      label: i === 0 ? 'Today' : d.toLocaleDateString(undefined, { weekday: 'short' }),
+      full: d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' }),
+    })
   }
-}).sort((a, b) => (a.status === 'open' ? -1 : 1) - (b.status === 'open' ? -1 : 1))
+  return out
+})
+const dayMax = computed(() => Math.max(1, ...days.value.map((d) => d.count)))
+const weekTotal = computed(() => days.value.reduce((s, d) => s + d.count, 0))
 
-const openCount = incidents.filter((i) => i.status === 'open').length
-const resolvedCount = incidents.filter((i) => i.status === 'resolved').length
-function sevClass(s) { return s === 'high' ? 'critical' : s === 'medium' ? 'warning' : 'info' }
-
-const byType = computed(() => types.map((t) => ({ type: t, count: incidents.filter((i) => i.type === t).length })))
-const maxType = Math.max(1, ...byType.value.map((t) => t.count))
-function typePct(n) { return n ? Math.max(6, (n / maxType) * 100) : 0 }
-
-// 7-point weekly trend sparkline
-const weekly = [4, 6, 5, 8, 7, 10, 9]
-const trendPct = Math.round(((weekly[6] - weekly[0]) / weekly[0]) * 100)
-const trendUp = trendPct >= 0
-const maxW = Math.max(...weekly), minW = Math.min(...weekly)
-const sparkDots = weekly.map((v, i) => ({
-  x: (i / (weekly.length - 1)) * 220,
-  y: 66 - ((v - minW) / Math.max(1, maxW - minW)) * 56,
-}))
-const sparkPoints = sparkDots.map((p) => `${p.x},${p.y}`).join(' ')
+async function load() {
+  try {
+    alerts.value = await getAlerts()
+    fetchedAt.value = new Date()
+    loadError.value = false
+  } catch (e) {
+    loadError.value = !alerts.value.length
+  } finally { loading.value = false }
+}
+async function refresh() { refreshing.value = true; await load(); refreshing.value = false }
+onMounted(load)
 </script>
 
 <style scoped>
-.barchart { display: flex; flex-direction: column; gap: 10px; }
-.brow { display: grid; grid-template-columns: 120px 1fr 28px; align-items: center; gap: 10px; }
-.blabel { font-size: 12px; font-weight: 700; color: var(--muted); }
-.bval { font-size: 12.5px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
-@media (max-width: 480px) { .brow { grid-template-columns: 92px 1fr 28px; gap: 8px; } .blabel { font-size: 11px; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin .8s linear infinite; }
+.alert-cell { display: flex; gap: 11px; align-items: flex-start; min-width: 240px; }
+.alert-cell .t-secondary { max-width: 46ch; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; }
+.type-ic { width: 32px; height: 32px; border-radius: var(--radius-sm); flex: none; display: grid; place-items: center; background: var(--info-soft); color: var(--info); }
+.type-ic.warning { background: var(--amber-soft); color: var(--amber); }
+.type-ic.critical { background: var(--crit-soft); color: var(--crit); }
+.cols { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; height: 150px; }
+.col { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.col-val { font-size: .75rem; font-weight: 750; color: var(--ink-strong); height: 16px; }
+.col-bar { flex: 1; width: 100%; max-width: 28px; display: flex; align-items: flex-end; background: var(--surface-3); border-radius: 4px; overflow: hidden; }
+.col-bar span { display: block; width: 100%; background: var(--crit); border-radius: 4px 4px 0 0; min-height: 0; }
+.col-lbl { font-size: .72rem; color: var(--muted); white-space: nowrap; }
+@media (max-width: 1360px) {
+  .sec-grid { grid-template-columns: minmax(0, 1fr); }
+  .sec-grid > .vstack { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
+@media (max-width: 720px) {
+  .sec-grid > .vstack { grid-template-columns: minmax(0, 1fr); }
+  .alert-cell { min-width: 0; }
+  .alerts-table .toolbar .select { flex-basis: 100%; }
+}
 </style>

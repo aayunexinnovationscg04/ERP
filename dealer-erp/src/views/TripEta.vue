@@ -1,36 +1,31 @@
 <template>
-  <div class="topbar">
-    <h1>ETA &amp; Delivery</h1>
-    <span class="muted">{{ enroute.length }} truck(s) en route</span>
-  </div>
+  <PageHeader title="ETA & Delivery" :description="`${enroute.length} truck(s) en route with live ETA and recent delivery events.`" preview />
 
-  <p class="section-title">Live ETA</p>
   <div class="eta-grid">
-    <motion.div class="card eta-box" v-for="(t, i) in enroute" :key="t.id"
-                :initial="{ opacity: 0, y: 10 }" :animate="{ opacity: 1, y: 0 }"
-                :transition="{ duration: .22, delay: Math.min(i, 12) * .03, ease: [.4, 0, .2, 1] }">
+    <div class="card eta-box" v-for="t in enroute" :key="t.id">
       <div class="eta-top">
         <span class="icon-chip blue"><Truck :size="16" /></span>
-        <span class="eta-name">{{ t.vehicleName }}</span>
+        <div style="min-width:0">
+          <div class="eta-name">{{ t.vehicleName }}</div>
+          <div class="eta-dest"><Flag :size="12" /> {{ t.destination }}</div>
+        </div>
       </div>
-      <div class="muted eta-dest"><Flag :size="12" class="pilot-ic" /> {{ t.destination }}</div>
-      <div class="eta-countdown">{{ t.etaLabel }}</div>
-      <div class="eta-bar"><div class="eta-bar-fill" :style="{ width: t.progress + '%' }"></div></div>
-      <div class="muted eta-pct">{{ t.progress }}% of route complete</div>
-    </motion.div>
+      <div class="eta-countdown num">{{ t.etaLabel }}</div>
+      <div class="meter"><span class="brand" :style="{ width: t.progress + '%' }"></span></div>
+      <div class="eta-pct">{{ t.progress }}% of route complete</div>
+    </div>
   </div>
 
-  <p class="section-title">Delivery Timeline</p>
-  <div class="card" style="padding:16px 20px">
-    <div class="tl">
-      <div class="tl-row" v-for="ev in timeline" :key="ev.id">
-        <span class="tl-dot" :class="ev.cls"></span>
-        <div class="tl-body">
-          <div class="tl-head">
-            <b>{{ ev.title }}</b>
-            <span class="muted">{{ ev.when }}</span>
+  <div class="card section">
+    <div class="card-head"><div class="card-head-title"><PackageCheck :size="17" /><h2>Delivery timeline</h2></div></div>
+    <div class="card-body">
+      <div class="tl">
+        <div class="tl-row" v-for="ev in timeline" :key="ev.id">
+          <span class="tl-dot" :class="ev.cls"></span>
+          <div class="tl-body">
+            <div class="tl-head"><b>{{ ev.title }}</b><span class="muted">{{ ev.when }}</span></div>
+            <div class="muted" style="font-size:12.5px">{{ ev.detail }}</div>
           </div>
-          <div class="muted" style="font-size:12.5px">{{ ev.detail }}</div>
         </div>
       </div>
     </div>
@@ -38,8 +33,8 @@
 </template>
 
 <script setup>
-import { Truck, Flag } from 'lucide-vue-next'
-import { motion } from 'motion-v'
+import { Truck, Flag, PackageCheck } from 'lucide-vue-next'
+import PageHeader from '../components/PageHeader.vue'
 import { MOCK_VEHICLES, MOCK_CUSTOMERS, seededRandom, pick, rangeInt } from '../mock'
 
 const rng = seededRandom(1212)
@@ -70,25 +65,23 @@ const timeline = Array.from({ length: 8 }, (_, i) => {
   }
 }).sort((a, b) => a.sortKey - b.sortKey)
 </script>
-
 <style scoped>
-.eta-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 4px; }
-.eta-box { padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; }
+.eta-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.eta-box { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
 .eta-top { display: flex; align-items: center; gap: 10px; }
 .eta-name { font-weight: 700; font-size: 15px; color: var(--ink-strong); }
-.eta-dest { display: flex; align-items: center; gap: 5px; font-size: 12.5px; }
-.eta-countdown { font-size: 24px; font-weight: 800; letter-spacing: -.01em; color: var(--brand); font-family: var(--font-head); margin-top: 2px; }
-.eta-bar { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 4px; }
-.eta-bar-fill { height: 100%; background: var(--accent-grad); border-radius: 999px; transition: width var(--dur) var(--ease); }
-.eta-pct { font-size: 11.5px; margin-top: 2px; }
-
+.eta-dest { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eta-countdown { font-size: 22px; font-weight: 800; letter-spacing: -.01em; color: var(--ink-strong); font-family: var(--font-head); }
+.eta-pct { font-size: 12px; color: var(--muted); }
 .tl { display: flex; flex-direction: column; }
 .tl-row { display: flex; gap: 14px; padding: 10px 0; position: relative; }
-.tl-row:not(:last-child)::before { content: ''; position: absolute; left: 4px; top: 22px; bottom: -4px; width: 1px; background: var(--border); }
-.tl-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex: none; background: var(--gray); }
-.tl-dot.blue { background: var(--blue); }
+.tl-row:not(:last-child)::before { content: ''; position: absolute; left: 4px; top: 24px; bottom: -6px; width: 2px; background: var(--border); }
+.tl-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex: none; background: var(--muted-2); }
+.tl-dot.blue { background: var(--info); }
 .tl-dot.amber { background: var(--amber); }
 .tl-dot.green { background: var(--green); }
-.tl-body { flex: 1; }
-.tl-head { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; }
+.tl-body { flex: 1; min-width: 0; }
+.tl-head { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; }
+.tl-head b { color: var(--ink-strong); }
+.tl-head span { font-size: 12.5px; white-space: nowrap; }
 </style>

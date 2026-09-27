@@ -1,171 +1,271 @@
 <template>
-  <div class="topbar">
-    <div class="heading">
-      <span class="eyebrow">Platform / User Management</span>
-      <h1>Users</h1>
+  <PageHeader :icon="Users" title="Users" description="Accounts for every portal. Change roles and companies inline; access to individual screens is set per user.">
+    <button type="button" class="btn btn-primary" @click="openCreate"><UserPlus :size="16" /> New user</button>
+  </PageHeader>
+
+  <div class="stats">
+    <StatCard label="Total users" :value="fmt(users.length)" :icon="Users" tone="navy" :loading="loading" />
+    <StatCard label="Active accounts" :value="fmt(activeCount)" :icon="UserCheck" tone="green" :loading="loading" />
+    <StatCard label="Disabled" :value="fmt(users.length - activeCount)" :icon="UserX" :tone="users.length - activeCount ? 'amber' : 'navy'" :loading="loading" />
+    <StatCard label="Read-only accounts" :value="fmt(readOnlyCount)" :icon="Eye" tone="info" :loading="loading" sub="Non-admins without edit rights" />
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <label class="input-icon">
+        <Search :size="16" />
+        <input v-model="q" class="input" type="search" placeholder="Search username, email or phone" aria-label="Search users" />
+      </label>
+      <select v-model="roleFilter" class="select" aria-label="Filter by role">
+        <option value="">All roles</option>
+        <option v-for="r in roles" :key="r" :value="r">{{ roleLabel(r) }}</option>
+      </select>
+      <select v-model="companyFilter" class="select" aria-label="Filter by company">
+        <option value="">All companies</option>
+        <option value="none">No company</option>
+        <option v-for="c in companies" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
+      </select>
+      <button v-if="filtersOn" type="button" class="btn btn-ghost btn-sm" @click="clearFilters"><X :size="14" /> Clear</button>
     </div>
-    <button class="primary ico" style="width:auto" @click="showCreate = !showCreate"><Plus :size="16" /> New user</button>
+    <div class="table-wrap">
+      <table class="table stack users-table">
+        <thead>
+          <tr><th>User</th><th>Role</th><th>Company</th><th class="t-center">Can edit</th><th class="t-center">Active</th><th class="col-login">Last sign-in</th><th class="t-right">Access</th></tr>
+        </thead>
+        <TableSkeleton v-if="loading" :cols="7" :rows="6" />
+        <tbody v-else-if="!filtered.length">
+          <tr class="table-empty"><td colspan="7">
+            <EmptyState v-if="!users.length" :icon="Users" title="No users yet" text="Create the first account to get started.">
+              <button type="button" class="btn btn-primary" @click="openCreate"><UserPlus :size="16" /> New user</button>
+            </EmptyState>
+            <EmptyState v-else :icon="Search" title="No matching users" text="Try a different search or filter.">
+              <button type="button" class="btn" @click="clearFilters">Clear filters</button>
+            </EmptyState>
+          </td></tr>
+        </tbody>
+        <tbody v-else>
+          <tr v-for="u in filtered" :key="u.id" :class="{ 'row-off': !u.is_active }">
+            <td class="cell-head">
+              <div class="cell-entity">
+                <span class="entity-mark round">{{ (u.username || '?')[0] }}</span>
+                <div>
+                  <div class="t-primary">{{ u.username }} <span v-if="isSelf(u)" class="badge outline" style="height:20px;margin-left:4px">You</span></div>
+                  <div class="t-secondary">{{ u.email || u.phone || 'No contact details' }}</div>
+                  <div class="t-secondary login-inline">Last sign-in: {{ relTime(u.last_login) }}</div>
+                </div>
+              </div>
+            </td>
+            <td data-label="Role">
+              <select
+                :value="u.role" class="select select-sm role-select" :class="'r-' + u.role" :disabled="isSelf(u) || busyId === u.id"
+                :title="isSelf(u) ? 'You cannot change your own role' : 'Change role'" aria-label="Role"
+                @change="patch(u, { role: $event.target.value }, 'Role updated')"
+              >
+                <option v-for="r in roles" :key="r" :value="r">{{ roleLabel(r) }}</option>
+              </select>
+            </td>
+            <td data-label="Company">
+              <select
+                :value="u.company ?? ''" class="select select-sm" :disabled="busyId === u.id" aria-label="Company"
+                @change="patch(u, { company: $event.target.value || null }, 'Company updated')"
+              >
+                <option value="">No company</option>
+                <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+            </td>
+            <td data-label="Can edit" class="t-center">
+              <span v-if="u.role === 'admin'" class="muted" title="Admins always have full access">Always</span>
+              <ToggleSwitch
+                v-else :model-value="u.can_edit" :disabled="busyId === u.id" :aria-label="`Allow ${u.username} to edit`"
+                @change="(v) => patch(u, { can_edit: v }, v ? 'Edit rights granted' : 'Account set to read-only')"
+              />
+            </td>
+            <td data-label="Active" class="t-center">
+              <ToggleSwitch
+                :model-value="u.is_active" :disabled="isSelf(u) || busyId === u.id" :aria-label="`${u.username} active`"
+                :title="isSelf(u) ? 'You cannot deactivate your own account' : ''"
+                @change="(v) => onActive(u, v)"
+              />
+            </td>
+            <td data-label="Last sign-in" class="nowrap muted col-login" :title="u.last_login ? fmtDateTime(u.last_login) : ''">{{ relTime(u.last_login) }}</td>
+            <td data-label="Access" class="t-right">
+              <router-link :to="`/users/${u.id}/permissions`" class="btn btn-sm access-btn" :aria-label="`Screen access for ${u.username}`" title="Screen access"><SlidersHorizontal :size="14" /> <span class="access-label">Screen access</span></router-link>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div v-if="!loading && users.length" class="card-foot">
+      <span>Showing {{ filtered.length }} of {{ users.length }} {{ users.length === 1 ? 'user' : 'users' }}</span>
+    </div>
   </div>
 
-  <div class="chiprow" v-if="!loading">
-    <div class="chip" style="border-top-color:var(--brand)"><span class="chip-n num">{{ users.length }}</span><span class="chip-l">Total users</span></div>
-    <div class="chip" style="border-top-color:var(--green)"><span class="chip-n num">{{ activeCount }}</span><span class="chip-l">Active now</span></div>
-    <div class="chip" style="border-top-color:var(--role-manager)"><span class="chip-n num">{{ roleCounts.length }}</span><span class="chip-l">Roles in use</span></div>
-  </div>
-
-  <AnimatePresence>
-    <motion.div
-      v-if="showCreate" class="card users-card" style="padding:16px;margin-bottom:18px"
-      :initial="{ opacity: 0, height: 0 }" :animate="{ opacity: 1, height: 'auto' }" :exit="{ opacity: 0, height: 0 }"
-      :transition="{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }"
-    >
-      <p class="section-title">Create user</p>
-      <div class="formgrid">
-        <input v-model="nu.username" placeholder="username" />
-        <input v-model="nu.password" type="password" placeholder="password" />
-        <select v-model="nu.role">
-          <option value="dealer">Dealer</option>
-          <option value="manager">Manager</option>
-          <option value="pilot">Pilot</option>
-          <option value="admin">Admin</option>
+  <Modal :open="showCreate" title="New user" description="The user signs in to the portal that matches their role." @close="showCreate = false">
+    <form id="user-form" class="form-grid" autocomplete="off" @submit.prevent="create">
+      <div class="field">
+        <label for="nu-username">Username<span class="req">*</span></label>
+        <input id="nu-username" v-model="nu.username" class="input" required autocomplete="off" autocapitalize="none" spellcheck="false" />
+      </div>
+      <div class="field">
+        <label for="nu-password">Password<span class="req">*</span></label>
+        <input id="nu-password" v-model="nu.password" class="input" type="password" required autocomplete="new-password" />
+      </div>
+      <div class="field">
+        <label for="nu-role">Role</label>
+        <select id="nu-role" v-model="nu.role" class="select">
+          <option v-for="r in roles" :key="r" :value="r">{{ roleLabel(r) }}</option>
         </select>
-        <select v-model="nu.company">
-          <option :value="null">— no company —</option>
+      </div>
+      <div class="field">
+        <label for="nu-company">Company</label>
+        <select id="nu-company" v-model="nu.company" class="select">
+          <option :value="null">No company</option>
           <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
-        <input v-model="nu.phone" placeholder="phone (optional)" />
-        <button class="primary ico" style="width:auto" @click="create" :disabled="!nu.username || !nu.password"><Plus :size="16" /> Create</button>
+        <span v-if="nu.role !== 'admin' && !nu.company" class="help">Dealers, managers and pilots normally belong to a company.</span>
       </div>
-      <div v-if="msg" class="muted" style="margin-top:8px">{{ msg }}</div>
-    </motion.div>
-  </AnimatePresence>
+      <div class="field">
+        <label for="nu-email">Email</label>
+        <input id="nu-email" v-model="nu.email" class="input" type="email" autocomplete="off" placeholder="Optional" />
+      </div>
+      <div class="field">
+        <label for="nu-phone">Phone</label>
+        <input id="nu-phone" v-model="nu.phone" class="input" type="tel" autocomplete="off" placeholder="Optional" />
+      </div>
+      <div v-if="msg" class="form-error span-2"><CircleAlert :size="16" /> {{ msg }}</div>
+    </form>
+    <template #footer>
+      <button type="button" class="btn" @click="showCreate = false">Cancel</button>
+      <button type="submit" form="user-form" class="btn btn-primary" :disabled="creating || !nu.username || !nu.password">
+        {{ creating ? 'Creating…' : 'Create user' }}
+      </button>
+    </template>
+  </Modal>
 
-  <div class="card users-card" style="padding:6px 0">
-    <table>
-      <thead><tr><th>Username</th><th>Role</th><th>Company</th><th>Active</th><th>Access</th></tr></thead>
-      <tbody v-if="loading">
-        <tr v-for="n in 6" :key="n">
-          <td colspan="5" style="padding:6px 13px"><div class="skel sk-row" style="margin:0"></div></td>
-        </tr>
-      </tbody>
-      <tbody v-else>
-        <motion.tr
-          v-for="(u, idx) in users" :key="u.id"
-          :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }"
-          :transition="{ duration: 0.16, delay: Math.min(idx, 10) * 0.02, ease: [0.4, 0, 0.2, 1] }"
-        >
-          <td data-label="User">{{ u.username }}<div class="muted" style="font-size:12px">{{ u.email }}</div></td>
-          <td data-label="Role">
-            <select :value="u.role" class="role-select" :class="'r-' + u.role" @change="patch(u, { role: $event.target.value })" style="width:auto">
-              <option value="dealer">Dealer</option>
-              <option value="manager">Manager</option>
-              <option value="pilot">Pilot</option>
-              <option value="admin">Admin</option>
-            </select>
-          </td>
-          <td data-label="Company">
-            <select :value="u.company" @change="patch(u, { company: $event.target.value || null })" style="width:auto">
-              <option :value="''">—</option>
-              <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
-          </td>
-          <td data-label="Active">
-            <ToggleSwitch :model-value="u.is_active" @change="(v) => patch(u, { is_active: v })" />
-          </td>
-          <td data-label="Access"><router-link :to="`/users/${u.id}/permissions`" class="tabs-link"><SlidersHorizontal :size="13" /> Tabs &amp; overrides</router-link></td>
-        </motion.tr>
-      </tbody>
-    </table>
-    <div v-if="!loading" class="table-foot">{{ users.length }} {{ users.length === 1 ? 'user' : 'users' }} total</div>
-  </div>
+  <ConfirmDialog
+    :open="!!deactivating" :title="`Deactivate ${deactivating?.username}?`" confirm-label="Deactivate"
+    :busy="busyId === deactivating?.id" @cancel="deactivating = null" @confirm="confirmDeactivate"
+  >
+    They will be signed out and won't be able to sign in until the account is reactivated.
+  </ConfirmDialog>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { motion, AnimatePresence } from 'motion-v'
-import { Plus, SlidersHorizontal } from 'lucide-vue-next'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { Users, UserPlus, UserCheck, UserX, Eye, Search, X, SlidersHorizontal, CircleAlert } from 'lucide-vue-next'
 import { getUsers, createUser, updateUser, getCompanies } from '../api'
+import { auth } from '../auth'
+import { fmt, fmtDateTime, relTime, roleLabel, apiError } from '../format'
 import { toast } from '../toast'
+import PageHeader from '../components/PageHeader.vue'
+import StatCard from '../components/StatCard.vue'
+import EmptyState from '../components/EmptyState.vue'
+import TableSkeleton from '../components/TableSkeleton.vue'
+import Modal from '../components/Modal.vue'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 import ToggleSwitch from '../components/ToggleSwitch.vue'
 
+const route = useRoute()
+const roles = ['dealer', 'manager', 'pilot', 'admin']
 const users = ref([]); const companies = ref([])
 const loading = ref(true)
-const showCreate = ref(false); const msg = ref('')
-const nu = ref({ username: '', password: '', role: 'dealer', company: null, phone: '' })
+const busyId = ref(null)
+
+const q = ref('')
+const roleFilter = ref('')
+const companyFilter = ref(route.query.company ? String(route.query.company) : '')
+watch(() => route.query.company, (c) => { companyFilter.value = c ? String(c) : '' })
+const filtersOn = computed(() => q.value || roleFilter.value || companyFilter.value)
+function clearFilters() { q.value = ''; roleFilter.value = ''; companyFilter.value = '' }
 
 const activeCount = computed(() => users.value.filter((u) => u.is_active).length)
-const roleCounts = computed(() => [...new Set(users.value.map((u) => u.role))])
+const readOnlyCount = computed(() => users.value.filter((u) => u.role !== 'admin' && !u.can_edit).length)
+const filtered = computed(() => {
+  const term = q.value.trim().toLowerCase()
+  return users.value.filter((u) => {
+    if (roleFilter.value && u.role !== roleFilter.value) return false
+    if (companyFilter.value === 'none' && u.company) return false
+    if (companyFilter.value && companyFilter.value !== 'none' && String(u.company) !== companyFilter.value) return false
+    if (term && ![u.username, u.email, u.phone].some((f) => (f || '').toLowerCase().includes(term))) return false
+    return true
+  })
+})
+const isSelf = (u) => auth.user && String(auth.user.id) === String(u.id)
 
 async function load() {
   try {
     ;[users.value, companies.value] = await Promise.all([getUsers(), getCompanies()])
+  } catch (e) {
+    toast.error('Could not load users')
   } finally { loading.value = false }
 }
+
+// ---- create ----
+const showCreate = ref(false); const msg = ref(''); const creating = ref(false)
+const blank = () => ({ username: '', password: '', role: 'dealer', company: null, email: '', phone: '' })
+const nu = ref(blank())
+function openCreate() { nu.value = blank(); msg.value = ''; showCreate.value = true }
 async function create() {
-  msg.value = ''
+  msg.value = ''; creating.value = true
   try {
-    await createUser({ ...nu.value })
-    nu.value = { username: '', password: '', role: 'dealer', company: null, phone: '' }
+    await createUser({ ...nu.value, username: nu.value.username.trim() })
     showCreate.value = false
+    toast.success(`User ${nu.value.username} created`)
     await load()
-    toast.success('User created')
   } catch (e) {
-    msg.value = 'Error: ' + JSON.stringify(e.response?.data || e.message)
-    toast.error('Could not create user')
+    msg.value = apiError(e, 'Could not create the user.')
+  } finally { creating.value = false }
+}
+
+// ---- inline edits ----
+async function patch(u, body, okMsg = 'User updated') {
+  busyId.value = u.id
+  try {
+    await updateUser(u.id, body)
+    toast.success(okMsg)
+  } catch (e) {
+    toast.error(apiError(e, 'Could not update the user.'))
+  } finally {
+    await load()
+    busyId.value = null
   }
 }
-async function patch(u, body) {
-  try {
-    await updateUser(u.id, body); await load()
-    toast.success('User updated')
-  } catch (e) {
-    await load()
-    toast.error('Could not update user')
-  }
+const deactivating = ref(null)
+function onActive(u, v) {
+  if (v) patch(u, { is_active: true }, `${u.username} reactivated`)
+  else deactivating.value = u
+}
+async function confirmDeactivate() {
+  const u = deactivating.value
+  await patch(u, { is_active: false }, `${u.username} deactivated`)
+  deactivating.value = null
 }
 onMounted(load)
 </script>
 
 <style scoped>
-/* cap the table card's width so a handful of demo rows reads as a
-   deliberately-sized panel rather than a mostly-empty full-bleed table
-   stretched across the whole content column */
-.users-card { max-width: 980px; }
-.formgrid { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 10px; }
-select { font: inherit; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); padding: 9px 10px; border-radius: 8px; }
-.role-select { font-weight: 700; font-size: 12.5px; }
-.role-select.r-admin { background: var(--role-admin-soft); color: var(--role-admin); border-color: rgba(139,92,246,.35); }
-.role-select.r-dealer { background: var(--role-dealer-soft); color: var(--role-dealer); border-color: rgba(245,158,11,.35); }
-.role-select.r-manager { background: var(--role-manager-soft); color: var(--role-manager); border-color: rgba(45,212,191,.35); }
-.role-select.r-pilot { background: var(--role-pilot-soft); color: var(--role-pilot); border-color: rgba(56,189,248,.35); }
-@media (max-width: 800px) { .formgrid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 480px) { .formgrid { grid-template-columns: 1fr; } .formgrid button { width: 100%; } }
-
-/* Phones: the horizontal-scroll pattern used for wider/denser tables (like
-   the Role Management matrix, which genuinely can't be "stacked") works but
-   isn't obviously discoverable - a swipe-to-see-more table reads as broken
-   at a glance. This table's rows are simple enough to restructure into
-   readable stacked cards instead: each row becomes its own bordered card,
-   each cell becomes a labelled line (label from data-label, set in the
-   template) instead of a table column. */
-@media (max-width: 640px) {
-  .users-card { overflow-x: visible; }
-  .users-card table, .users-card thead, .users-card tbody, .users-card tr, .users-card td { display: block; width: 100%; }
-  .users-card thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .users-card tbody tr {
-    border: 1px solid var(--border); border-radius: var(--radius-sm);
-    margin: 10px 12px; padding: 4px 12px; background: var(--surface-2);
-  }
-  .users-card td {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 9px 0; border-bottom: 1px solid var(--border); white-space: normal; text-align: right;
-  }
-  .users-card tr td:last-child { border-bottom: none; }
-  .users-card td::before {
-    content: attr(data-label); flex: none; font-size: var(--fs-xs); font-weight: 700;
-    letter-spacing: .04em; text-transform: uppercase; color: var(--muted); text-align: left;
-  }
-  .users-card td select { width: auto; max-width: 60%; }
-  .users-card .table-foot { padding: 10px 12px 4px; }
+.role-select { font-weight: 700; width: auto; min-width: 118px; border-color: transparent; }
+.role-select.r-admin { background-color: var(--role-admin-soft); color: var(--role-admin); }
+.role-select.r-dealer { background-color: var(--role-dealer-soft); color: var(--role-dealer); }
+.role-select.r-manager { background-color: var(--role-manager-soft); color: var(--role-manager); }
+.role-select.r-pilot { background-color: var(--role-pilot-soft); color: var(--role-pilot); }
+.role-select:disabled { opacity: 1; cursor: default; background-image: none; padding-right: 10px; }
+.users-table td .select-sm:not(.role-select) { width: auto; min-width: 150px; max-width: 200px; }
+.login-inline { display: none; }
+@media (max-width: 1180px) and (min-width: 721px) {
+  .users-table .col-login { display: none; }
+  .login-inline { display: block; }
+  .users-table td .select-sm:not(.role-select) { min-width: 0; max-width: 150px; }
+  .role-select { min-width: 104px; }
+}
+@media (max-width: 1320px) and (min-width: 721px) {
+  .users-table .access-label { display: none; }
+  .users-table .access-btn { width: 36px; padding: 0; }
+  .users-table th, .users-table td { padding-left: 12px; padding-right: 12px; }
+}
+.row-off .t-primary { color: var(--muted); }
+@media (max-width: 720px) {
+  .users-table td .select-sm:not(.role-select) { min-width: 0; max-width: 62%; }
 }
 </style>

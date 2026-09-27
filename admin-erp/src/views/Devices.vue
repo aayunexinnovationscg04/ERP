@@ -1,99 +1,115 @@
 <template>
-  <div class="topbar">
-    <div class="heading">
-      <span class="eyebrow">Platform / Device Management</span>
-      <h1 class="ico"><Cpu :size="20" /> Devices</h1>
+  <PageHeader :icon="Cpu" title="Devices" description="Every Fuel Guard X telematics unit registered on the platform, with its latest check-in.">
+    <span class="ph-meta" v-if="fetchedAt"><Clock :size="13" /> Updated {{ fmtTime(fetchedAt) }}</span>
+    <button type="button" class="btn" :disabled="refreshing" @click="refresh"><RefreshCw :size="16" :class="{ spin: refreshing }" /> Refresh</button>
+  </PageHeader>
+
+  <div class="stats">
+    <StatCard label="Registered devices" :value="fmt(devices.length)" :icon="Cpu" tone="navy" :loading="loading" />
+    <StatCard label="Online" :value="fmt(onlineCount)" :icon="Wifi" tone="green" :loading="loading" :sub="loading ? '' : pct(onlineCount) + ' of fleet'" />
+    <StatCard label="Offline" :value="fmt(devices.length - onlineCount)" :icon="WifiOff" :tone="devices.length - onlineCount ? 'red' : 'navy'" :loading="loading" />
+    <StatCard label="Pending commands" :value="fmt(pendingTotal)" :icon="Send" :tone="pendingTotal ? 'amber' : 'navy'" :loading="loading" sub="Queued for delivery to devices" />
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <label class="input-icon">
+        <Search :size="16" />
+        <input v-model="q" class="input" type="search" placeholder="Search device ID, label, SIM or firmware" aria-label="Search devices" />
+      </label>
+      <div class="seg" role="group" aria-label="Filter by connection">
+        <button v-for="f in filters" :key="f.key" type="button" :class="{ on: status === f.key }" @click="status = f.key">
+          {{ f.label }} <span class="count">{{ f.count }}</span>
+        </button>
+      </div>
     </div>
-  </div>
-  <p class="hint">ESP32 fleet across every company. Illustrative preview — the device API does not yet return a per-device company tag, so rows below are simulated (company names are real).</p>
-
-  <div class="chiprow" v-if="!loading">
-    <div class="chip"><span class="chip-n num">{{ devices.length }}</span><span class="chip-l">Total devices</span></div>
-    <div class="chip" style="border-top-color:var(--green)"><span class="chip-n num">{{ onlineCount }}</span><span class="chip-l">Online</span></div>
-    <div class="chip flag"><span class="chip-n num">{{ devices.length - onlineCount }}</span><span class="chip-l">Offline</span></div>
-    <div class="chip" style="border-top-color:var(--amber)"><span class="chip-n num">{{ faultCount }}</span><span class="chip-l">Sensor faults</span></div>
-  </div>
-
-  <div class="card" style="padding:6px 0">
-    <table>
-      <thead><tr><th>Device ID</th><th>Company</th><th>Health</th><th>Sensors</th><th>Status</th><th>Last seen</th></tr></thead>
-      <tbody v-if="loading">
-        <tr v-for="n in 8" :key="n"><td colspan="6" style="padding:6px 13px"><div class="skel sk-row" style="margin:0"></div></td></tr>
-      </tbody>
-      <tbody v-else>
-        <motion.tr
-          v-for="(d, idx) in devices" :key="d.id"
-          :initial="{ opacity: 0, y: 6 }" :animate="{ opacity: 1, y: 0 }"
-          :transition="{ duration: 0.14, delay: Math.min(idx, 12) * 0.015, ease: [0.4, 0, 0.2, 1] }"
-        >
-          <td>{{ d.device_id }}</td>
-          <td class="muted">{{ d.company }}</td>
-          <td><span class="badge" :class="healthClass(d.health)">{{ healthLabel(d.health) }}</span></td>
-          <td><span class="badge" :class="d.sensorOk ? 'active' : 'warning'">{{ d.sensorOk ? 'OK' : 'Fault' }}</span></td>
-          <td>
-            <span class="ico">
-              <span class="dot" :class="d.online ? 'green' : 'gray'"></span>
-              {{ d.online ? 'Online' : 'Offline' }}
-            </span>
-          </td>
-          <td class="muted">{{ d.lastSeen }}</td>
-        </motion.tr>
-      </tbody>
-    </table>
-    <div v-if="!loading" class="table-foot">{{ devices.length }} devices</div>
+    <div class="table-wrap">
+      <table class="table stack">
+        <thead>
+          <tr><th>Device</th><th>Connection</th><th>Last seen</th><th>Firmware</th><th>SIM</th><th class="t-right">Pending cmds</th></tr>
+        </thead>
+        <TableSkeleton v-if="loading" :cols="6" :rows="7" />
+        <tbody v-else-if="loadError">
+          <tr class="table-empty"><td colspan="6"><EmptyState :icon="CircleAlert" title="Devices could not be loaded" text="Check your connection and try again."><button type="button" class="btn" @click="refresh">Try again</button></EmptyState></td></tr>
+        </tbody>
+        <tbody v-else-if="!filtered.length">
+          <tr class="table-empty"><td colspan="6">
+            <EmptyState v-if="!devices.length" :icon="Cpu" title="No devices registered" text="Devices appear here once they are provisioned for a company." />
+            <EmptyState v-else :icon="Search" title="No matching devices" text="Try a different search or filter." />
+          </td></tr>
+        </tbody>
+        <tbody v-else>
+          <tr v-for="d in filtered" :key="d.id">
+            <td class="cell-head">
+              <div class="cell-entity">
+                <span class="entity-mark"><Cpu :size="16" /></span>
+                <div><div class="t-primary mono">{{ d.device_id }}</div><div class="t-secondary">{{ d.label || 'No label' }}</div></div>
+              </div>
+            </td>
+            <td data-label="Connection"><span class="badge" :class="d.online ? 'success' : 'neutral'"><span class="bdot"></span>{{ d.online ? 'Online' : 'Offline' }}</span></td>
+            <td data-label="Last seen" class="nowrap" :title="fmtDateTime(d.last_seen)">{{ relTime(d.last_seen) }}</td>
+            <td data-label="Firmware" class="mono muted">{{ d.firmware_version || '—' }}</td>
+            <td data-label="SIM" class="mono muted">{{ d.sim_number || '—' }}</td>
+            <td data-label="Pending cmds" class="t-right num">
+              <span v-if="d.pending_commands" class="badge warning">{{ d.pending_commands }}</span>
+              <span v-else class="muted">0</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div v-if="!loading && devices.length" class="card-foot"><span>Showing {{ filtered.length }} of {{ devices.length }} devices</span></div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { motion } from 'motion-v'
-import { Cpu } from 'lucide-vue-next'
-import { getCompanies } from '../api'
+import { Cpu, Wifi, WifiOff, Send, Search, Clock, RefreshCw, CircleAlert } from 'lucide-vue-next'
+import { getDevices } from '../api'
+import { fmt, fmtTime, fmtDateTime, relTime } from '../format'
+import PageHeader from '../components/PageHeader.vue'
+import StatCard from '../components/StatCard.vue'
+import EmptyState from '../components/EmptyState.vue'
+import TableSkeleton from '../components/TableSkeleton.vue'
 
 const devices = ref([])
 const loading = ref(true)
-
-function seeded(seed) {
-  const x = Math.sin(seed * 17.31 + 5.19) * 91827.53
-  return x - Math.floor(x)
-}
-const healthLevels = ['healthy', 'warning', 'critical']
-function healthLabel(h) { return h === 'healthy' ? 'Healthy' : h === 'warning' ? 'Attention' : 'Critical' }
-function healthClass(h) { return h === 'healthy' ? 'active' : h === 'warning' ? 'warning' : 'critical' }
+const refreshing = ref(false)
+const loadError = ref(false)
+const fetchedAt = ref(null)
+const q = ref('')
+const status = ref('all')
 
 const onlineCount = computed(() => devices.value.filter((d) => d.online).length)
-const faultCount = computed(() => devices.value.filter((d) => !d.sensorOk).length)
-
-function relTime(minsAgo) {
-  if (minsAgo < 1) return 'just now'
-  if (minsAgo < 60) return `${minsAgo}m ago`
-  const h = Math.floor(minsAgo / 60)
-  if (h < 24) return `${h}h ago`
-  return `${Math.floor(h / 24)}d ago`
-}
+const pendingTotal = computed(() => devices.value.reduce((s, d) => s + (d.pending_commands || 0), 0))
+const pct = (n) => (devices.value.length ? Math.round((n / devices.value.length) * 100) + '%' : '0%')
+const filters = computed(() => [
+  { key: 'all', label: 'All', count: devices.value.length },
+  { key: 'online', label: 'Online', count: onlineCount.value },
+  { key: 'offline', label: 'Offline', count: devices.value.length - onlineCount.value },
+])
+const filtered = computed(() => {
+  const term = q.value.trim().toLowerCase()
+  return devices.value
+    .filter((d) => status.value === 'all' || (status.value === 'online') === !!d.online)
+    .filter((d) => !term || [d.device_id, d.label, d.sim_number, d.firmware_version].some((f) => (f || '').toLowerCase().includes(term)))
+    .sort((a, b) => (a.online === b.online ? a.device_id.localeCompare(b.device_id) : a.online ? 1 : -1))
+})
 
 async function load() {
   try {
-    const companies = await getCompanies()
-    const names = companies.length ? companies.map((c) => c.name) : ['Demo Logistics Co.']
-    const count = Math.max(10, names.length * 3)
-    devices.value = Array.from({ length: count }, (_, i) => {
-      const seed = i + 1
-      const online = seeded(seed * 3 + 1) > 0.22
-      const health = healthLevels[Math.floor(seeded(seed * 5 + 2) * (online ? 2 : 3))]
-      const sensorOk = seeded(seed * 7 + 3) > 0.15
-      const minsAgo = online ? Math.floor(seeded(seed * 11 + 4) * 12) : 15 + Math.floor(seeded(seed * 13 + 5) * 4000)
-      return {
-        id: seed,
-        device_id: `esp32-${String(seed).padStart(3, '0')}`,
-        company: names[i % names.length],
-        online, health, sensorOk,
-        lastSeen: relTime(minsAgo),
-      }
-    })
-  } finally {
-    loading.value = false
-  }
+    devices.value = await getDevices()
+    fetchedAt.value = new Date()
+    loadError.value = false
+  } catch (e) {
+    loadError.value = !devices.value.length
+  } finally { loading.value = false }
 }
+async function refresh() { refreshing.value = true; await load(); refreshing.value = false }
 onMounted(load)
 </script>
+
+<style scoped>
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin .8s linear infinite; }
+</style>

@@ -1,61 +1,65 @@
 <template>
-  <div class="topbar">
-    <div class="heading">
-      <span class="eyebrow">Platform / Security &amp; Analytics</span>
-      <h1 class="ico"><ChartLine :size="20" /> Global Reports</h1>
-    </div>
+  <PageHeader :icon="ChartLine" title="Global Reports" description="Platform-wide usage over the last 7 days: sign-ins, sessions and API traffic." />
+
+  <div class="notice info">
+    <FlaskConical :size="16" />
+    <span><strong>Sample data.</strong> <span class="muted">The usage-analytics pipeline is not connected yet, so these figures are generated examples that show how this report will look.</span></span>
   </div>
-  <p class="hint">Platform-wide usage over the last 7 days. Illustrative sample pending a dedicated usage-analytics pipeline.</p>
 
   <div class="stats">
-    <div class="card stat" style="--stat-color:#8b5cf6;--stat-color-soft:rgba(139,92,246,.16)">
-      <span class="stat-icon"><LogIn :size="16" /></span>
-      <div class="n">{{ totals.logins.toLocaleString() }}</div><div class="l">Logins (7d)</div>
-    </div>
-    <div class="card stat" style="--stat-color:#2dd4bf;--stat-color-soft:rgba(45,212,191,.16)">
-      <span class="stat-icon"><Users :size="16" /></span>
-      <div class="n">{{ totals.sessions.toLocaleString() }}</div><div class="l">Active sessions (peak)</div>
-    </div>
-    <div class="card stat" style="--stat-color:#38bdf8;--stat-color-soft:rgba(56,189,248,.16)">
-      <span class="stat-icon"><Activity :size="16" /></span>
-      <div class="n">{{ totals.apiCalls.toLocaleString() }}</div><div class="l">API calls (7d)</div>
-    </div>
-    <div class="card stat" style="--stat-color:#f59e0b;--stat-color-soft:rgba(245,158,11,.16)">
-      <span class="stat-icon"><Gauge :size="16" /></span>
-      <div class="n">{{ totals.avgLatency }} ms</div><div class="l">Avg. API latency</div>
-    </div>
+    <StatCard label="Sign-ins (7 days)" :value="totals.logins.toLocaleString()" :icon="LogIn" tone="navy" />
+    <StatCard label="Peak active sessions" :value="totals.sessions.toLocaleString()" :icon="Users" tone="teal" />
+    <StatCard label="API calls (7 days)" :value="totals.apiCalls.toLocaleString()" :icon="Activity" tone="info" />
+    <StatCard label="Avg. API latency" :value="totals.avgLatency + ' ms'" :icon="Gauge" tone="amber" />
   </div>
 
-  <div class="card" style="padding:16px;margin-top:20px">
-    <p class="section-title" style="margin-bottom:14px">API calls, last 7 days</p>
-    <svg width="100%" height="180" viewBox="0 0 700 180" preserveAspectRatio="none" role="img" aria-label="API calls over the last 7 days">
-      <line v-for="g in 4" :key="g" :x1="0" :x2="700" :y1="g * 40" :y2="g * 40" stroke="var(--border)" stroke-width="1" />
-      <polygon :points="areaPoints" fill="var(--brand-soft)" />
-      <polyline :points="linePoints" fill="none" stroke="var(--brand)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-      <circle v-for="(p, i) in dots" :key="i" :cx="p.x" :cy="p.y" r="3.2" fill="var(--brand)" />
-    </svg>
-    <div class="row" style="justify-content:space-between;margin-top:4px">
-      <span class="muted" style="font-size:11px" v-for="d in days" :key="d">{{ d }}</span>
+  <section class="card">
+    <div class="card-head"><div><h2>API calls per day</h2><div class="sub">Last 7 days</div></div></div>
+    <div class="card-body">
+      <div class="chart" @mouseleave="hover = null">
+        <svg viewBox="0 0 700 200" preserveAspectRatio="none" role="img" aria-label="API calls per day over the last 7 days" class="chart-svg">
+          <line v-for="g in 4" :key="g" x1="0" x2="700" :y1="g * 45 - 5" :y2="g * 45 - 5" stroke="var(--border)" stroke-width="1" vector-effect="non-scaling-stroke" />
+          <polyline :points="linePoints" fill="none" stroke="var(--info)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+          <line v-if="hover !== null" :x1="dots[hover].x" :x2="dots[hover].x" y1="0" y2="200" stroke="var(--border-strong)" stroke-width="1" vector-effect="non-scaling-stroke" />
+        </svg>
+        <span
+          v-for="(p, i) in dots" :key="i" class="pt" :class="{ on: hover === i }"
+          :style="{ left: (p.x / 700 * 100) + '%', top: (p.y / 200 * 100) + '%' }"
+        ></span>
+        <div class="hit">
+          <span v-for="(d, i) in days" :key="d" :style="{ left: ((dots[i].x - 55) / 700 * 100) + '%', width: (110 / 700 * 100) + '%' }" @mouseenter="hover = i" @focus="hover = i" @blur="hover = null" tabindex="0" :aria-label="`${d}: ${daily.apiCalls[i].toLocaleString()} API calls`"></span>
+        </div>
+        <div v-if="hover !== null" class="tip" :style="{ left: (dots[hover].x / 700 * 100) + '%' }">
+          <strong>{{ days[hover] }}</strong>{{ daily.apiCalls[hover].toLocaleString() }} calls
+        </div>
+      </div>
+      <div class="x-labels"><span v-for="d in days" :key="d">{{ d }}</span></div>
     </div>
-  </div>
+  </section>
 
-  <div class="card" style="padding:6px 0;margin-top:18px">
-    <table>
-      <thead><tr><th>Day</th><th>Logins</th><th>Active sessions</th><th>API calls</th></tr></thead>
-      <tbody>
-        <tr v-for="(d, i) in days" :key="d">
-          <td>{{ d }}</td>
-          <td class="num">{{ daily.logins[i] }}</td>
-          <td class="num">{{ daily.sessions[i] }}</td>
-          <td class="num">{{ daily.apiCalls[i].toLocaleString() }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <section class="card mt">
+    <div class="card-head"><div><h2>Daily breakdown</h2></div></div>
+    <div class="table-wrap">
+      <table class="table stack">
+        <thead><tr><th>Day</th><th class="t-right">Sign-ins</th><th class="t-right">Active sessions</th><th class="t-right">API calls</th></tr></thead>
+        <tbody>
+          <tr v-for="(d, i) in days" :key="d">
+            <td class="cell-head"><span class="t-primary">{{ d }}</span></td>
+            <td data-label="Sign-ins" class="t-right num">{{ daily.logins[i] }}</td>
+            <td data-label="Active sessions" class="t-right num">{{ daily.sessions[i] }}</td>
+            <td data-label="API calls" class="t-right num">{{ daily.apiCalls[i].toLocaleString() }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </template>
 
 <script setup>
-import { ChartLine, LogIn, Users, Activity, Gauge } from 'lucide-vue-next'
+import { ref } from 'vue'
+import { ChartLine, LogIn, Users, Activity, Gauge, FlaskConical } from 'lucide-vue-next'
+import PageHeader from '../components/PageHeader.vue'
+import StatCard from '../components/StatCard.vue'
 
 function seeded(seed) {
   const x = Math.sin(seed * 45.9 + 12.3) * 51231.7
@@ -75,12 +79,31 @@ const totals = {
   avgLatency: 60 + Math.floor(seeded(99) * 90),
 }
 
-const maxCalls = Math.max(...daily.apiCalls)
-const minCalls = Math.min(...daily.apiCalls)
+// y-axis starts at zero so day-to-day differences aren't exaggerated
+const maxCalls = Math.max(...daily.apiCalls) * 1.1
 const dots = daily.apiCalls.map((v, i) => ({
-  x: (i / (daily.apiCalls.length - 1)) * 700,
-  y: 160 - ((v - minCalls) / Math.max(1, maxCalls - minCalls)) * 140,
+  x: 20 + (i / (daily.apiCalls.length - 1)) * 660,
+  y: 190 - (v / maxCalls) * 180,
 }))
 const linePoints = dots.map((p) => `${p.x},${p.y}`).join(' ')
-const areaPoints = `0,180 ${linePoints} 700,180`
+const hover = ref(null)
 </script>
+
+<style scoped>
+.chart { position: relative; height: 220px; }
+.chart-svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.pt {
+  position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%;
+  background: var(--info); box-shadow: 0 0 0 2px var(--surface); pointer-events: none;
+}
+.pt.on { width: 12px; height: 12px; margin: -6px 0 0 -6px; }
+.hit { position: absolute; inset: 0; overflow: hidden; }
+.hit span { position: absolute; top: 0; bottom: 0; outline: none; }
+.tip {
+  position: absolute; top: -6px; transform: translateX(-50%); pointer-events: none; white-space: nowrap;
+  background: var(--ink-strong); color: var(--surface); border-radius: var(--radius-xs);
+  padding: 6px 10px; font-size: .75rem; font-weight: 600; display: flex; gap: 8px; box-shadow: var(--shadow-md);
+}
+.x-labels { display: flex; justify-content: space-between; padding: 8px calc(20 / 700 * 100%) 0; font-size: .75rem; color: var(--muted); }
+.x-labels span { width: 0; display: flex; justify-content: center; white-space: nowrap; }
+</style>

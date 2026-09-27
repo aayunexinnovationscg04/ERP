@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 
 from alerts.models import Alert
 from alerts.serializers import AlertSerializer
-from core.permissions import IsPilot
+from core.permissions import IsPilot, ModuleAccess
 
 from .models import Telemetry, Trip, Vehicle
 from .serializers import TelemetrySerializer, TripSerializer, VehicleDetailSerializer
@@ -32,7 +32,8 @@ def pilot_vehicle(user):
 
 
 class _PilotBase(APIView):
-    permission_classes = [IsAuthenticated, IsPilot]
+    permission_classes = [IsAuthenticated, IsPilot, ModuleAccess]
+    required_modules = {"driver_home"}
 
     def get_vehicle(self, request):
         return pilot_vehicle(request.user)
@@ -72,6 +73,8 @@ class PilotTelemetryView(_PilotBase):
 class PilotTripsView(_PilotBase):
     """GET /api/pilot/trips — recent trips for the pilot's vehicle."""
 
+    required_modules = {"driver_trips"}
+
     def get(self, request):
         vehicle = self.get_vehicle(request)
         if not vehicle:
@@ -82,6 +85,8 @@ class PilotTripsView(_PilotBase):
 
 class PilotAlertsView(_PilotBase):
     """GET /api/pilot/alerts — alerts for the pilot's vehicle (open + recent)."""
+
+    required_modules = {"driver_alerts"}
 
     def get(self, request):
         vehicle = self.get_vehicle(request)

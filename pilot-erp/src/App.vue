@@ -3,87 +3,101 @@
   <WelcomeGate v-if="justLoggedIn" :name="welcomeName" @done="justLoggedIn = false" />
   <div v-if="isLogin"><router-view /></div>
   <div v-else class="app" :class="{ collapsed }">
-    <!-- phone top bar: brand + quick actions (theme, logout) — primary nav
-         lives in the thumb-reachable bottom tab bar below, so there's no
-         drawer/hamburger to manage -->
-    <div class="mobilebar">
-      <img :src="logo" alt="" class="mb-logo" />
-      <span class="mb-brand-text"><span class="mb-brand-sub">Aayunex Innovations</span><span class="mb-brand">Fuel Guard X</span></span>
+    <!-- phone: fixed top bar (brand + theme + sign out). Primary nav lives in
+         the thumb-reachable bottom tab bar. -->
+    <header class="topbar">
+      <div class="brand-lockup">
+        <span class="logo-tile"><img :src="logo" alt="" /></span>
+        <span class="brand-text">
+          <span class="brand-sub">Aayunex Innovations</span>
+          <span class="brand-name">Fuel Guard X</span>
+        </span>
+      </div>
       <span class="spacer"></span>
-      <span class="mb-user">{{ auth.user?.username }}</span>
-      <button class="theme-toggle mb-theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
-        <Sun v-if="theme === 'dark'" :size="18" />
-        <Moon v-else :size="18" />
+      <button class="icon-btn" type="button" @click="toggleTheme"
+        :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+        :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+        <Sun v-if="theme === 'dark'" :size="20" :stroke-width="2.25" />
+        <Moon v-else :size="20" :stroke-width="2.25" />
       </button>
-      <button class="mb-logout" @click="logout" title="Log out">
-        <PowerOff :size="18" :stroke-width="2.25" />
+      <button class="icon-btn" type="button" @click="logout" aria-label="Log out" title="Log out">
+        <LogOut :size="20" :stroke-width="2.25" />
       </button>
-    </div>
+    </header>
 
-    <!-- desktop/tablet: collapsible side navbar, grouped into clusters -->
-    <aside class="sidebar">
+    <!-- tablet: icon rail · desktop: full sidebar (collapsible to the rail) -->
+    <aside class="sidebar" aria-label="Main navigation">
       <div class="side-head">
-        <div class="brand side-brand">
-          <img :src="logo" alt="" class="side-brand-logo" />
-          <span class="label mb-brand-text"><span class="mb-brand-sub">Aayunex Innovations</span><span class="mb-brand">Fuel Guard X</span></span>
+        <div class="brand-lockup">
+          <span class="logo-tile"><img :src="logo" alt="" /></span>
+          <span class="brand-text">
+            <span class="brand-sub">Pilot App</span>
+            <span class="brand-name">Fuel Guard X</span>
+          </span>
         </div>
-        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" :stroke-width="2.25" />
+        <button class="icon-btn collapse-btn" type="button" @click="collapsed = !collapsed"
+          :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="18" :stroke-width="2.25" />
         </button>
       </div>
 
-      <nav class="nav nav-grouped">
-        <div v-for="g in navGroups" :key="g.key" class="nav-group">
-          <button type="button" class="nav-group-head" @click="toggleGroup(g)" :aria-expanded="isGroupOpen(g)">
-            <component :is="g.icon" :size="14" :stroke-width="2.25" class="nav-group-ic" />
-            <span class="label nav-group-label">{{ g.label }}</span>
-            <span class="spacer"></span>
-            <ChevronDown :size="14" :stroke-width="2.25" class="nav-group-chevron" :class="{ open: isGroupOpen(g) }" />
-          </button>
-          <div class="nav-group-items" v-show="isGroupOpen(g)">
-            <router-link v-for="item in g.items" :key="item.to" :to="item.to" :title="item.label">
-              <component :is="item.icon" :size="18" :stroke-width="2.25" class="ic" />
-              <span class="label">{{ item.label }}</span>
-            </router-link>
-          </div>
-        </div>
+      <nav class="side-nav">
+        <template v-for="g in visibleNavGroups" :key="g.label">
+          <div class="side-section">{{ g.label }}</div>
+          <router-link v-for="item in g.items" :key="item.to" :to="item.to" class="side-link" :title="item.label">
+            <component :is="item.icon" :size="20" :stroke-width="2.25" />
+            <span>{{ item.short || item.label }}</span>
+            <span v-if="item.to === '/alerts' && openAlerts" class="count" :aria-label="`${openAlerts} open alerts`">{{ openAlerts > 99 ? '99+' : openAlerts }}</span>
+          </router-link>
+        </template>
       </nav>
 
-      <div class="sidebar-controls">
-        <button class="theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
-          <Sun v-if="theme === 'dark'" :size="16" :stroke-width="2.25" />
-          <Moon v-else :size="16" :stroke-width="2.25" />
+      <div class="side-foot">
+        <div class="side-user" :title="auth.user?.username">
+          <span class="avatar">{{ initials }}</span>
+          <span class="side-user-text">
+            <strong>{{ auth.user?.username || 'Pilot' }}</strong>
+            <small>{{ auth.user?.company?.name || 'Pilot' }}</small>
+          </span>
+        </div>
+        <button class="side-btn" type="button" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+          <Sun v-if="theme === 'dark'" :size="18" :stroke-width="2.25" />
+          <Moon v-else :size="18" :stroke-width="2.25" />
+          <span class="label">{{ theme === 'dark' ? 'Light mode' : 'Dark mode' }}</span>
+        </button>
+        <button class="side-btn logout" type="button" @click="logout" title="Log out">
+          <LogOut :size="18" :stroke-width="2.25" /><span class="label">Log out</span>
         </button>
       </div>
-      <button class="logout-btn" style="margin-top:12px" @click="logout" title="Log out">
-        <PowerOff :size="16" :stroke-width="2.25" class="ic" /><span class="label">Log out</span>
-      </button>
     </aside>
 
     <main class="main">
-      <PageSkeleton v-if="showRouteSkeleton" />
-      <AnimatePresence v-else mode="wait">
-        <motion.div :key="$route.fullPath"
-          :initial="{ opacity: 0, y: reduced ? 0 : 8 }"
-          :animate="{ opacity: 1, y: 0 }"
-          :exit="{ opacity: 0, y: reduced ? 0 : -6 }"
-          :transition="pageTransition(reduced)">
-          <router-view v-slot="{ Component }">
-            <component :is="Component" />
-          </router-view>
-        </motion.div>
-      </AnimatePresence>
+      <div class="page">
+        <PageSkeleton v-if="showRouteSkeleton" />
+        <AnimatePresence v-else mode="wait">
+          <motion.div :key="$route.fullPath"
+            :initial="{ opacity: 0, y: reduced ? 0 : 6 }"
+            :animate="{ opacity: 1, y: 0 }"
+            :exit="{ opacity: 0 }"
+            :transition="pageTransition(reduced)">
+            <router-view v-slot="{ Component }">
+              <component :is="Component" />
+            </router-view>
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </main>
 
-    <!-- phone-only bottom tab bar: thumb-reachable primary nav, capped at 5
-         icons — one per top-level cluster (Route Guidance lives inside Trip
-         Operations on desktop / off the Trips page on mobile, not its own tab) -->
-    <nav class="tabbar">
-      <router-link to="/" title="My Truck"><span class="tab-ic"><Truck :size="20" :stroke-width="2.25" /></span>My Truck</router-link>
-      <router-link to="/trips" title="Trips"><span class="tab-ic"><Route :size="20" :stroke-width="2.25" /></span>Trips</router-link>
-      <router-link to="/navigation" title="Navigation"><span class="tab-ic"><Compass :size="20" :stroke-width="2.25" /></span>Navigation</router-link>
-      <router-link to="/alerts" title="Alerts"><span class="tab-ic"><ShieldAlert :size="20" :stroke-width="2.25" /></span>Alerts</router-link>
-      <router-link to="/profile" title="Profile"><span class="tab-ic"><User :size="20" :stroke-width="2.25" /></span>Profile</router-link>
+    <!-- phone bottom tab bar: five primary destinations. Route Guidance is
+         reached from the active trip on the Trips page. -->
+    <nav class="tabbar" aria-label="Main navigation">
+      <router-link v-for="t in visibleTabs" :key="t.to" :to="t.to" class="tab" :aria-label="t.label">
+        <span class="tab-ic">
+          <component :is="t.icon" :size="22" :stroke-width="2.25" />
+          <span v-if="t.to === '/alerts' && openAlerts" class="tab-badge">{{ openAlerts > 9 ? '9+' : openAlerts }}</span>
+        </span>
+        <span class="tab-label">{{ t.label }}</span>
+      </router-link>
     </nav>
   </div>
 </template>
@@ -93,16 +107,18 @@ import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { motion, AnimatePresence } from 'motion-v'
 import {
-  Truck, Route, ChevronsLeft, ChevronsRight, PowerOff,
-  Sun, Moon, ChevronDown, User, ShieldAlert, Compass, Navigation,
+  Truck, Route, ChevronsLeft, ChevronsRight, LogOut,
+  Sun, Moon, User, ShieldAlert, Compass, Navigation,
 } from 'lucide-vue-next'
 import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
 import PageSkeleton from './components/PageSkeleton.vue'
-import { auth, clearAuth, justLoggedIn } from './auth'
+import { auth, justLoggedIn, logout as endSession } from './auth'
+import { getSummary } from './api'
 import { usePrefersReducedMotion, pageTransition } from './motion'
 import { useTheme } from './theme'
-import logo from './assets/logo.png'
+import logo from '@shared/design/brand/fgx-mark.png'
+import { canOpen } from './access'
 
 const route = useRoute()
 const router = useRouter()
@@ -111,13 +127,52 @@ const welcomeName = computed(() => {
   const u = auth.user?.username
   return u ? u.charAt(0).toUpperCase() + u.slice(1) : 'Pilot'
 })
+const initials = computed(() => (auth.user?.username || 'P').charAt(0).toUpperCase())
 const collapsed = ref(localStorage.getItem('fgx-pilot-sidebar-collapsed') === '1')
+watch(collapsed, (v) => localStorage.setItem('fgx-pilot-sidebar-collapsed', v ? '1' : '0'))
 const reduced = usePrefersReducedMotion()
+const { theme, toggleTheme } = useTheme()
 
-// Route-level chunks are lazy (see router.js) — most resolve fast enough
-// that this never shows, but a slow/first-time chunk fetch gets a skeleton
-// instead of a frozen page. The 150ms show-delay avoids a flash of skeleton
-// for the common case where the chunk is already cached/instant.
+const navGroups = [
+  { label: 'Vehicle', items: [{ to: '/', label: 'My Truck', icon: Truck }] },
+  {
+    label: 'Trip operations',
+    items: [
+      { to: '/trips', label: 'Trips', icon: Route },
+      { to: '/route-guidance', label: 'Route Guidance', short: 'Guidance', icon: Navigation },
+      { to: '/navigation', label: 'Traffic & Delays', short: 'Traffic', icon: Compass },
+    ],
+  },
+  { label: 'Safety', items: [{ to: '/alerts', label: 'Alerts', icon: ShieldAlert }] },
+  { label: 'Account', items: [{ to: '/profile', label: 'Profile', icon: User }] },
+]
+const tabs = [
+  { to: '/', label: 'My Truck', icon: Truck },
+  { to: '/trips', label: 'Trips', icon: Route },
+  { to: '/navigation', label: 'Traffic', icon: Compass },
+  { to: '/alerts', label: 'Alerts', icon: ShieldAlert },
+  { to: '/profile', label: 'Profile', icon: User },
+]
+// Only screens this pilot may open (Role Management modules).
+const visibleNavGroups = computed(() => navGroups
+  .map((g) => ({ ...g, items: g.items.filter((i) => canOpen(i.to)) }))
+  .filter((g) => g.items.length))
+const visibleTabs = computed(() => tabs.filter((t) => canOpen(t.to)))
+
+// Open-alert count for the Alerts tab/nav badge (same /pilot/summary the
+// home page reads), refreshed on every navigation.
+const openAlerts = ref(0)
+async function refreshCount() {
+  if (!auth.isAuthed || isLogin.value) return
+  try { openAlerts.value = (await getSummary()).open_alerts || 0 } catch (e) { /* keep last */ }
+}
+watch([() => route.path, () => auth.isAuthed], () => { refreshCount() }, { immediate: true })
+
+// The phone layout scrolls the document; start each page at the top.
+watch(() => route.path, () => { if (typeof window !== 'undefined') window.scrollTo(0, 0) })
+
+// Route chunks are lazy (see router.js). A slow first fetch shows a skeleton
+// after 150ms instead of a frozen page.
 const showRouteSkeleton = ref(false)
 let skeletonShowTimer = null
 router.beforeEach((to) => {
@@ -129,61 +184,6 @@ router.afterEach(() => {
   clearTimeout(skeletonShowTimer)
   showRouteSkeleton.value = false
 })
-const { theme, toggleTheme } = useTheme()
-watch(collapsed, (v) => localStorage.setItem('fgx-pilot-sidebar-collapsed', v ? '1' : '0'))
-function logout() { clearAuth(); router.push('/login') }
 
-// ---- desktop sidebar: grouped nav clusters ----
-const navGroups = [
-  {
-    key: 'vehicle', label: 'My Vehicle', icon: Truck,
-    items: [{ to: '/', label: 'My Truck', icon: Truck }],
-  },
-  {
-    key: 'trip-ops', label: 'Trip Operations', icon: Route,
-    items: [
-      { to: '/trips', label: 'Trips', icon: Route },
-      { to: '/route-guidance', label: 'Route Guidance', icon: Navigation },
-    ],
-  },
-  {
-    key: 'profile', label: 'My Profile', icon: User,
-    items: [{ to: '/profile', label: 'Profile', icon: User }],
-  },
-  {
-    key: 'alerts', label: 'Alerts', icon: ShieldAlert,
-    items: [{ to: '/alerts', label: 'Alerts', icon: ShieldAlert }],
-  },
-  {
-    key: 'navigation', label: 'Navigation', icon: Compass,
-    items: [{ to: '/navigation', label: 'Traffic & Delays', icon: Compass }],
-  },
-]
-
-const NAV_GROUPS_KEY = 'fgx_pilot_nav_groups'
-function groupHasActiveRoute(g) {
-  return g.items.some((item) => route.path === item.to)
-}
-
-// Accordion: at most ONE group open at a time. Navigating to a page
-// auto-opens its group (so the active link is never hidden on arrival),
-// but afterward the toggle is a real toggle — clicking an open group
-// (including the active one) closes it, and it only re-opens on the next
-// navigation into that section.
-const initialGroup = navGroups.find(groupHasActiveRoute)?.key
-  ?? localStorage.getItem(NAV_GROUPS_KEY)
-  ?? navGroups[0].key
-const openGroupKey = ref(initialGroup)
-watch(openGroupKey, (v) => localStorage.setItem(NAV_GROUPS_KEY, v || ''))
-watch(() => route.path, () => {
-  const g = navGroups.find(groupHasActiveRoute)
-  if (g) openGroupKey.value = g.key
-})
-
-function isGroupOpen(g) {
-  return openGroupKey.value === g.key
-}
-function toggleGroup(g) {
-  openGroupKey.value = openGroupKey.value === g.key ? null : g.key
-}
+async function logout() { openAlerts.value = 0; await endSession(); router.push('/login') }
 </script>

@@ -1,108 +1,115 @@
 <template>
-  <div class="topbar">
-    <div class="row" style="gap:12px">
-      <button type="button" class="back-btn" @click="$router.back()" title="Back">
-        <ArrowLeft :size="17" />
-      </button>
-      <h1><router-link to="/fuel" class="muted">Fuel</router-link> / {{ v?.local_name || '…' }}</h1>
-    </div>
+  <PageHeader :title="v ? v.local_name + ' — fuel' : 'Fuel'" :back="{ to: '/fuel', label: 'Fuel Overview' }">
+    <template #description>
+      <span v-if="v">{{ v.registration_number }} · last reading {{ ago(latest?.received_at) }}</span><span v-else>&nbsp;</span>
+    </template>
+    <router-link v-if="v" :to="`/vehicles/${v.id}`" class="btn"><Truck :size="16" /> Vehicle profile</router-link>
+  </PageHeader>
+
+  <div v-if="loading">
+    <div class="kpis"><div class="skel sk-chip" v-for="n in 4" :key="n"></div></div>
+    <div class="skel sk-hero"></div>
   </div>
 
-  <div v-if="loading" class="card" style="padding:16px">
-    <div class="skel skel-line lg"></div>
-    <div class="skel skel-line md"></div>
-    <div class="skel skel-line sm"></div>
-  </div>
+  <EmptyState v-else-if="!v" class="card" :icon="Fuel" title="Vehicle not found">
+    <router-link to="/fuel" class="btn">Back to fuel overview</router-link>
+  </EmptyState>
 
   <template v-else>
-    <p class="section-title">Fuel Monitoring</p>
-    <div class="card fuel-highlight">
-      <div class="fh-main">
-        <span class="icon-chip lg violet fh-ic"><Fuel :size="22" class="icon-lg" /></span>
+    <div class="card fd-hero">
+      <div class="fd-hero-main">
+        <span class="icon-chip lg brand"><Fuel :size="20" /></span>
         <div>
-          <div class="fh-value">{{ fmt(latest?.total_litres) }} <span class="fh-unit">L</span></div>
-          <div class="muted" style="font-size:13px">Current fuel level · updated {{ ago(latest?.received_at) }}</div>
+          <div class="kpi-label">Current fuel level</div>
+          <div class="fd-value num" v-if="latest?.total_litres != null">{{ fmt(latest.total_litres) }} <small>L</small></div>
+          <div class="fd-value fd-none" v-else>No reading yet</div>
+        </div>
+        <div v-if="v.tank_capacity_litres && latest?.total_litres != null" class="fd-pct">
+          <b class="num">{{ pctFull }}%</b><span>of {{ v.tank_capacity_litres }} L tank</span>
         </div>
       </div>
-      <div v-if="v?.tank_capacity_litres" class="fh-bar-wrap">
-        <div class="fh-bar"><div class="fh-bar-fill" :style="{ width: pctFull + '%' }"></div></div>
-        <div class="muted" style="font-size:12px">{{ pctFull }}% of {{ v.tank_capacity_litres }} L tank capacity</div>
+      <div v-if="v.tank_capacity_litres" class="meter fd-meter"><span :class="pctFull <= 15 ? 'crit' : pctFull <= 40 ? 'amber' : 'green'" :style="{ width: pctFull + '%' }"></span></div>
+      <p v-else class="muted" style="font-size:12.5px;margin-top:10px">Tank capacity not set — ask your administrator to add it to show a percentage.</p>
+    </div>
+
+    <div class="kpis section">
+      <StatTile label="Consumed (recent trips)" :value="fmt(totalConsumed)" unit="L" :icon="Droplet" tone="brand" />
+      <StatTile label="Distance (recent trips)" :value="fmt(totalDistance, 0)" unit="km" :icon="Milestone" tone="navy" />
+      <StatTile label="Efficiency" :value="efficiencyKmpl != null ? fmt(efficiencyKmpl) : '—'" :unit="efficiencyKmpl != null ? 'km/L' : ''" :icon="TrendingUp" tone="green"
+        :sub="efficiencyKmpl != null ? `Across ${tripsWithFuel.length} trip(s) with fuel data` : 'Not enough trip + fuel data yet'" />
+      <StatTile label="Completed trips" :value="completedTrips.length" :icon="RouteIcon" tone="blue" />
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-head-title"><Activity :size="17" /><div><h2>Fuel level trend</h2>
+        <div class="card-sub">Recent telemetry readings</div></div></div></div>
+      <div class="card-body">
+        <template v-if="trend">
+          <svg class="spark" :viewBox="`0 0 ${trend.width} ${trend.height}`" preserveAspectRatio="none"
+               role="img" aria-label="Fuel level trend over recent telemetry">
+            <line :x1="0" :y1="trend.base" :x2="trend.width" :y2="trend.base" stroke="var(--border)" stroke-width="1" vector-effect="non-scaling-stroke" />
+            <polyline :points="trend.area" fill="var(--brand)" fill-opacity="0.12" stroke="none" />
+            <polyline :points="trend.line" fill="none" stroke="var(--brand)" stroke-width="2"
+                      stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+          </svg>
+          <div class="legend-row">
+            <span>Oldest <b>{{ fmt(litresSeries[0]) }}</b> L</span>
+            <span>Latest <b>{{ fmt(litresSeries[litresSeries.length - 1]) }}</b> L</span>
+          </div>
+        </template>
+        <EmptyState v-else compact :icon="Activity" title="Not enough readings yet" text="A trend appears after the sensor has reported a few fuel levels." />
       </div>
     </div>
 
-    <p class="section-title">Fuel Refill Logs</p>
-    <div class="card" style="padding:6px 0">
-      <table>
-        <thead><tr><th>When</th><th>Amount</th><th>Note</th></tr></thead>
-        <tbody>
-          <tr v-for="a in refills" :key="a.id" class="active">
-            <td>{{ new Date(a.created_at).toLocaleString() }}</td>
-            <td class="ico"><Plus :size="13" style="color:var(--green)" /> {{ fmt(a.meta?.delta_litres) }} L</td>
-            <td class="muted">{{ a.message }}</td>
-          </tr>
-          <tr v-if="!refills.length"><td colspan="3" class="muted" style="padding:14px">No refill events recorded yet.</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p class="section-title">Fuel Theft Alerts</p>
-    <div class="card" style="padding:6px 0">
-      <table>
-        <thead><tr><th>When</th><th>Amount lost</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr v-for="a in thefts" :key="a.id" :class="a.status === 'open' ? 'critical' : 'offline'">
-            <td>{{ new Date(a.created_at).toLocaleString() }}</td>
-            <td class="ico"><Minus :size="13" style="color:var(--crit)" /> {{ fmt(Math.abs(a.meta?.delta_litres)) }} L</td>
-            <td><span class="badge" :class="a.status === 'open' ? 'critical' : 'offline'">{{ a.status }}</span></td>
-          </tr>
-          <tr v-if="!thefts.length"><td colspan="3" class="muted" style="padding:14px">No theft alerts on file.</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p class="section-title">Fuel Consumption Reports</p>
-    <div class="card" style="padding:14px 16px">
-      <div class="kvs">
-        <div><span class="muted">Total consumed (recent trips)</span><b>{{ fmt(totalConsumed) }} L</b></div>
-        <div><span class="muted">Total distance (recent trips)</span><b>{{ fmt(totalDistance) }} km</b></div>
-        <div><span class="muted">Trips with fuel data</span><b>{{ tripsWithFuel.length }}</b></div>
-        <div><span class="muted">Completed trips seen</span><b>{{ completedTrips.length }}</b></div>
-      </div>
-    </div>
-
-    <p class="section-title">Fuel Efficiency Analytics</p>
-    <div class="card" style="padding:14px 16px">
-      <template v-if="efficiencyKmpl != null">
-        <div class="fh-value" style="font-size:26px">{{ fmt(efficiencyKmpl) }} <span class="fh-unit">km/L</span></div>
-        <p class="muted" style="margin:6px 0 0;font-size:12.5px">Average across {{ tripsWithFuel.length }} trip(s) with recorded fuel consumption.</p>
-      </template>
-      <p v-else class="muted" style="margin:0">Not enough trip + fuel data yet to compute efficiency.</p>
-    </div>
-
-    <p class="section-title">Fuel Usage Trends</p>
-    <div class="card" style="padding:14px 16px">
-      <template v-if="trend">
-        <svg class="spark" :viewBox="`0 0 ${trend.width} ${trend.height}`" preserveAspectRatio="none"
-             role="img" aria-label="Fuel level trend over recent telemetry">
-          <line :x1="0" :y1="trend.base" :x2="trend.width" :y2="trend.base"
-                stroke="var(--border)" stroke-width="1" vector-effect="non-scaling-stroke" />
-          <polyline :points="trend.area" fill="var(--violet)" fill-opacity="0.14" stroke="none" />
-          <polyline :points="trend.line" fill="none" stroke="var(--violet)" stroke-width="1.5"
-                    stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
-        </svg>
-        <div class="row" style="justify-content:space-between;margin-top:6px">
-          <span class="muted" style="font-size:12px">Oldest <b style="color:var(--ink-strong)">{{ fmt(litresSeries[0]) }}</b> L</span>
-          <span class="muted" style="font-size:12px">Latest <b style="color:var(--ink-strong)">{{ fmt(litresSeries[litresSeries.length - 1]) }}</b> L</span>
+    <div class="grid-2-even section">
+      <div class="card flush">
+        <div class="card-head"><div class="card-head-title"><CirclePlus :size="17" /><h2>Refill log</h2></div>
+          <span class="badge info plain">{{ refills.length }}</span></div>
+        <div v-if="refills.length" class="table-wrap">
+          <table>
+            <thead><tr><th>When</th><th class="num">Added</th><th class="hide-sm">Note</th></tr></thead>
+            <tbody>
+              <tr v-for="a in refills" :key="a.id">
+                <td class="nowrap">{{ dt(a.created_at) }}</td>
+                <td class="num" style="color:var(--green);font-weight:700">{{ a.meta?.delta_litres != null ? '+' + fmt(a.meta.delta_litres) + ' L' : '—' }}</td>
+                <td class="hide-sm muted">{{ a.message }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </template>
-      <p v-else class="muted" style="margin:0">Not enough telemetry yet to chart a trend.</p>
+        <EmptyState v-else compact :icon="CirclePlus" title="No refills recorded yet" />
+      </div>
+
+      <div class="card flush">
+        <div class="card-head"><div class="card-head-title"><ShieldAlert :size="17" /><h2>Fuel theft alerts</h2></div>
+          <span class="badge plain" :class="thefts.length ? 'critical' : 'offline'">{{ thefts.length }}</span></div>
+        <div v-if="thefts.length" class="table-wrap">
+          <table>
+            <thead><tr><th>When</th><th>Alert</th><th class="num">Lost</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr v-for="a in thefts" :key="a.id">
+                <td class="nowrap">{{ dt(a.created_at) }}</td>
+                <td>{{ a.title }}</td>
+                <td class="num" style="color:var(--crit);font-weight:700">{{ a.meta?.delta_litres != null ? '−' + fmt(Math.abs(a.meta.delta_litres)) + ' L' : '—' }}</td>
+                <td><span class="badge" :class="a.status === 'open' ? 'critical' : 'offline'">{{ a.status }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <EmptyState v-else compact :icon="ShieldCheck" title="No theft alerts on file" />
+      </div>
     </div>
   </template>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { ArrowLeft, Fuel, Plus, Minus } from 'lucide-vue-next'
+import {
+  Fuel, Truck, Droplet, Milestone, TrendingUp, Route as RouteIcon, Activity, CirclePlus, ShieldAlert, ShieldCheck,
+} from 'lucide-vue-next'
+import PageHeader from '../components/PageHeader.vue'
+import StatTile from '../components/StatTile.vue'
+import EmptyState from '../components/EmptyState.vue'
 import { getVehicle, getVehicleTrack, getVehicleTrips, getAlerts } from '../api'
 import { fmt, ago, sparkline } from '../util'
 
@@ -113,6 +120,7 @@ const trips = ref([])
 const refills = ref([])
 const thefts = ref([])
 const loading = ref(true)
+const dt = (iso) => new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 
 const latest = computed(() => v.value?.latest)
 const pctFull = computed(() => {
@@ -147,29 +155,15 @@ async function load() {
 }
 onMounted(load)
 </script>
-
 <style scoped>
-.back-btn {
-  flex: none; width: 34px; height: 34px; padding: 0; display: grid; place-items: center;
-  border-radius: var(--radius-sm); color: var(--text);
-}
-.back-btn:hover { background: var(--surface-2); }
-
-.fuel-highlight { padding: 18px 20px; background: linear-gradient(150deg, var(--violet-soft), var(--surface) 60%); border-color: rgba(139,92,246,.32); }
-.fh-main { display: flex; align-items: center; gap: 14px; }
-.fh-ic { flex: none; }
-.fh-value { font-size: 30px; font-weight: 800; letter-spacing: -.01em; color: var(--ink-strong); }
-.fh-unit { font-size: 16px; font-weight: 600; color: var(--muted); }
-
-.fh-bar-wrap { margin-top: 14px; }
-.fh-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-bottom: 6px; }
-.fh-bar-fill { height: 100%; background: var(--grad-violet); border-radius: 999px; }
-
-.kvs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
-.kvs div { display: flex; flex-direction: column; }
-.kvs b { font-size: 16px; margin-top: 2px; }
-
-/* Six sections back-to-back need real air between them, not just the tight
-   title-to-its-own-card gap — otherwise they visually blur into one block. */
-.card + .section-title { margin-top: 28px; }
+.fd-hero { padding: 20px 22px; }
+.fd-hero-main { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.fd-value { font-family: var(--font-head); font-size: 34px; font-weight: 800; letter-spacing: -.02em; color: var(--ink-strong); line-height: 1.1; }
+.fd-value small { font-size: 16px; color: var(--muted); font-weight: 700; }
+.fd-none { font-size: 22px; color: var(--muted); }
+.fd-pct { margin-left: auto; text-align: right; display: flex; flex-direction: column; }
+.fd-pct b { font-size: 20px; color: var(--ink-strong); }
+.fd-pct span { font-size: 12.5px; color: var(--muted); }
+.fd-meter { height: 10px; margin-top: 16px; }
+@media (max-width: 480px) { .fd-pct { margin-left: 0; text-align: left; width: 100%; flex-direction: row; gap: 8px; align-items: baseline; } }
 </style>

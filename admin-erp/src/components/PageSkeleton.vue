@@ -1,23 +1,14 @@
 <template>
-  <div class="page-skel" aria-hidden="true">
-    <div class="skel skel-line md" style="height:22px;width:34%;margin:0 0 22px"></div>
+  <div aria-hidden="true">
+    <div class="skel" style="height:26px;width:260px;max-width:70%;margin:4px 0 8px"></div>
+    <div class="skel" style="height:14px;width:420px;max-width:90%;margin-bottom:24px"></div>
     <div class="stats">
-      <div class="skel sk-chip" v-for="n in 4" :key="n"></div>
+      <div class="stat" v-for="n in 4" :key="n"><div class="skel skel-line sm"></div><div class="skel skel-line md" style="height:24px"></div></div>
     </div>
-    <div class="skel sk-hero" style="margin-top:18px"></div>
-    <div class="skel sk-row" v-for="n in 4" :key="'r'+n"></div>
+    <div class="card card-body"><div class="skel skel-row" v-for="n in 5" :key="'r'+n" style="margin-bottom:14px"></div></div>
   </div>
 </template>
 
 <script setup>
-// Generic fallback shown only while a lazy route chunk is still downloading
-// (App.vue's `navigating`, bracketed by router.beforeEach/afterEach) — most
-// navigations resolve well under the show-delay and never see this at all;
-// it exists for the occasional slow/first-load chunk fetch so that moment
-// reads as "loading" rather than a frozen or blank page. Individual views
-// still own their own skeleton for their real data-fetch beyond this.
+// Shown only while a lazy route chunk is still downloading (see App.vue).
 </script>
-
-<style scoped>
-.page-skel { padding: 4px 2px; }
-</style>

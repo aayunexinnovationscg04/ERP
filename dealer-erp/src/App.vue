@@ -4,104 +4,140 @@
   <WelcomeGate v-if="justLoggedIn" :name="welcomeName" @done="justLoggedIn = false" />
   <div v-if="isLogin"><router-view /></div>
   <div v-else class="app" :class="{ collapsed }">
-    <div class="mobilebar">
-      <motion.button class="hamburger" aria-label="Menu" :while-tap="{ scale: .88 }" @click="menuOpen = !menuOpen">
-        <AnimatePresence mode="wait">
-          <motion.span :key="menuOpen ? 'x' : 'menu'" class="hamburger-ic"
-            :initial="{ opacity: 0, rotate: -90 }" :animate="{ opacity: 1, rotate: 0 }" :exit="{ opacity: 0, rotate: 90 }"
-            :transition="{ duration: .16, ease: [.4, 0, .2, 1] }">
-            <component :is="menuOpen ? X : Menu" :size="22" />
-          </motion.span>
-        </AnimatePresence>
-      </motion.button>
-      <div class="mb-brand"><span class="logo-chip"><img :src="logo" alt="" /></span>
-        <span class="brand-text"><span class="brand-sub">Aayunex Innovations</span><span class="brand-title">Fuel Guard X</span></span>
-      </div>
-      <div class="spacer"></div>
-      <button class="theme-toggle mb-theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
-        <Sun v-if="theme === 'dark'" :size="18" />
-        <Moon v-else :size="18" />
-      </button>
-    </div>
-    <aside class="sidebar" :class="{ open: menuOpen }">
+    <div class="scrim" :class="{ show: menuOpen }" @click="menuOpen = false" aria-hidden="true"></div>
+
+    <aside class="sidebar" :class="{ open: menuOpen }" aria-label="Main navigation">
       <div class="side-head">
-        <div class="brand side-brand"><span class="logo-chip"><img :src="logo" alt="" class="side-brand-logo" /></span>
-          <span class="label brand-text"><span class="brand-sub">Aayunex Innovations</span><span class="brand-title">Fuel Guard X</span></span>
-        </div>
-        <button class="collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="16" />
+        <router-link to="/fleet-overview" class="brand" title="Fuel Guard X">
+          <span class="logo-chip"><img :src="logo" alt="" /></span>
+          <span class="brand-text"><span class="brand-title">Fuel Guard X</span><span class="brand-sub">Dealer Portal</span></span>
+        </router-link>
+        <button class="sb-icon-btn collapse-btn" @click="collapsed = !collapsed"
+                :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+          <component :is="collapsed ? PanelLeftOpen : PanelLeftClose" :size="18" />
         </button>
-        <button class="drawer-close" @click="menuOpen = false" aria-label="Close menu" title="Close menu">
+        <button class="sb-icon-btn drawer-close" @click="menuOpen = false" aria-label="Close menu" title="Close menu">
           <X :size="20" />
         </button>
       </div>
-      <nav class="nav" @click="menuOpen = false">
-        <div class="nav-group" v-for="g in NAV_GROUPS" :key="g.id">
-          <button type="button" class="nav-group-head" :class="{ open: isGroupOpen(g) }" @click.stop="toggleGroup(g.id)">
-            <span class="ic" :class="g.hue"><component :is="g.icon" :size="14" /></span>
+
+      <nav class="nav" @click="onNavClick">
+        <div class="nav-group" v-for="g in visibleGroups" :key="g.id">
+          <button type="button" class="nav-group-head" :class="{ open: isGroupOpen(g), 'has-active': groupHasActiveRoute(g) }"
+                  :aria-expanded="isGroupOpen(g)" @click.stop="toggleGroup(g.id)">
+            <span class="gh-ic"><component :is="g.icon" :size="16" /></span>
             <span class="label">{{ g.label }}</span>
-            <ChevronRight :size="14" class="chev" />
+            <ChevronRight :size="15" class="chev" />
           </button>
           <div class="nav-group-items" :class="{ 'is-collapsed': !isGroupOpen(g) }">
             <router-link v-for="item in g.items" :key="item.to" :to="item.to" :title="item.label"
-              class="nav-item" :class="[g.hue, { 'router-link-active': inSection(item.to) }]">
+              class="nav-item" :class="{ 'router-link-active': inSection(item.to) }">
               <span class="ic"><component :is="item.icon" :size="17" /></span>
               <span class="label">{{ item.label }}</span>
+              <span v-if="item.to === '/alerts' && openAlerts" class="nav-count">{{ openAlerts > 99 ? '99+' : openAlerts }}</span>
             </router-link>
           </div>
         </div>
       </nav>
-      <div class="sidebar-controls">
-        <button class="theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
-          <Sun v-if="theme === 'dark'" :size="16" />
-          <Moon v-else :size="16" />
-        </button>
+
+      <div class="side-foot">
+        <div class="side-user" :title="userName">
+          <span class="avatar">{{ initials }}</span>
+          <span class="side-user-text">
+            <b>{{ userName }}</b>
+            <small>{{ roleLabel }}{{ canWrite ? '' : ' · view only' }}</small>
+          </span>
+        </div>
+        <div class="side-actions">
+          <button class="side-btn logout" @click="logout" title="Log out">
+            <LogOut :size="16" /><span class="label">Log out</span>
+          </button>
+        </div>
       </div>
-      <button class="logout-btn" style="margin-top:12px" @click="logout" title="Log out">
-        <PowerOff :size="16" class="ic" /><span class="label">Log out</span>
-      </button>
     </aside>
-    <main class="main">
-      <PageSkeleton v-if="showRouteSkeleton" />
-      <router-view v-else v-slot="{ Component, route: r }">
-        <AnimatePresence mode="wait">
-          <motion.div :key="r.fullPath"
-            :initial="{ opacity: 0, y: 8 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -6 }"
-            :transition="{ duration: .22, ease: [.4, 0, .2, 1] }">
-            <component :is="Component" />
-          </motion.div>
-        </AnimatePresence>
-      </router-view>
-    </main>
+
+    <div class="shell-main">
+      <header class="appbar">
+        <button class="hamburger" aria-label="Open menu" :aria-expanded="menuOpen" @click="menuOpen = true">
+          <Menu :size="22" />
+        </button>
+        <router-link to="/fleet-overview" class="appbar-brand">
+          <span class="logo-chip"><img :src="logo" alt="" /></span>
+          <b>Fuel Guard X</b>
+        </router-link>
+        <div class="crumbs" v-if="crumb">
+          <span class="crumb-group">{{ crumb.group }}</span>
+          <ChevronRight :size="14" class="sep" />
+          <b>{{ crumb.item }}</b>
+        </div>
+        <div class="appbar-right">
+          <span v-if="!canWrite" class="ro-pill" title="Your account can view data but not change it.">
+            <Eye :size="14" /><span>View only</span>
+          </span>
+          <span v-if="companyName" class="company-pill" :title="companyName">
+            <Building2 :size="15" /><span>{{ companyName }}</span>
+          </span>
+          <router-link v-if="canOpen('/alerts')" to="/alerts" class="appbar-alerts icon-link" :title="openAlerts ? `${openAlerts} open alert(s)` : 'Alerts'"
+                       :aria-label="openAlerts ? `${openAlerts} open alerts` : 'Alerts'">
+            <Bell :size="18" />
+            <span v-if="openAlerts" class="dotcount">{{ openAlerts > 99 ? '99+' : openAlerts }}</span>
+          </router-link>
+          <button class="icon-btn" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+                  :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+            <Sun v-if="theme === 'dark'" :size="18" />
+            <Moon v-else :size="18" />
+          </button>
+        </div>
+      </header>
+
+      <main class="main">
+        <div class="page">
+          <div v-if="suspended" class="notice amber suspended-banner" role="status">
+            <TriangleAlert :size="16" />
+            <span><b>{{ companyName }} is suspended.</b> Live tracking and alerts may be paused. Contact your Aayunex administrator to restore the account.</span>
+          </div>
+          <PageSkeleton v-if="showRouteSkeleton" />
+          <router-view v-else v-slot="{ Component, route: r }">
+            <AnimatePresence mode="wait">
+              <motion.div :key="r.fullPath"
+                :initial="{ opacity: 0 }" :animate="{ opacity: 1 }" :exit="{ opacity: 0 }"
+                :transition="{ duration: .14, ease: [.4, 0, .2, 1] }">
+                <component :is="Component" />
+              </motion.div>
+            </AnimatePresence>
+          </router-view>
+        </div>
+      </main>
+    </div>
   </div>
   </MotionConfig>
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  Menu, X, LocateFixed, Truck, Bell, MapPin, Fuel, IdCard, ChevronsLeft, ChevronsRight, PowerOff,
+  Menu, X, LocateFixed, Truck, Bell, MapPin, Fuel, IdCard, PanelLeftClose, PanelLeftOpen, LogOut,
   Sun, Moon, ChevronRight, Radar, History, BarChart3, TrendingUp, Users, CalendarCheck, Gauge,
   Wallet, Route, CalendarClock, Clock, ShieldAlert, ClipboardList, Receipt, Sparkles, BrainCircuit,
-  Compass, FileText,
+  Compass, FileText, LayoutDashboard, Building2, Eye, TriangleAlert,
 } from 'lucide-vue-next'
 import { motion, AnimatePresence, MotionConfig } from 'motion-v'
-import { auth, clearAuth, justLoggedIn } from './auth'
+import { auth, justLoggedIn, logout as endSession } from './auth'
+import { getAlerts } from './api'
 import { useTheme } from './theme'
 import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
 import PageSkeleton from './components/PageSkeleton.vue'
-import logo from './assets/logo.png'
+import logo from '@shared/design/brand/fgx-mark.png'
+import { canOpen } from './access'
 
 const route = useRoute()
 const router = useRouter()
 const isLogin = computed(() => route.path === '/login')
 
-// Route-level chunks are lazy (see router.js) — most resolve fast enough
-// that this never shows, but a slow/first-time chunk fetch gets a skeleton
-// instead of a frozen page. The 150ms show-delay avoids a flash of skeleton
-// for the common case where the chunk is already cached/instant.
+// Route-level chunks are lazy (see router.js). A slow chunk fetch gets a
+// skeleton instead of a frozen page; the 150ms delay avoids a flash.
 const showRouteSkeleton = ref(false)
 let skeletonShowTimer = null
 router.beforeEach((to) => {
@@ -113,38 +149,70 @@ router.afterEach(() => {
   clearTimeout(skeletonShowTimer)
   showRouteSkeleton.value = false
 })
+
 const welcomeName = computed(() => auth.user?.company?.name || auth.user?.username || 'Dealer')
+const companyName = computed(() => auth.user?.company?.name || '')
+const suspended = computed(() => { const st = auth.user?.company?.status; return !!st && st !== 'active' })
+const canWrite = computed(() => auth.user?.may_write !== false)
+const userName = computed(() => {
+  const u = auth.user
+  if (!u) return ''
+  const full = [u.first_name, u.last_name].filter(Boolean).join(' ')
+  return full || u.username
+})
+const initials = computed(() => {
+  const parts = (userName.value || '?').replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/)
+  return ((parts[0]?.[0] || '?') + (parts[1]?.[0] || '')).toUpperCase()
+})
+const roleLabel = computed(() => {
+  const r = auth.user?.role || ''
+  const nice = r ? r.charAt(0).toUpperCase() + r.slice(1) : 'User'
+  return companyName.value ? `${nice} · ${companyName.value}` : nice
+})
+
 const menuOpen = ref(false)
 const collapsed = ref(localStorage.getItem('fgx-sidebar-collapsed') === '1')
 const { theme, toggleTheme } = useTheme()
 watch(() => route.path, () => { menuOpen.value = false })
-// Full-screen mobile drawer: lock background scroll while it's open so the
-// takeover reads as a real modal surface, not a scrollable overlay on top of
-// a still-scrollable page.
 watch(menuOpen, (open) => { document.documentElement.classList.toggle('drawer-open', open) })
-// The list routes and their /:id detail routes are flat siblings, not nested
-// children, so vue-router's own router-link-active (matched-record based) drops
-// once you're on e.g. /vehicles/123. Match by path prefix instead so the sidebar
-// item stays highlighted while inside that section's detail pages.
+function onKey(e) { if (e.key === 'Escape' && menuOpen.value) menuOpen.value = false }
+onMounted(() => window.addEventListener('keydown', onKey))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+function onNavClick(e) { if (e.target.closest('a')) menuOpen.value = false }
+
+// List routes and their /:id detail routes are flat siblings, so match the
+// sidebar item by path prefix to keep it highlighted on detail pages.
 function inSection(base) { return route.path === base || route.path.startsWith(base + '/') }
 watch(collapsed, (v) => localStorage.setItem('fgx-sidebar-collapsed', v ? '1' : '0'))
-function logout() { clearAuth(); router.push('/login') }
+async function logout() { await endSession(); router.push('/login') }
+
+// Open-alert count for the bell + sidebar badge. Refreshed on navigation and
+// every 60s; failures just hide the badge.
+const openAlerts = ref(0)
+let alertTimer = null
+async function refreshAlertCount() {
+  if (!auth.isAuthed || isLogin.value || !canOpen('/alerts')) return
+  try {
+    const list = await getAlerts({ status: 'open' })
+    openAlerts.value = Array.isArray(list) ? list.length : 0
+  } catch (e) { /* keep last value */ }
+}
+watch(() => route.path, refreshAlertCount, { immediate: true })
+onMounted(() => { alertTimer = setInterval(refreshAlertCount, 60000) })
+onBeforeUnmount(() => clearInterval(alertTimer))
 
 // ---- grouped, collapsible sidebar nav ----
-// Each group owns one jewel-tone hue (shared by every item's icon chip inside
-// it, same convention the old flat nav used per-section), a Lucide icon for
-// its collapsible header, and its member routes.
 const NAV_GROUPS = [
   {
-    id: 'fleet', label: 'Fleet Management', icon: Truck, hue: 'blue',
+    id: 'fleet', label: 'Fleet', icon: Truck,
     items: [
-      { to: '/fleet-overview', label: 'Fleet Overview', icon: Gauge },
+      { to: '/fleet-overview', label: 'Fleet Overview', icon: LayoutDashboard },
       { to: '/vehicles', label: 'Vehicles', icon: Truck },
       { to: '/vehicle-documents', label: 'Vehicle Documents', icon: FileText },
     ],
   },
   {
-    id: 'monitoring', label: 'Live Monitoring', icon: Radar, hue: 'cyan',
+    id: 'monitoring', label: 'Live Monitoring', icon: Radar,
     items: [
       { to: '/locations', label: 'Live Map', icon: LocateFixed },
       { to: '/geofences', label: 'Geofences', icon: MapPin },
@@ -152,7 +220,7 @@ const NAV_GROUPS = [
     ],
   },
   {
-    id: 'fuel', label: 'Fuel Monitoring', icon: Fuel, hue: 'violet',
+    id: 'fuel', label: 'Fuel', icon: Fuel,
     items: [
       { to: '/fuel', label: 'Fuel Overview', icon: Fuel },
       { to: '/fuel-reports', label: 'Consumption Reports', icon: BarChart3 },
@@ -160,37 +228,37 @@ const NAV_GROUPS = [
     ],
   },
   {
-    id: 'drivers', label: 'Driver Management', icon: Users, hue: 'teal',
+    id: 'drivers', label: 'Pilots', icon: Users,
     items: [
       { to: '/pilots', label: 'Pilots', icon: IdCard },
       { to: '/pilot-attendance', label: 'Attendance', icon: CalendarCheck },
-      { to: '/pilot-performance', label: 'Performance & Behavior', icon: Gauge },
+      { to: '/pilot-performance', label: 'Performance', icon: Gauge },
       { to: '/pilot-salary', label: 'Salary', icon: Wallet },
     ],
   },
   {
-    id: 'trips', label: 'Trip Management', icon: Route, hue: 'green',
+    id: 'trips', label: 'Trips', icon: Route,
     items: [
       { to: '/trip-planner', label: 'Trip Planner', icon: CalendarClock },
       { to: '/trip-eta', label: 'ETA & Delivery', icon: Clock },
     ],
   },
   {
-    id: 'alerts', label: 'Alerts & Security', icon: ShieldAlert, hue: 'crit',
+    id: 'alerts', label: 'Security', icon: ShieldAlert,
     items: [
       { to: '/alerts', label: 'Alerts', icon: Bell },
     ],
   },
   {
-    id: 'billing', label: 'ERP & Billing', icon: Receipt, hue: 'amber',
+    id: 'billing', label: 'ERP & Billing', icon: Receipt,
     items: [
       { to: '/billing-orders', label: 'Order Booking', icon: ClipboardList },
       { to: '/billing-invoices', label: 'Challans & Invoices', icon: Receipt },
-      { to: '/billing-expenses', label: 'Expense Tracking', icon: Wallet },
+      { to: '/billing-expenses', label: 'Expenses', icon: Wallet },
     ],
   },
   {
-    id: 'ai', label: 'AI Analytics', icon: Sparkles, hue: 'gray',
+    id: 'ai', label: 'AI Analytics', icon: Sparkles,
     items: [
       { to: '/ai-predictions', label: 'Predictions', icon: BrainCircuit },
       { to: '/ai-route-optimization', label: 'Route Optimization', icon: Compass },
@@ -198,16 +266,24 @@ const NAV_GROUPS = [
   },
 ]
 
+const crumb = computed(() => {
+  for (const g of NAV_GROUPS) {
+    const item = g.items.find((i) => inSection(i.to))
+    if (item) return { group: g.label, item: item.label + (route.path !== item.to ? ' · Details' : '') }
+  }
+  return null
+})
+
+// Only sections this account may open (Role Management modules).
+const visibleGroups = computed(() => NAV_GROUPS
+  .map((g) => ({ ...g, items: g.items.filter((i) => canOpen(i.to)) }))
+  .filter((g) => g.items.length))
+
 const NAV_GROUPS_STORAGE_KEY = 'fgx_dealer_nav_groups'
 function groupHasActiveRoute(g) { return g.items.some((item) => inSection(item.to)) }
 
-// Accordion: at most ONE group open at a time, so the sidebar never grows
-// tall enough to need scrolling — opening a group closes whichever was open.
-// Navigating to a page auto-opens its group (so the active link is never
-// hidden on arrival), but after that the toggle is a real toggle — clicking
-// an already-open group (including the active one) closes it, same as any
-// other group. It doesn't force back open just because you're still on that
-// route; it only re-opens on the NEXT navigation into that section.
+// Accordion: one group open at a time so the sidebar stays short. Navigating
+// into a section opens its group; clicking a header toggles it.
 const initialGroup = NAV_GROUPS.find(groupHasActiveRoute)?.id
   ?? localStorage.getItem(NAV_GROUPS_STORAGE_KEY)
   ?? NAV_GROUPS[0].id
@@ -217,11 +293,6 @@ watch(() => route.path, () => {
   const g = NAV_GROUPS.find(groupHasActiveRoute)
   if (g) openGroupId.value = g.id
 })
-
-function toggleGroup(id) {
-  openGroupId.value = openGroupId.value === id ? null : id
-}
-function isGroupOpen(g) {
-  return openGroupId.value === g.id
-}
+function toggleGroup(id) { openGroupId.value = openGroupId.value === id ? null : id }
+function isGroupOpen(g) { return openGroupId.value === g.id }
 </script>

@@ -3,8 +3,8 @@
 // Usage: node run.mjs
 import { chromium } from 'playwright';
 import fs from 'fs';
+import { portalUrl } from './portals.mjs';
 
-const BASE = process.env.BASE || 'https://erp.aayunexinnovations.com';
 const SHOTS = process.env.SHOTS || (process.cwd() + '/shots');
 fs.mkdirSync(SHOTS, { recursive: true });
 
@@ -48,7 +48,7 @@ function watch(page, bucket) {
 }
 
 async function login(page, app, cfg) {
-  await page.goto(`${BASE}/${app}/`, { waitUntil: 'networkidle', timeout: 30000 });
+  await page.goto(portalUrl(app), { waitUntil: 'networkidle', timeout: 30000 });
   await page.waitForSelector('input', { timeout: 15000 });
   const inputs = page.locator('form input');
   await inputs.nth(0).fill(cfg.user);
@@ -69,7 +69,7 @@ const run = async () => {
       const ctx = await browser.newContext({ viewport: vp, ignoreHTTPSErrors: true });
       const page = await ctx.newPage(); const errs = []; watch(page, errs);
       try {
-        await page.goto(`${BASE}/${app}/`, { waitUntil: 'networkidle', timeout: 30000 });
+        await page.goto(portalUrl(app), { waitUntil: 'networkidle', timeout: 30000 });
         await page.waitForTimeout(800);
         await page.screenshot({ path: `${SHOTS}/${app}-login-${name}.png`, fullPage: false });
         report.push({ app, page: `login-${name}`, ok: true, errors: errs });
@@ -87,7 +87,7 @@ const run = async () => {
         await login(page, app, cfg);
         for (const [label, route] of cfg.routes) {
           const before = errs.length;
-          await page.goto(`${BASE}/${app}/#${route}`, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
+          await page.goto(portalUrl(app, route), { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
           await page.waitForTimeout(1600); // let data + map render
           await page.screenshot({ path: `${SHOTS}/${app}-${label}-desktop.png`, fullPage: false });
           report.push({ app, page: label, ok: true, newErrors: errs.slice(before) });
@@ -104,7 +104,7 @@ const run = async () => {
       const page = await ctx.newPage(); const errs = []; watch(page, errs);
       try {
         await login(page, app, cfg);
-        await page.goto(`${BASE}/${app}/#${cfg.routes[0][1]}`, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
+        await page.goto(portalUrl(app, cfg.routes[0][1]), { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
         await page.waitForTimeout(1500);
         await page.screenshot({ path: `${SHOTS}/${app}-main-mobile.png`, fullPage: false });
         // open the hamburger drawer if present

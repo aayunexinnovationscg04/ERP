@@ -1,134 +1,197 @@
 <template>
-  <div v-if="loading">
-    <div class="skel sk-hero"></div>
-    <div class="chips">
-      <div class="skel sk-chip"></div><div class="skel sk-chip"></div>
-      <div class="skel sk-chip"></div><div class="skel sk-chip"></div>
+  <div class="page-head">
+    <div class="ph-text">
+      <h1>My Truck</h1>
+      <div class="ph-sub">Live status of your assigned vehicle</div>
     </div>
-    <div class="section-title"><div class="skel skel-line sm" style="margin:0"></div></div>
-    <div class="skel sk-map"></div>
+    <div v-if="!loading && assigned" class="ph-actions">
+      <button class="btn btn-sm" type="button" @click="refresh" :disabled="refreshing" aria-label="Refresh now">
+        <RefreshCw :size="16" :stroke-width="2.25" :class="{ spin: refreshing }" /> Refresh
+      </button>
+    </div>
   </div>
 
-  <div v-else-if="!assigned" class="card empty">
-    <Truck :size="42" :stroke-width="1.5" style="color:var(--muted)" />
-    <h2 style="margin:10px 0 6px">No truck assigned yet</h2>
-    <p class="muted">Your dispatcher hasn't linked a vehicle to your account.<br />Once they do, it shows up here.</p>
+  <!-- loading -->
+  <div v-if="loading" class="home-grid">
+    <div class="skel sk-hero" style="grid-area:hero"></div>
+    <div class="skel sk-map" style="grid-area:map"></div>
   </div>
 
-  <div v-else>
-    <!-- status hero -->
-    <motion.div class="card hero"
-      :initial="{ opacity: 0, y: reduced ? 0 : 10 }" :animate="{ opacity: 1, y: 0 }"
-      :transition="pageTransition(reduced)">
-      <div class="row">
-        <div>
-          <div class="reg">{{ v.registration_number }}</div>
-          <div class="sub">{{ [v.make, v.model].filter(Boolean).join(' ') || 'Vehicle' }}</div>
-        </div>
-        <div class="spacer"></div>
-        <div style="text-align:right">
-          <span class="badge" :class="v.status"><span class="dot"></span>{{ v.status }}</span>
-          <div style="margin-top:8px">
-            <AnimatePresence mode="wait">
-              <motion.span class="badge" :class="summary.on_trip ? 'on' : 'off'" :key="summary.on_trip ? 'on' : 'off'"
-                :initial="{ opacity: 0, scale: reduced ? 1 : 0.85 }" :animate="{ opacity: 1, scale: 1 }"
-                :exit="{ opacity: 0, scale: reduced ? 1 : 0.85 }" :transition="emphasisTransition(reduced)">
-                <span class="dot"></span>{{ summary.on_trip ? 'On trip' : 'Parked' }}
-              </motion.span>
-            </AnimatePresence>
+  <!-- no vehicle assigned -->
+  <div v-else-if="!assigned" class="card empty-state">
+    <span class="empty-ic"><Truck :size="34" :stroke-width="1.75" /></span>
+    <h2>No truck assigned yet</h2>
+    <p>Your fleet manager hasn't linked a vehicle to your account. As soon as they do, its live location, trips and alerts show up here.</p>
+    <div class="empty-actions">
+      <button class="btn btn-primary" type="button" @click="checkAgain" :disabled="refreshing">
+        <RefreshCw :size="18" :stroke-width="2.25" :class="{ spin: refreshing }" /> Check again
+      </button>
+      <router-link to="/profile" class="btn"><User :size="18" :stroke-width="2.25" /> My profile</router-link>
+    </div>
+  </div>
+
+  <div v-else class="home-grid">
+    <!-- vehicle status -->
+    <motion.section class="card hero" style="grid-area:hero" aria-label="Vehicle status"
+      :initial="{ opacity: 0, y: reduced ? 0 : 8 }" :animate="{ opacity: 1, y: 0 }" :transition="pageTransition(reduced)">
+      <div class="hero-top">
+        <div class="hero-id">
+          <span class="plate">{{ v.registration_number }}</span>
+          <div class="hero-model">
+            <span>{{ modelLine }}</span>
+            <span class="badge" :class="v.status">{{ statusLabel(v.status) }}</span>
           </div>
         </div>
+        <AnimatePresence mode="wait">
+          <motion.span :key="summary.on_trip ? 'on' : 'off'" class="badge badge-lg" :class="summary.on_trip ? 'on' : 'off'"
+            :initial="{ opacity: 0, scale: reduced ? 1 : 0.9 }" :animate="{ opacity: 1, scale: 1 }" :exit="{ opacity: 0 }"
+            :transition="emphasisTransition(reduced)">
+            <span class="dot"></span>{{ summary.on_trip ? 'On trip' : 'Parked' }}
+          </motion.span>
+        </AnimatePresence>
       </div>
 
-      <div class="chips">
-        <div class="chip">
-          <span class="chip-ic blue"><Gauge :size="17" :stroke-width="2.25" /></span>
-          <div class="chip-body"><div class="l">Speed</div><div class="v">{{ fmt(latest?.speed_kmph) }} <small class="muted">km/h</small></div></div>
+      <div class="speed-block">
+        <div class="speed-read">
+          <span class="speed-num">{{ fmt(latest?.speed_kmph) }}</span>
+          <span class="speed-unit">km/h</span>
         </div>
-        <div class="chip">
-          <span class="chip-ic violet"><Milestone :size="17" :stroke-width="2.25" /></span>
-          <div class="chip-body"><div class="l">Distance today</div><div class="v">{{ summary.distance_today_km ?? 0 }} <small class="muted">km</small></div></div>
-        </div>
-        <div class="chip">
-          <span class="chip-ic" :class="latest?.lock_active ? 'emerald' : 'amber'"><component :is="latest?.lock_active ? Lock : LockOpen" :size="17" :stroke-width="2.25" /></span>
-          <div class="chip-body"><div class="l">Fuel cap</div><div class="v">{{ latest?.lock_active ? 'Locked' : 'Open' }}</div></div>
-        </div>
-        <div class="chip">
-          <span class="chip-ic cyan"><Satellite :size="17" :stroke-width="2.25" /></span>
-          <div class="chip-body"><div class="l">GPS</div><div class="v">{{ latest?.has_gps_fix ? ((latest?.satellites ?? 0) + ' sats') : 'No fix' }}</div></div>
+        <div class="speed-meta">
+          <span class="muted">Current speed</span>
+          <strong>{{ latest?.speed_kmph == null ? 'No reading' : latest.speed_kmph > 2 ? 'Moving' : 'Stopped' }}</strong>
         </div>
       </div>
-    </motion.div>
 
-    <!-- speed data viz -->
-    <div v-if="spark" class="card viz-card">
-      <div class="viz-head">
-        <span class="l">Speed — last {{ spark.n }} points</span>
+      <div class="stat-grid">
+        <div class="stat tone-info">
+          <div class="stat-top"><span class="stat-ic"><Milestone :size="17" :stroke-width="2.25" /></span><span class="stat-label">Today</span></div>
+          <div class="stat-value">{{ summary.distance_today_km ?? 0 }}<small>km</small></div>
+        </div>
+        <div class="stat" :class="latest?.lock_active ? 'tone-green' : 'tone-amber'">
+          <div class="stat-top"><span class="stat-ic"><component :is="latest?.lock_active ? Lock : LockOpen" :size="17" :stroke-width="2.25" /></span><span class="stat-label">Fuel cap</span></div>
+          <div class="stat-value sm">{{ latest ? (latest.lock_active ? 'Locked' : 'Open') : '—' }}</div>
+        </div>
+        <div class="stat" :class="latest?.has_gps_fix ? 'tone-green' : 'tone-amber'">
+          <div class="stat-top"><span class="stat-ic"><Satellite :size="17" :stroke-width="2.25" /></span><span class="stat-label">GPS</span></div>
+          <div class="stat-value sm">{{ latest?.has_gps_fix ? `${latest?.satellites ?? 0} sats` : 'No fix' }}</div>
+        </div>
+        <div class="stat" :class="trackerTone">
+          <div class="stat-top"><span class="stat-ic"><RadioTower :size="17" :stroke-width="2.25" /></span><span class="stat-label">Tracker</span></div>
+          <div class="stat-value sm">{{ trackerLabel }}</div>
+        </div>
+      </div>
+
+      <div class="hero-foot">
+        <span class="live-dot" :class="{ stale: isStale }" aria-hidden="true"></span>
+        <span>Updated {{ latest ? timeAgo(latest.received_at, nowTick) : '—' }}</span>
         <span class="spacer"></span>
-        <span class="m">max {{ spark.max }} km/h</span>
+        <span class="muted">Auto-refresh 20 s</span>
       </div>
-      <div class="viz-body">
-        <div v-if="gauge" class="gauge">
-          <svg viewBox="0 0 120 66" width="112" height="62" role="img"
-               :aria-label="`Current speed ${gauge.speed} km/h out of 60 km/h reference`">
-            <path :d="gauge.track" fill="none" stroke="var(--surface-2)" stroke-width="9" stroke-linecap="round" />
-            <path :d="gauge.val" fill="none" stroke="var(--brand)" stroke-width="9" stroke-linecap="round" />
-            <text x="60" y="52" text-anchor="middle" font-size="22" font-weight="800" fill="var(--text)">{{ gauge.speed }}</text>
-            <text x="60" y="63" text-anchor="middle" font-size="9" fill="var(--muted)">km/h · ref 60</text>
-          </svg>
-        </div>
-        <svg class="spark" :viewBox="`0 0 ${spark.w} ${spark.h}`" preserveAspectRatio="none"
-             role="img" :aria-label="`Speed over the last ${spark.n} readings, currently ${spark.last} km/h, peak ${spark.max} km/h`">
-          <polyline :points="spark.area" fill="var(--brand)" fill-opacity=".10" stroke="none" />
-          <line x1="0" :y1="spark.base" :x2="spark.w" :y2="spark.base" stroke="var(--border)" stroke-width="1" vector-effect="non-scaling-stroke" />
-          <polyline :points="spark.line" fill="none" stroke="var(--brand)" stroke-width="1.5"
-                    stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
-        </svg>
-      </div>
-    </div>
+    </motion.section>
 
+    <!-- open alerts -->
     <AnimatePresence>
-      <motion.div v-if="summary.open_alerts" key="alert-banner" class="card item alert-banner"
-        :initial="{ opacity: 0, y: reduced ? 0 : -8, scale: reduced ? 1 : 0.98 }" :animate="{ opacity: 1, y: 0, scale: 1 }"
-        :exit="{ opacity: 0, scale: reduced ? 1 : 0.98 }" :transition="emphasisTransition(reduced)">
-        <div class="item-row">
-          <span class="item-ic critical"><Bell :size="17" :stroke-width="2.25" /></span>
-          <div>
-            <div class="t">{{ summary.open_alerts }} open alert{{ summary.open_alerts > 1 ? 's' : '' }}</div>
-            <div class="d">Tap the Alerts tab to review</div>
-          </div>
-        </div>
-        <router-link to="/alerts" class="badge critical" style="align-self:center">View</router-link>
+      <motion.div v-if="summary.open_alerts" key="alert-banner" style="grid-area:alert"
+        :initial="{ opacity: 0, y: reduced ? 0 : -6 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0 }"
+        :transition="emphasisTransition(reduced)">
+        <router-link to="/alerts" class="alert-banner">
+          <span class="ab-ic"><ShieldAlert :size="22" :stroke-width="2.25" /></span>
+          <span class="ab-text">
+            <strong>{{ summary.open_alerts }} open alert{{ summary.open_alerts > 1 ? 's' : '' }}</strong>
+            <span>Tap to see what needs attention</span>
+          </span>
+          <span class="ab-go">Review <ChevronRight :size="18" :stroke-width="2.5" /></span>
+        </router-link>
       </motion.div>
     </AnimatePresence>
 
-    <div class="section-title">Live location &amp; today's route</div>
-    <FleetMap :markers="markers" :track="track" />
+    <!-- live map -->
+    <section class="card map-card map-area" style="grid-area:map" aria-label="Live location">
+      <div class="card-head">
+        <span class="ch-ic ic-info"><MapPin :size="18" :stroke-width="2.25" /></span>
+        <div class="ch-text"><h2>Live location</h2><div class="ch-sub">Today's route and current position</div></div>
+      </div>
+      <FleetMap :markers="markers" :track="track" empty-text="Waiting for a GPS fix" />
+    </section>
 
-    <div class="muted" style="font-size:12px; margin-top:12px; text-align:center">
-      Last update: {{ latest ? new Date(latest.received_at).toLocaleString() : '—' }} · refreshes every 20s
-    </div>
+    <!-- speed trend -->
+    <section v-if="spark" class="card" style="grid-area:speed" aria-label="Speed trend">
+      <div class="card-head">
+        <span class="ch-ic ic-brand"><Gauge :size="18" :stroke-width="2.25" /></span>
+        <div class="ch-text"><h2>Speed trend</h2><div class="ch-sub">Last {{ spark.n }} readings</div></div>
+        <div class="peak"><span class="muted">Peak</span> <strong class="num">{{ spark.max }}</strong> <span class="muted">km/h</span></div>
+      </div>
+      <div class="card-pad">
+        <svg class="spark" :viewBox="`0 0 ${spark.w} ${spark.h}`" preserveAspectRatio="none" role="img"
+          :aria-label="`Speed over the last ${spark.n} readings, currently ${spark.last} km/h, peak ${spark.max} km/h`">
+          <line x1="0" :y1="spark.base" :x2="spark.w" :y2="spark.base" stroke="var(--border-strong)" stroke-width="1" vector-effect="non-scaling-stroke" />
+          <polyline :points="spark.area" fill="var(--brand)" fill-opacity=".12" stroke="none" />
+          <polyline :points="spark.line" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+        </svg>
+      </div>
+    </section>
+
+    <!-- documents -->
+    <section v-if="docs.length" class="card" style="grid-area:docs" aria-label="Vehicle documents">
+      <div class="card-head">
+        <span class="ch-ic ic-neutral"><FileText :size="18" :stroke-width="2.25" /></span>
+        <div class="ch-text"><h2>Vehicle documents</h2><div class="ch-sub">Carry valid papers on every trip</div></div>
+        <span v-if="docIssues" class="badge" :class="docsExpired ? 'expired' : 'expiring_soon'">{{ docIssues }} to renew</span>
+        <span v-else class="badge valid">All valid</span>
+      </div>
+      <ul class="list">
+        <li v-for="d in docs" :key="d.id" class="list-row">
+          <span class="row-ic" :class="docTone(d.expiry_status)"><component :is="docIcon(d.expiry_status)" :size="19" :stroke-width="2.25" /></span>
+          <div class="row-main">
+            <div class="row-title">{{ d.doc_type_label }}</div>
+            <div class="row-sub">{{ d.number || '—' }} · {{ d.expiry_date ? (d.expiry_status === 'expired' ? 'Expired ' : 'Valid till ') + shortDate(d.expiry_date) : 'No expiry date' }}</div>
+          </div>
+          <span class="badge" :class="d.expiry_status">{{ docStatusLabel(d.expiry_status) }}</span>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { motion, AnimatePresence } from 'motion-v'
-import { Truck, Gauge, Milestone, Lock, LockOpen, Satellite, Bell } from 'lucide-vue-next'
+import {
+  Truck, Gauge, Milestone, Lock, LockOpen, Satellite, ShieldAlert, RefreshCw, User, MapPin,
+  ChevronRight, RadioTower, FileText, FileCheck, FileClock, FileX,
+} from 'lucide-vue-next'
 import FleetMap from '../components/FleetMap.vue'
-import { getSummary, getMyTrack } from '../api'
+import { getSummary, getMyTrack, getMyVehicle } from '../api'
+import { toast } from '../toast'
+import { timeAgo, shortDate } from '../format'
 import { usePrefersReducedMotion, pageTransition, emphasisTransition } from '../motion'
 
 const reduced = usePrefersReducedMotion()
 const loading = ref(true)
+const refreshing = ref(false)
 const summary = ref({})
+const vehicle = ref(null)
 const track = ref([])
 const speeds = ref([])
-let timer = null
+const nowTick = ref(Date.now())
+let timer = null, tick = null
 
 const assigned = computed(() => summary.value.assigned)
 const v = computed(() => summary.value.vehicle || {})
 const latest = computed(() => summary.value.latest)
+const modelLine = computed(() => {
+  const mm = [v.value.make, v.value.model].filter(Boolean).join(' ') || 'Vehicle'
+  return vehicle.value?.local_name ? `${mm} · ${vehicle.value.local_name}` : mm
+})
+const isStale = computed(() => !latest.value || nowTick.value - new Date(latest.value.received_at).getTime() > 10 * 60000)
+
+const device = computed(() => vehicle.value?.device || null)
+const trackerLabel = computed(() => {
+  if (!vehicle.value) return '—'
+  if (!device.value) return 'Not fitted'
+  return device.value.online ? 'Online' : 'Offline'
+})
+const trackerTone = computed(() => (!device.value ? '' : device.value.online ? 'tone-green' : 'tone-red'))
 
 const markers = computed(() => {
   const l = latest.value
@@ -137,53 +200,139 @@ const markers = computed(() => {
 })
 
 function fmt(n) { return n == null ? '—' : Math.round(n) }
+function statusLabel(s) { const t = s ? s.replace(/_/g, ' ') : 'unknown'; return t.charAt(0).toUpperCase() + t.slice(1) }
 
-// speed sparkline (inline SVG, brand-colored, built from recent telemetry)
+// ---- documents (from /pilot/vehicle) ----
+const DOC_ORDER = { expired: 0, expiring_soon: 1, valid: 2 }
+const docs = computed(() => [...(vehicle.value?.documents || [])]
+  .sort((a, b) => (DOC_ORDER[a.expiry_status] ?? 3) - (DOC_ORDER[b.expiry_status] ?? 3)))
+const docIssues = computed(() => docs.value.filter((d) => d.expiry_status === 'expired' || d.expiry_status === 'expiring_soon').length)
+const docsExpired = computed(() => docs.value.some((d) => d.expiry_status === 'expired'))
+function docTone(s) { return s === 'expired' ? 'ic-red' : s === 'expiring_soon' ? 'ic-amber' : 'ic-green' }
+function docIcon(s) { return s === 'expired' ? FileX : s === 'expiring_soon' ? FileClock : FileCheck }
+function docStatusLabel(s) { return s === 'expired' ? 'Expired' : s === 'expiring_soon' ? 'Expiring' : s === 'valid' ? 'Valid' : '—' }
+
+// ---- speed sparkline (inline SVG from recent telemetry) ----
 const spark = computed(() => {
   const arr = speeds.value.slice(-60)
   if (arr.length < 2) return null
-  const w = 300, h = 90, pad = 8
-  const max = Math.max(...arr), min = Math.min(...arr)
-  const range = (max - min) || 1
+  const w = 300, h = 100, pad = 6
+  const max = Math.max(...arr)
+  const top = max || 1
   const n = arr.length
-  const X = (i) => pad + (i / (n - 1)) * (w - pad * 2)
-  const Y = (val) => pad + (1 - (val - min) / range) * (h - pad * 2)
+  const X = (i) => (i / (n - 1)) * w
+  const Y = (val) => pad + (1 - val / top) * (h - pad * 2)
   const line = arr.map((val, i) => `${X(i).toFixed(1)},${Y(val).toFixed(1)}`).join(' ')
   const base = (h - pad).toFixed(1)
-  const area = `${X(0).toFixed(1)},${base} ${line} ${X(n - 1).toFixed(1)},${base}`
+  const area = `0,${base} ${line} ${w},${base}`
   return { line, area, w, h, base, n, max: Math.round(max), last: Math.round(arr[n - 1]) }
-})
-
-// speed gauge (SVG arc) — current speed vs a 60 km/h reference
-const gauge = computed(() => {
-  const s = latest.value?.speed_kmph
-  if (s == null) return null
-  const cx = 60, cy = 44, r = 40
-  const pct = Math.max(0, Math.min(1, s / 60))
-  const polar = (deg) => {
-    const a = (deg * Math.PI) / 180
-    return [cx + r * Math.cos(a), cy - r * Math.sin(a)]
-  }
-  const arc = (endDeg) => {
-    const [x1, y1] = polar(180)
-    const [x2, y2] = polar(endDeg)
-    return `M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 0 0 ${x2.toFixed(1)} ${y2.toFixed(1)}`
-  }
-  return { track: arc(0), val: arc(180 - pct * 180), speed: Math.round(s) }
 })
 
 async function load() {
   try {
     summary.value = await getSummary()
     if (summary.value.assigned) {
-      const pts = await getMyTrack(500)
-      track.value = pts.filter((p) => p.has_gps_fix).map((p) => [p.latitude, p.longitude])
-      speeds.value = pts.filter((p) => p.speed_kmph != null).map((p) => p.speed_kmph)
+      const [pts, veh] = await Promise.all([getMyTrack(500), getMyVehicle().catch(() => null)])
+      // telemetry arrives newest-first; draw the route oldest -> newest
+      const ordered = [...pts].sort((a, b) => new Date(a.received_at) - new Date(b.received_at))
+      track.value = ordered.filter((p) => p.has_gps_fix).map((p) => [p.latitude, p.longitude])
+      speeds.value = ordered.filter((p) => p.speed_kmph != null).map((p) => p.speed_kmph)
+      if (veh) vehicle.value = veh
     }
-  } catch (e) { /* keep last good data */ }
-  finally { loading.value = false }
+    return true
+  } catch (e) { return false /* keep last good data */ }
+  finally { loading.value = false; nowTick.value = Date.now() }
 }
 
-onMounted(() => { load(); timer = setInterval(load, 20000) })
-onBeforeUnmount(() => clearInterval(timer))
+async function refresh() {
+  refreshing.value = true
+  const ok = await load()
+  refreshing.value = false
+  if (!ok) toast.error('Could not refresh. Check your connection.')
+}
+async function checkAgain() {
+  refreshing.value = true
+  const ok = await load()
+  refreshing.value = false
+  if (!ok) toast.error('Could not reach the server. Try again in a moment.')
+  else if (!summary.value.assigned) toast.info('Still no truck assigned. Your fleet manager can link one.')
+  else toast.success('Truck assigned. Loading its status.')
+}
+
+onMounted(() => {
+  load()
+  timer = setInterval(load, 20000)
+  tick = setInterval(() => { nowTick.value = Date.now() }, 30000)
+})
+onBeforeUnmount(() => { clearInterval(timer); clearInterval(tick) })
 </script>
+
+<style scoped>
+.home-grid {
+  display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "hero" "alert" "map" "speed" "docs";
+}
+@media (min-width: 1100px) {
+  .home-grid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 18px; align-items: start;
+    grid-template-areas: "hero map" "alert map" "speed map" "docs docs";
+  }
+  .home-grid > .map-area { align-self: stretch; display: flex; flex-direction: column; }
+  .home-grid > .map-area :deep(.map-wrap) { flex: 1; display: flex; flex-direction: column; }
+  .home-grid > .map-area :deep(.map) { flex: 1; min-height: 420px; }
+}
+
+.hero { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.hero-id { min-width: 0; }
+/* Indian number-plate styling: white plate, dark border, heavy letters */
+.plate {
+  display: inline-block; max-width: 100%; padding: 5px 12px; border-radius: var(--radius-xs);
+  background: #FFFFFF; color: var(--navy-900); border: 2px solid var(--navy-900);
+  font-size: 1.375rem; font-weight: 800; letter-spacing: .06em; line-height: 1.2;
+  font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+:root[data-theme="dark"] .plate { border-color: #CBD5E1; }
+.hero-model { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; color: var(--muted); font-size: .9375rem; font-weight: 600; margin-top: 10px; }
+
+.speed-block {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 14px 16px; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border);
+}
+.speed-read { display: flex; align-items: baseline; gap: 8px; }
+.speed-num { font-size: 3.5rem; font-weight: 800; letter-spacing: -.04em; line-height: 1; color: var(--ink-strong); font-variant-numeric: tabular-nums; }
+.speed-unit { font-size: 1.125rem; font-weight: 700; color: var(--muted); }
+.speed-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: .8125rem; font-weight: 600; }
+.speed-meta strong { font-size: 1rem; color: var(--ink-strong); }
+
+.hero-foot { display: flex; align-items: center; gap: 8px; font-size: .8125rem; font-weight: 600; color: var(--text); }
+.live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); flex: none; }
+.live-dot.stale { background: var(--amber); }
+
+.alert-banner {
+  display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 14px 16px;
+  border-radius: var(--radius); background: var(--crit-soft); border: 1px solid var(--crit);
+  color: var(--text); text-decoration: none;
+}
+.alert-banner:hover { border-color: var(--crit-strong); }
+.ab-ic { flex: none; width: 44px; height: 44px; border-radius: var(--radius); display: grid; place-items: center; background: var(--crit); color: #FFFFFF; }
+:root[data-theme="dark"] .ab-ic { background: var(--crit-strong); }
+.ab-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ab-text strong { font-size: 1rem; font-weight: 800; color: var(--ink-strong); }
+.ab-text span { font-size: .8125rem; color: var(--muted); }
+.ab-go { flex: none; display: inline-flex; align-items: center; gap: 2px; font-weight: 800; color: var(--crit); font-size: .9375rem; }
+
+.peak { font-size: .8125rem; white-space: nowrap; }
+.peak strong { font-size: 1.125rem; font-weight: 800; color: var(--ink-strong); }
+.spark { display: block; width: 100%; height: 110px; }
+
+@media (min-width: 600px) and (max-width: 1099.98px) { .hero .stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 380px) {
+  .plate { font-size: 1.1875rem; }
+  .speed-num { font-size: 3rem; }
+  .card-head .badge { display: none; }
+}
+</style>

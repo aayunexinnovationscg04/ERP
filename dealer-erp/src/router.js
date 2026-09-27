@@ -1,5 +1,6 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
-import { auth } from './auth'
+import { createRouter, createWebHistory } from 'vue-router'
+import { auth, sessionReady, setSessionEndHandler } from './auth'
+import { canOpen, firstAllowedPath } from './access'
 
 // Every view is route-level code-split (dynamic import) instead of statically
 // imported here. Statically importing ~25 views meant the Login screen — the
@@ -10,6 +11,7 @@ import { auth } from './auth'
 // refresh". Each view now ships as its own small chunk, fetched only when
 // actually navigated to.
 const Login = () => import('./views/Login.vue')
+const NoAccess = () => import('./views/NoAccess.vue')
 const Locations = () => import('./views/Locations.vue')
 const Vehicles = () => import('./views/Vehicles.vue')
 const VehicleDetail = () => import('./views/VehicleDetail.vue')
@@ -61,6 +63,7 @@ const routes = [
   { path: '/trip-planner', component: TripPlanner },
   { path: '/trip-eta', component: TripEta },
   { path: '/alerts', component: Alerts },
+  { path: '/no-access', component: NoAccess },
   { path: '/geofences', component: Geofences },
   { path: '/billing-orders', component: BillingOrders },
   { path: '/billing-invoices', component: BillingInvoices },
@@ -69,11 +72,28 @@ const routes = [
   { path: '/ai-route-optimization', component: AiRouteOptimization },
 ]
 
-const router = createRouter({ history: createWebHashHistory(), routes })
+// Old links used hash URLs (/dealer/#/users). Rewrite to the clean path before
+// the router reads the location.
+if (location.hash.startsWith('#/')) {
+  history.replaceState(null, '', import.meta.env.BASE_URL + location.hash.slice(2))
+}
 
-router.beforeEach((to) => {
-  if (!to.meta.public && !auth.isAuthed) return '/login'
+const router = createRouter({ history: createWebHistory(import.meta.env.BASE_URL), routes })
+
+router.beforeEach(async (to) => {
+  await sessionReady  // restore the session from the refresh cookie before deciding
+  if (!to.meta.public && !auth.isAuthed) {
+    return { path: '/login', query: to.fullPath !== '/' ? { next: to.fullPath } : {} }
+  }
   if (to.path === '/login' && auth.isAuthed) return '/'
+  // Screens whose module is switched off for this account (Role Management).
+  if (!to.meta.public && !canOpen(to.path)) return firstAllowedPath()
+})
+
+// Session revoked/expired mid-use (or signed out in another tab) -> back to login.
+setSessionEndHandler(() => {
+  const here = router.currentRoute.value
+  if (!here.meta.public) router.replace({ path: '/login', query: { next: here.fullPath } })
 })
 
 export default router

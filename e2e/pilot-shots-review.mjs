@@ -1,12 +1,13 @@
 // Pilot ERP mobile review screenshots — local dev server, real backend on :8000.
 import { chromium } from 'playwright';
 import fs from 'fs';
+import { portalUrl } from './portals.mjs';
 
-const BASE = process.env.BASE || 'http://127.0.0.1:5174/pilot/';
+const BASE = portalUrl('pilot');
 const SHOTS = process.env.SHOTS || (process.cwd() + '/shots');
 fs.mkdirSync(SHOTS, { recursive: true });
 
-const CREDS = JSON.parse(fs.readFileSync('/root/erp/e2e/creds.json'));
+const CREDS = JSON.parse(fs.readFileSync('/root/aayunex_innovations/ERP/e2e/creds.json'));
 const { user, pass } = CREDS.pilot;
 
 const WIDTHS = [
@@ -46,7 +47,7 @@ const run = async () => {
     const page = await ctx.newPage();
     await login(page);
     for (const [label, route] of ROUTES) {
-      await page.goto(BASE + '#' + route, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
+      await page.goto(portalUrl('pilot', route), { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
       await page.waitForTimeout(1600);
       await page.screenshot({ path: `${SHOTS}/${label}-${vp.tag}.png`, fullPage: true });
       const m = await page.evaluate(() => ({ scrollW: document.documentElement.scrollWidth, innerW: window.innerWidth }));

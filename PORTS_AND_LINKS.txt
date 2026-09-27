@@ -1,45 +1,46 @@
 ================================================================================
 FUEL GUARD X - PORTS, LINKS & ACCESS
-Last updated: 2026-07-26
+Last updated: 2026-09-27 (subdomain-per-portal layout, ui-revamp branch)
 VPS public IP : 31.42.125.144
 Domain        : dashboard.aayunexinnovations.com  ->  31.42.125.144
 --------------------------------------------------------------------------------
 NOTE ON SECRETS: real secrets (DB password, Django SECRET_KEY) are NOT in this
-file. They live in /root/erp/backend/.env (gitignored, mode 600). The dev login
+file. They live in /root/aayunex_innovations/ERP/backend/.env (gitignored, mode 600). The dev login
 passwords below are for the pilot only - CHANGE THEM BEFORE PRODUCTION.
 ================================================================================
 
 
-PUBLIC LINKS (open in a browser)  --  ALL ERPs on ONE subdomain, HTTPS via Caddy
+PUBLIC LINKS (open in a browser)  --  one subdomain per portal, HTTPS via Caddy
 --------------------------------------------------------------------------------
-  Dealer ERP           https://erp.aayunexinnovations.com/dealer/   demo login: dealer / dealer123
-  Admin ERP            https://erp.aayunexinnovations.com/admin/    login: admin  / admin123
-  Pilot ERP            https://erp.aayunexinnovations.com/pilot/    demo login: pilot / pilot123
-  Landing page         https://erp.aayunexinnovations.com/          -- "pick your portal" (real Aayunex logo)
+  Choose your portal   https://erp.aayunexinnovations.com/       (landing: Dealer / Pilot)
+  Dealer ERP           https://dealer.aayunexinnovations.com/    demo login: dealer / dealer123
+  Pilot ERP            https://pilot.aayunexinnovations.com/     demo login: pilot / pilot123
+  Admin ERP            https://admin.aayunexinnovations.com/     login: admin / admin123
+                       (admin is intentionally NOT linked from the landing page)
+  Django Admin panel   https://admin.aayunexinnovations.com/django-admin/   login: admin / admin123
+  Receiver Dashboard   https://dashboard.aayunexinnovations.com  (legacy device dashboard)
+
+  Old links keep working: erp.aayunexinnovations.com/dealer/..., /pilot/...,
+  /admin/... and /django-admin/... 301-redirect to the matching subdomain, and
+  old #/ hash URLs are rewritten to clean paths (e.g. /#/alerts -> /alerts).
 
   (Real customer tenant is company "aayunex-transport" with the one real device
   esp32-01 -- unrelated to the "demo-fleet"/"shree-logistics"/"om-sai-transport"
-  demo companies above, which exist purely to make the ERP look populated for
+  demo companies, which exist purely to make the ERP look populated for
   demos/sales. `seed_demo --reset` wipes only those demo companies.)
 
-  Django Admin panel   https://erp.aayunexinnovations.com/django-admin/  login: admin / admin123
-     (publicly routed 2026-08-04 at explicit user request -- previously SSH-tunnel
-     only. Same Django auth gate as before; no separate access control added.)
-  Receiver Dashboard   https://dashboard.aayunexinnovations.com     login: admin / admin123
-     (legacy device dashboard - separate subdomain, also HTTPS via Caddy)
-
-  HOW IT ROUTES: Caddy terminates TLS for erp.aayunexinnovations.com and reverse-
-  proxies to nginx :8090, which path-routes: /dealer/ /admin/ /pilot/ (SPAs),
-  /api/ + /django-admin/ (Django). Direct http://31.42.125.144:8090/... still works
-  for on-server testing but the public, TLS URLs above are the ones to use.
+  HOW IT ROUTES: Caddy terminates TLS for erp/dealer/pilot/admin and reverse-
+  proxies to nginx 127.0.0.1:8090, which routes by Host header: each portal
+  host serves its SPA at / plus /api/ (Django); admin also serves /django-admin/.
+  Config: deploy/Caddyfile, deploy/nginx-fuelguardx.conf, deploy/nginx-snippets/.
 
 
-BACKEND API (public, through nginx)
+BACKEND API (same-origin on every portal host)
 --------------------------------------------------------------------------------
-  Base                          https://erp.aayunexinnovations.com/api/
-  Health check                  https://erp.aayunexinnovations.com/api/health  -> {"ok":true}
-  Auth login (POST)             https://erp.aayunexinnovations.com/api/auth/login
-     (One shared API behind all three ERP paths; same-origin, so SPAs call /api/... )
+  Base                  https://<dealer|pilot|admin>.aayunexinnovations.com/api/
+  Health check          https://admin.aayunexinnovations.com/api/health -> {"ok":true}
+  Auth                  POST /api/auth/login | refresh | logout | logout-all
+                        header X-FGX-Portal: admin|dealer|pilot   (see docs/API.md)
 
 
 DEVICE TELEMETRY (HTTP ONLY - required, the SIM800L cannot do TLS)
@@ -56,7 +57,7 @@ DATABASE (PRIVATE - no web link, and must stay that way)
   Host/Port 127.0.0.1 : 5432   (local-only; refuses public connections = correct)
   Database  fuelguardx
   User      fuelguardx
-  Password  see DATABASE_URL in /root/erp/backend/.env
+  Password  see DATABASE_URL in /root/aayunex_innovations/ERP/backend/.env
   Connect on the server:   su postgres -c "psql fuelguardx"
   A database is NOT a website - never expose 5432 to the internet.
 
@@ -74,29 +75,28 @@ FULL PORT MAP
   Port   Scope        Service                          Public link
   22     public       SSH                              ssh root@31.42.125.144
   80     public       Caddy (device HTTP + ACME)       http://31.42.125.144/api/telemetry
-  443    public       Caddy (HTTPS: ERP + legacy dash) https://erp.aayunexinnovations.com
-  8090   local->Caddy nginx -> all 3 ERPs + API        (public via erp.aayunex... over 443)
+  443    public       Caddy (HTTPS: ERP + legacy dash) https://{erp,dealer,pilot,admin}.aayunexinnovations.com
+  8090   local->Caddy nginx -> all 3 ERPs + API        (public via the portal subdomains over 443)
   8000   local-only   Django / gunicorn                (internal, via nginx)
   8080   local-only   old receiver-dashboard           (internal, via Caddy)
   5432   local-only   PostgreSQL                       (internal, private)
   2019   local-only   Caddy admin API                  (internal)
-  NOTE: nginx :8091 retired - Super Admin now lives at erp.aayunex.../admin/ (path,
-  not a port). :8092 no longer needed either; Driver ERP will be the /pilot/ path.
 
 
 WHY 127.0.0.1 vs 31.42.125.144
 --------------------------------------------------------------------------------
   Public traffic now enters ONLY on 443 (Caddy) and 80 (device + ACME). Caddy
-  proxies erp.aayunexinnovations.com -> nginx :8090 -> gunicorn :8000. nginx and
+  proxies the portal subdomains -> nginx :8090 -> gunicorn :8000. nginx and
   gunicorn are internal engine parts; the public never hits 8090/8000 directly.
   This is standard, secure architecture and needs no extra provider-firewall ports.
 
 
 TLS / HTTPS  (DONE)
 --------------------------------------------------------------------------------
-  erp.aayunexinnovations.com -> A record 31.42.125.144 (IPv4 only; AAAA removed so
-  Let's Encrypt validates against the VPS). Caddy auto-issued + auto-renews the cert.
-  All ERP paths are HTTPS; http:// is 308-redirected to https:// by Caddy.
+  erp / dealer / pilot / admin .aayunexinnovations.com -> A records 31.42.125.144
+  (IPv4 only, so Let's Encrypt validates against the VPS). Caddy issues and
+  auto-renews a certificate per hostname -- no certbot needed. http:// is
+  308-redirected to https:// by Caddy.
   Reachability caveat is resolved: no 8090/8091 provider-firewall ports required.
 
 
@@ -105,7 +105,7 @@ TEST / DEV LOGINS (pilot only - CHANGE BEFORE PRODUCTION)
   The old weak passwords (admin123 / owner123) were ROTATED to strong random ones
   on 2026-07-26. Passwords are NOT stored in this committed file anymore.
   See the gitignored file (server only, mode 600):
-      /root/erp/deploy/PILOT_CREDENTIALS.txt
+      /root/aayunex_innovations/ERP/deploy/PILOT_CREDENTIALS.txt
   Users:  admin  -> Super Admin ERP + Django admin
           owner1 -> Owner ERP ("Aayunex Transport")
           driver1 -> Driver ERP (assigned to CG04-TEST-01 / esp32-01)

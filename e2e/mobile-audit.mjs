@@ -2,8 +2,8 @@
 // overflow (document wider than viewport) and screenshots each for review.
 import { chromium } from 'playwright';
 import fs from 'fs';
+import { portalUrl, LANDING } from './portals.mjs';
 
-const BASE = process.env.BASE || 'https://erp.aayunexinnovations.com';
 const SHOTS = process.env.SHOTS || (process.cwd() + '/mobile');
 fs.mkdirSync(SHOTS, { recursive: true });
 let CREDS = {};
@@ -38,7 +38,7 @@ const run = async () => {
   {
     const ctx = await b.newContext({ viewport: { width: W, height: H }, ignoreHTTPSErrors: true });
     const p = await ctx.newPage();
-    await p.goto(`${BASE}/`, { waitUntil: 'networkidle', timeout: 30000 });
+    await p.goto(LANDING, { waitUntil: 'networkidle', timeout: 30000 });
     await measure(p, 'landing', 'landing');
     await ctx.close();
   }
@@ -47,7 +47,7 @@ const run = async () => {
     const ctx = await b.newContext({ viewport: { width: W, height: H }, ignoreHTTPSErrors: true });
     const p = await ctx.newPage();
     // login page
-    await p.goto(`${BASE}/${app}/`, { waitUntil: 'networkidle', timeout: 30000 });
+    await p.goto(portalUrl(app), { waitUntil: 'networkidle', timeout: 30000 });
     await measure(p, `${app}/login`, `${app}-login`);
     // sign in
     await p.locator('form input').nth(0).fill(cfg.user);
@@ -55,7 +55,7 @@ const run = async () => {
     await p.locator('button.primary').first().click();
     await p.waitForSelector('.main', { state: 'visible', timeout: 20000 });
     for (const [label, route] of cfg.routes) {
-      await p.goto(`${BASE}/${app}/#${route}`, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
+      await p.goto(portalUrl(app, route), { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
       await measure(p, `${app}/${label}`, `${app}-${label}`);
     }
     // open the hamburger drawer to check it too

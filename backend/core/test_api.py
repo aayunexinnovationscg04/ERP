@@ -21,6 +21,7 @@ from fleet.models import (Device, Pilot, PilotAttendance, Geofence, Vehicle,
 _DRF = copy.deepcopy(settings.REST_FRAMEWORK)
 _DRF["DEFAULT_THROTTLE_RATES"] = {
     "anon": "100000/min", "user": "100000/min", "login": "100000/min",
+    "refresh": "100000/min",
 }
 
 
@@ -41,27 +42,36 @@ class ApiBase(TestCase):
         u.save()
         return u
 
+    PORTAL_FOR_ROLE = {"admin": "admin", "dealer": "dealer", "manager": "dealer", "pilot": "pilot"}
+
+    def login(self, username, password, portal=None, client=None):
+        c = client or APIClient()
+        portal = portal or self.PORTAL_FOR_ROLE[User.objects.get(username=username).role]
+        return c, c.post("/api/auth/login", {"username": username, "password": password},
+                         format="json", HTTP_X_FGX_PORTAL=portal)
+
     def client_for(self, username, password):
-        c = APIClient()
-        r = c.post("/api/auth/login",
-                   {"username": username, "password": password}, format="json")
+        c, r = self.login(username, password)
         self.assertEqual(r.status_code, 200, r.content)
         c.credentials(HTTP_AUTHORIZATION="Bearer " + r.data["access"])
         return c
 
 
 class AuthTests(ApiBase):
-    def test_login_returns_tokens_and_user(self):
-        r = APIClient().post("/api/auth/login",
-                             {"username": "dealer1", "password": "OwnPass1234"}, format="json")
+    def test_login_returns_access_and_sets_httponly_refresh_cookie(self):
+        _, r = self.login("dealer1", "OwnPass1234")
         self.assertEqual(r.status_code, 200)
         self.assertIn("access", r.data)
-        self.assertIn("refresh", r.data)
+        self.assertNotIn("refresh", r.data)          # never exposed to JS
         self.assertEqual(r.data["user"]["role"], "dealer")
+        ck = r.cookies["fgx_rt_dealer"]
+        self.assertTrue(ck["httponly"])
+        self.assertTrue(ck["secure"])
+        self.assertEqual(ck["samesite"], "Strict")
+        self.assertEqual(ck["path"], "/api/auth/")
 
     def test_bad_password_401(self):
-        r = APIClient().post("/api/auth/login",
-                             {"username": "dealer1", "password": "wrong"}, format="json")
+        _, r = self.login("dealer1", "wrong", portal="dealer")
         self.assertEqual(r.status_code, 401)
 
     def test_me_requires_auth(self):
@@ -299,3 +309,161 @@ class PilotsTests(ApiBase):
         lone = Pilot.objects.create(company=self.c1, name="Unassigned Pilot")
         r = self.client_for("dealer1", "OwnPass1234").get(f"/api/pilots/{lone.id}/")
         self.assertIsNone(r.data["assigned_vehicle"])
+
+
+class TokenSessionTests(ApiBase):
+    """Access/refresh lifecycle: portal lock, rotation, replay, logout, revocation."""
+
+    def refresh(self, c, portal):
+        return c.post("/api/auth/refresh", HTTP_X_FGX_PORTAL=portal)
+
+    def test_login_requires_portal_header(self):
+        r = APIClient().post("/api/auth/login",
+                             {"username": "dealer1", "password": "OwnPass1234"}, format="json")
+        self.assertEqual(r.status_code, 403)
+
+    def test_role_locked_to_its_portal(self):
+        for user, pw, portal in [("dealer1", "OwnPass1234", "admin"),
+                                 ("pilot1", "DrvPass1234", "dealer"),
+                                 ("sa", "SaPass1234", "pilot"),
+                                 ("dealer1", "OwnPass1234", "pilot")]:
+            c, r = self.login(user, pw, portal=portal)
+            self.assertEqual(r.status_code, 403, (user, portal))
+            self.assertNotIn(f"fgx_rt_{portal}", r.cookies)
+
+    def test_all_three_portals_login_and_refresh(self):
+        for user, pw, portal in [("sa", "SaPass1234", "admin"),
+                                 ("dealer1", "OwnPass1234", "dealer"),
+                                 ("pilot1", "DrvPass1234", "pilot")]:
+            c, r = self.login(user, pw)
+            self.assertEqual(r.status_code, 200, portal)
+            r2 = self.refresh(c, portal)
+            self.assertEqual(r2.status_code, 200, portal)
+            self.assertIn("access", r2.data)
+            self.assertEqual(r2.data["user"]["username"], user)
+            c.credentials(HTTP_AUTHORIZATION="Bearer " + r2.data["access"])
+            self.assertEqual(c.get("/api/auth/me").status_code, 200)
+
+    def test_refresh_rotates_and_old_token_is_rejected(self):
+        c, _ = self.login("dealer1", "OwnPass1234")
+        old = c.cookies["fgx_rt_dealer"].value
+        r = self.refresh(c, "dealer")
+        self.assertEqual(r.status_code, 200)
+        self.assertNotEqual(c.cookies["fgx_rt_dealer"].value, old)
+        replay = APIClient()
+        replay.cookies["fgx_rt_dealer"] = old
+        self.assertEqual(self.refresh(replay, "dealer").status_code, 401)
+
+    def test_refresh_needs_cookie_and_matching_portal(self):
+        self.assertEqual(self.refresh(APIClient(), "dealer").status_code, 401)
+        c, _ = self.login("dealer1", "OwnPass1234")
+        other = APIClient()
+        other.cookies["fgx_rt_admin"] = c.cookies["fgx_rt_dealer"].value
+        self.assertEqual(self.refresh(other, "admin").status_code, 401)
+        self.assertEqual(c.post("/api/auth/refresh").status_code, 403)  # no header
+
+    def test_logout_revokes_refresh(self):
+        c, _ = self.login("pilot1", "DrvPass1234")
+        rt = c.cookies["fgx_rt_pilot"].value
+        self.assertEqual(c.post("/api/auth/logout", HTTP_X_FGX_PORTAL="pilot").status_code, 204)
+        again = APIClient()
+        again.cookies["fgx_rt_pilot"] = rt
+        self.assertEqual(self.refresh(again, "pilot").status_code, 401)
+
+    def test_password_change_kills_access_and_refresh(self):
+        c, r = self.login("dealer1", "OwnPass1234")
+        c.credentials(HTTP_AUTHORIZATION="Bearer " + r.data["access"])
+        self.dealer1.set_password("NewPass9999")
+        self.dealer1.save()
+        self.assertEqual(c.get("/api/auth/me").status_code, 401)
+        self.assertEqual(self.refresh(c, "dealer").status_code, 401)
+
+    def test_role_change_by_admin_kills_sessions(self):
+        c, r = self.login("dealer1", "OwnPass1234")
+        admin = self.client_for("sa", "SaPass1234")
+        admin.patch(f"/api/admin/users/{self.dealer1.pk}/", {"role": "pilot"}, format="json")
+        c.credentials(HTTP_AUTHORIZATION="Bearer " + r.data["access"])
+        self.assertEqual(c.get("/api/auth/me").status_code, 401)
+
+    def test_deactivated_user_cannot_refresh(self):
+        c, _ = self.login("dealer1", "OwnPass1234")
+        User.objects.filter(pk=self.dealer1.pk).update(is_active=False)
+        self.assertEqual(self.refresh(c, "dealer").status_code, 401)
+
+    def test_logout_all_revokes_every_session(self):
+        c1, r1 = self.login("dealer1", "OwnPass1234")
+        c2, _ = self.login("dealer1", "OwnPass1234")
+        c1.credentials(HTTP_AUTHORIZATION="Bearer " + r1.data["access"])
+        self.assertEqual(c1.post("/api/auth/logout-all", HTTP_X_FGX_PORTAL="dealer").status_code, 204)
+        self.assertEqual(c1.get("/api/auth/me").status_code, 401)
+        self.assertEqual(self.refresh(c2, "dealer").status_code, 401)
+
+    def test_absolute_session_cap(self):
+        c, _ = self.login("sa", "SaPass1234")
+        from unittest import mock
+        import time as _t
+        later = _t.time() + 13 * 3600
+        with mock.patch("core.tokens.time.time", return_value=later), \
+                mock.patch("rest_framework_simplejwt.tokens.aware_utcnow",
+                           return_value=timezone.now() + timedelta(hours=11)):
+            self.assertEqual(self.refresh(c, "admin").status_code, 401)
+
+
+class ModuleAccessTests(ApiBase):
+    """Role Management / per-user module switches are enforced by the API."""
+
+    def setUp(self):
+        super().setUp()
+        from core.models import RolePermission, UserModuleOverride
+        self.RolePermission, self.Override = RolePermission, UserModuleOverride
+
+    def test_defaults_allow_normal_use(self):
+        c = self.client_for("dealer1", "OwnPass1234")
+        for url in ["/api/vehicles/", "/api/alerts/", "/api/geofences/", "/api/pilots/"]:
+            self.assertEqual(c.get(url).status_code, 200, url)
+
+    def test_role_switch_blocks_endpoint(self):
+        self.RolePermission.objects.update_or_create(role="dealer", module="drivers", defaults={"allowed": False})
+        c = self.client_for("dealer1", "OwnPass1234")
+        self.assertEqual(c.get("/api/pilots/").status_code, 403)
+        self.assertEqual(c.get("/api/vehicles/").status_code, 200)   # other modules unaffected
+
+    def test_user_override_beats_role_default(self):
+        self.Override.objects.create(user=self.dealer1, module="geofences", allowed=False)
+        self.Override.objects.create(user=self.dealer1, module="live_map", allowed=False)
+        c = self.client_for("dealer1", "OwnPass1234")
+        self.assertEqual(c.get("/api/geofences/").status_code, 403)
+        other = self.client_for("dealer2", "OwnPass5678")
+        self.assertEqual(other.get("/api/geofences/").status_code, 200)
+
+    def test_endpoint_needs_any_one_of_its_modules(self):
+        for m in ["alerts", "dashboard", "fuel", "drivers"]:
+            self.Override.objects.create(user=self.dealer1, module=m, allowed=False)
+        c = self.client_for("dealer1", "OwnPass1234")
+        self.assertEqual(c.get("/api/alerts/").status_code, 403)
+        self.Override.objects.filter(user=self.dealer1, module="fuel").update(allowed=True)
+        self.assertEqual(c.get("/api/alerts/").status_code, 200)
+
+    def test_pilot_modules(self):
+        self.Override.objects.create(user=self.pilot1, module="driver_trips", allowed=False)
+        c = self.client_for("pilot1", "DrvPass1234")
+        self.assertEqual(c.get("/api/pilot/trips").status_code, 403)
+        self.assertEqual(c.get("/api/pilot/summary").status_code, 200)
+
+    def test_admin_never_blocked(self):
+        c = self.client_for("sa", "SaPass1234")
+        self.assertEqual(c.get("/api/pilots/").status_code, 200)
+
+
+class SuspendedCompanyTests(ApiBase):
+    def test_suspended_company_is_read_only(self):
+        self.dealer1.can_edit = True
+        self.dealer1.save()
+        self.c1.status = Company.Status.SUSPENDED
+        self.c1.save()
+        c = self.client_for("dealer1", "OwnPass1234")
+        self.assertFalse(c.get("/api/auth/me").data["may_write"])
+        self.assertEqual(c.get("/api/geofences/").status_code, 200)
+        r = c.post("/api/geofences/", {"name": "X", "kind": "restricted", "center_lat": 1,
+                                       "center_lng": 1, "radius_m": 100}, format="json")
+        self.assertEqual(r.status_code, 403)

@@ -1,67 +1,129 @@
 <template>
-  <div class="topbar">
-    <h1>Route History</h1>
-    <span class="muted">{{ trips.length }} trip(s)</span>
+  <PageHeader title="Route History" description="Pick a vehicle to see its recorded trips and where they started and ended.">
+    <label v-if="vehicles.length" class="field rh-pick">
+      <span class="sr-only">Vehicle</span>
+      <select v-model="vehicleId" aria-label="Vehicle">
+        <option v-for="v in vehicles" :key="v.id" :value="v.id">{{ v.local_name }} · {{ v.registration_number }}</option>
+      </select>
+    </label>
+  </PageHeader>
+
+  <div v-if="loading" class="grid-2">
+    <div class="skel sk-map"></div>
+    <div class="card card-body"><div class="skel sk-row" v-for="n in 5" :key="n"></div></div>
   </div>
 
-  <div class="card" style="padding:6px 0">
-    <table>
-      <thead>
-        <tr><th>Truck</th><th>Date</th><th class="col-optional">Distance</th><th class="col-optional">Duration</th><th>From</th><th>To</th></tr>
-      </thead>
-      <tbody>
-        <tr v-for="t in trips" :key="t.id">
-          <td>
-            <span class="row-with-chip">
-              <span class="icon-chip blue"><Truck :size="16" /></span>
-              <span style="font-weight:600">{{ t.vehicleName }}</span>
-            </span>
-          </td>
-          <td class="muted">{{ t.date }}</td>
-          <td class="col-optional">{{ t.distance }} km</td>
-          <td class="col-optional">{{ t.duration }}</td>
-          <td class="ico"><MapPin :size="13" class="muted" />{{ t.from }}</td>
-          <td class="ico"><Flag :size="13" class="muted" />{{ t.to }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <div v-else-if="!vehicles.length" class="card">
+    <EmptyState :icon="History" title="No route history yet" text="Trips are recorded automatically once a vehicle with a Fuel Guard X device starts moving." />
   </div>
+
+  <template v-else>
+    <div class="kpis">
+      <StatTile label="Trips recorded" :value="trips.length" :icon="RouteIcon" tone="blue" />
+      <StatTile label="Distance" :value="fmt(totalKm, 0)" unit="km" :icon="Milestone" tone="navy" sub="Across listed trips" />
+      <StatTile label="Fuel used" :value="fmt(totalFuel)" unit="L" :icon="Fuel" tone="brand" sub="Across listed trips" />
+      <StatTile label="Top speed" :value="fmt(topSpeed, 0)" unit="km/h" :icon="Gauge" :tone="topSpeed > 80 ? 'amber' : 'green'" />
+    </div>
+
+    <div class="grid-2">
+      <div class="card flush">
+        <div class="card-head">
+          <div class="card-head-title"><MapIcon :size="17" /><div><h2>{{ selTrip ? 'Trip on ' + dt(selTrip.started_at) : 'Recent track' }}</h2>
+            <div class="card-sub">{{ selTrip ? (selTrip.start_lat != null ? 'Start → end of the selected trip' : 'No start/end position recorded for this trip') : track.length + ' telemetry point(s)' }}</div></div></div>
+          <button v-if="selTrip" type="button" class="sm" @click="selTripId = null">Show recent track</button>
+        </div>
+        <div v-if="tripLoading" class="skel" style="height:440px;border-radius:0"></div>
+        <FleetMap v-else :markers="markers" :track="mapTrack" :end-label="selTrip ? 'End' : 'Latest'" />
+      </div>
+
+      <div class="card flush">
+        <div class="card-head"><div class="card-head-title"><History :size="17" /><h2>Trips</h2></div></div>
+        <EmptyState v-if="!trips.length && !tripLoading" compact :icon="RouteIcon" title="No trips for this vehicle" />
+        <div v-else class="list rh-list">
+          <div v-for="t in (allTrips ? trips : trips.slice(0, 12))" :key="t.id" class="list-row clickable" :class="{ sel: t.id === selTripId }" role="button" tabindex="0"
+               @click="selTripId = t.id" @keydown.enter="selTripId = t.id">
+            <span class="icon-chip" :class="t.status === 'active' ? 'green' : 'gray'"><RouteIcon :size="16" /></span>
+            <span class="grow">
+              <div class="title">{{ dt(t.started_at) }}</div>
+              <div class="sub">{{ fmt(t.distance_km) }} km · {{ duration(t) }} · max {{ fmt(t.max_speed_kmph, 0) }} km/h</div>
+            </span>
+            <span class="badge" :class="t.status === 'active' ? 'active' : 'offline'">{{ t.status === 'active' ? 'Live' : 'Done' }}</span>
+          </div>
+        </div>
+        <div v-if="trips.length > 12" class="card-foot" style="text-align:center">
+          <button type="button" class="sm ghost" @click="allTrips = !allTrips">{{ allTrips ? 'Show fewer' : `Show all ${trips.length} trips` }}</button>
+        </div>
+      </div>
+    </div>
+  </template>
 </template>
 
 <script setup>
-import { Truck, MapPin, Flag } from 'lucide-vue-next'
-import { MOCK_VEHICLES, seededRandom, pick, rangeInt, addDays, fmtDate } from '../mock'
+import { computed, onMounted, ref, watch } from 'vue'
+import { History, Route as RouteIcon, Map as MapIcon, Milestone, Fuel, Gauge } from 'lucide-vue-next'
+import { getVehicles, getVehicleTrack, getVehicleTrips } from '../api'
+import { fmt } from '../util'
+import FleetMap from '../components/FleetMap.vue'
+import PageHeader from '../components/PageHeader.vue'
+import StatTile from '../components/StatTile.vue'
+import EmptyState from '../components/EmptyState.vue'
 
-const PLACES = [
-  'Depot Yard, Raipur', 'Bhilai Steel Gate', 'Durg Warehouse', 'Rajnandgaon Terminal',
-  'Bilaspur Fuel Depot', 'Korba Loading Point', 'Ambikapur Site', 'Jagdalpur Customer Site',
-]
+const vehicles = ref([])
+const vehicleId = ref(null)
+const trips = ref([])
+const track = ref([])
+const loading = ref(true)
+const tripLoading = ref(false)
+const selTripId = ref(null)
+const allTrips = ref(false)
 
-const rng = seededRandom(303)
-const today = new Date()
-
-const trips = []
-let id = 1
-for (let i = 0; i < 26; i++) {
-  const v = pick(rng, MOCK_VEHICLES)
-  const date = addDays(today, -rangeInt(rng, 0, 21))
-  const distance = rangeInt(rng, 18, 420)
-  const hrs = Math.floor(distance / rangeInt(rng, 30, 45))
-  const mins = rangeInt(rng, 5, 55)
-  let from = pick(rng, PLACES)
-  let to = pick(rng, PLACES)
-  if (to === from) to = PLACES[(PLACES.indexOf(from) + 1) % PLACES.length]
-  trips.push({
-    id: id++, vehicleName: v.name, date: fmtDate(date),
-    distance, duration: `${hrs}h ${mins}m`, from, to, sortKey: date.getTime(),
-  })
+const dt = (iso) => new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+function duration(t) {
+  const end = t.ended_at ? new Date(t.ended_at) : new Date()
+  const mins = Math.max(0, Math.round((end - new Date(t.started_at)) / 60000))
+  return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`
 }
-trips.sort((a, b) => b.sortKey - a.sortKey)
+
+const vehicle = computed(() => vehicles.value.find((v) => v.id === vehicleId.value))
+const selTrip = computed(() => trips.value.find((t) => t.id === selTripId.value) || null)
+const totalKm = computed(() => trips.value.reduce((s, t) => s + (t.distance_km || 0), 0))
+const totalFuel = computed(() => trips.value.reduce((s, t) => s + (t.fuel_consumed_litres || 0), 0))
+const topSpeed = computed(() => trips.value.reduce((m, t) => Math.max(m, t.max_speed_kmph || 0), 0))
+
+const mapTrack = computed(() => {
+  const t = selTrip.value
+  if (t) return t.start_lat != null && t.end_lat != null ? [[t.start_lat, t.start_lng], [t.end_lat, t.end_lng]] : []
+  return track.value.map((p) => [p.latitude, p.longitude])
+})
+const markers = computed(() => {
+  const l = vehicle.value?.latest
+  if (selTrip.value || !l?.has_gps_fix) return []
+  return [{ id: vehicle.value.id, lat: l.latitude, lng: l.longitude, label: vehicle.value.local_name, status: vehicle.value.status }]
+})
+
+async function loadVehicle(id) {
+  if (id == null) return
+  tripLoading.value = true
+  selTripId.value = null
+  try {
+    ;[trips.value, track.value] = await Promise.all([getVehicleTrips(id), getVehicleTrack(id, 1000)])
+  } catch (e) { trips.value = []; track.value = [] }
+  finally { tripLoading.value = false }
+}
+watch(vehicleId, loadVehicle)
+
+onMounted(async () => {
+  try {
+    vehicles.value = await getVehicles()
+    if (vehicles.value.length) vehicleId.value = vehicles.value[0].id
+  } catch (e) { /* empty state */ }
+  finally { loading.value = false }
+})
 </script>
 
 <style scoped>
-@media (max-width: 720px) {
-  .col-optional { display: none; }
-  table { min-width: 0; }
-}
+.rh-pick { min-width: 260px; }
+.rh-list { max-height: 440px; overflow-y: auto; }
+.list-row.sel { background: var(--brand-soft); box-shadow: inset 3px 0 0 var(--brand); }
+@media (max-width: 720px) { .rh-pick { min-width: 0; width: 100%; } .rh-list { max-height: none; } }
 </style>

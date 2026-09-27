@@ -4,10 +4,20 @@ Base URL (through nginx): `http://<host>:8090`  ·  Django direct: `http://127.0
 All ERP endpoints require `Authorization: Bearer <access token>` unless noted.
 
 ## Auth
+Access token (10 min) in the JSON body, kept in SPA memory only. Refresh token in an
+HttpOnly `Secure` `SameSite=Strict` cookie `fgx_rt_<portal>` (path `/api/auth/`), rotated
+on every refresh; a reused refresh token is rejected. All `/api/auth/*` POSTs need header
+`X-FGX-Portal: admin|dealer|pilot`; an account may only sign in to its role's portal
+(admin → admin, dealer/manager → dealer, pilot → pilot). Refresh lifetime: admin 12 h hard
+cap; dealer/pilot 7 days idle, 30 days max. Changing a user's password, role, company or
+active flag revokes all their tokens instantly. Details: `backend/core/tokens.py`.
+
 | Method | Path | Body | Notes |
 |---|---|---|---|
-| POST | `/api/auth/login` | `{username, password}` | → `{access, refresh, user}`; token carries role + company_id |
-| POST | `/api/auth/refresh` | `{refresh}` | → `{access}` |
+| POST | `/api/auth/login` | `{username, password}` | → `{access, access_expires_in, user}` + sets refresh cookie; 401 bad creds, 403 wrong portal |
+| POST | `/api/auth/refresh` | — (cookie) | → `{access, access_expires_in, user}` + rotated cookie; 401 = sign in again |
+| POST | `/api/auth/logout` | — (cookie) | revokes this portal's refresh token, clears cookie → 204 |
+| POST | `/api/auth/logout-all` | — (Bearer) | revokes every session of the user on all devices/portals → 204 |
 | GET | `/api/auth/me` | — | current user + company |
 | GET | `/api/health` | — | public health check |
 
@@ -26,7 +36,7 @@ All ERP endpoints require `Authorization: Bearer <access token>` unless noted.
 | GET | `/api/alerts/?status&type&vehicle` | alerts, filterable |
 | POST | `/api/alerts/{id}/acknowledge/` | acknowledge an alert |
 
-## Super Admin (role `superadmin` only)
+## Admin (role `admin` only)
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/api/admin/modules` | all tabs/modules (key, label, group) |
@@ -38,8 +48,24 @@ All ERP endpoints require `Authorization: Bearer <access token>` unless noted.
 | GET | `/api/admin/roles` | role × module access matrix |
 | PUT | `/api/admin/roles` | `{role:{module: bool}}` — set global role defaults |
 
-`GET /api/auth/me` returns `modules: [...]` — the caller's **effective** accessible tabs
-(per-user override > role default > false; super-admin = all).
+`GET /api/auth/me` (and login/refresh) return `modules: [...]` — the caller's **effective**
+accessible tabs (per-user override > role default > built-in default; admin = all).
+
+The API enforces the same list (`core.permissions.ModuleAccess`): each endpoint declares the
+modules that need its data and the caller must have at least one, otherwise **403**.
+
+| Endpoint | Needs any of |
+|---|---|
+| `/api/vehicles/…` | fleet, live_map, fuel, dashboard, trips, drivers |
+| `/api/trips/…` | trips, fuel, fleet, reports |
+| `/api/devices/…` | fleet |
+| `/api/geofences/…` | geofences, live_map |
+| `/api/dashboard/summary/` | dashboard |
+| `/api/pilots/…` | drivers |
+| `/api/alerts/…` | alerts, dashboard, fuel, drivers |
+| `/api/pilot/summary`, `/vehicle`, `/vehicle/telemetry` | driver_home |
+| `/api/pilot/trips` | driver_trips |
+| `/api/pilot/alerts` | driver_alerts |
 
 ## Device ingest (firmware, token-auth — NOT JWT)
 | Method | Path | Auth | Notes |
@@ -59,7 +85,7 @@ Reply: `{"ok": true, "device_id": "...", "received": <bytes>, "commands": [{id,p
 ## Quick test
 ```bash
 B=http://127.0.0.1:8090
-TOK=$(curl -s -X POST $B/api/auth/login -H 'Content-Type: application/json' \
+TOK=$(curl -s -X POST $B/api/auth/login -H 'Content-Type: application/json' -H 'X-FGX-Portal: admin' \
       -d '{"username":"admin","password":"admin123"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["access"])')
 curl -s $B/api/dashboard/summary/ -H "Authorization: Bearer $TOK"
 curl -s -X POST $B/api/telemetry -H 'X-Auth: fuelguardx' -H 'X-Device-Id: esp32-01' \

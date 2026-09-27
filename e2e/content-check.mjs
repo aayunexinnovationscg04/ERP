@@ -3,8 +3,8 @@
 // console-error check misses, e.g. multi-root component under <transition>).
 import { chromium } from 'playwright';
 import fs from 'fs';
+import { portalUrl } from './portals.mjs';
 
-const BASE = process.env.BASE || 'https://erp.aayunexinnovations.com';
 let CREDS = {};
 try { CREDS = JSON.parse(fs.readFileSync(new URL('./creds.json', import.meta.url))); } catch {}
 
@@ -23,13 +23,13 @@ const run = async () => {
     const page = await ctx.newPage();
     const errs = [];
     page.on('pageerror', (e) => errs.push(e.message));
-    await page.goto(`${BASE}/${app}/`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(portalUrl(app), { waitUntil: 'networkidle', timeout: 30000 });
     await page.locator('form input').nth(0).fill(cfg.user);
     await page.locator('input[type=password]').fill(cfg.pass);
     await page.locator('button.primary').first().click();
     await page.waitForSelector('.main', { state: 'visible', timeout: 20000 });
     for (const route of cfg.routes) {
-      await page.goto(`${BASE}/${app}/#${route}`, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
+      await page.goto(portalUrl(app, route), { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
       await page.waitForTimeout(1800);
       const len = (await page.locator('.main').innerText().catch(() => '')).trim().length;
       const ok = len >= MIN;

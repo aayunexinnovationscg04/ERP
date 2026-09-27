@@ -1,66 +1,62 @@
 <template>
-  <div class="topbar">
-    <h1>Pilot Attendance</h1>
-    <span class="muted">{{ monthLabel }}</span>
-  </div>
+  <PageHeader title="Attendance" :description="`Monthly attendance for every pilot — ${monthLabel}.`" preview />
 
   <div class="kpis">
-    <motion.div class="card kpi glow-green hero" :while-hover="{ y: -2 }">
-      <span class="icon-chip lg green ic"><CalendarCheck :size="20" class="icon-lg" /></span><div class="n">{{ fmt(fleetAttendancePct, 0) }}%</div><div class="l">Fleet attendance</div>
-    </motion.div>
-    <motion.div class="card kpi glow-crit" :while-hover="{ y: -2 }">
-      <span class="icon-chip lg crit ic"><CalendarX :size="20" class="icon-lg" /></span><div class="n">{{ totalAbsent }}</div><div class="l">Absences this month</div>
-    </motion.div>
-    <motion.div class="card kpi glow-amber" :while-hover="{ y: -2 }">
-      <span class="icon-chip lg amber ic"><CalendarClock :size="20" class="icon-lg" /></span><div class="n">{{ totalLeave }}</div><div class="l">Leave days</div>
-    </motion.div>
+    <StatTile label="Fleet attendance" :value="fmt(fleetAttendancePct, 0)" unit="%" :icon="CalendarCheck" tone="green" />
+    <StatTile label="Absences this month" :value="totalAbsent" :icon="CalendarX" tone="crit" />
+    <StatTile label="Leave days" :value="totalLeave" :icon="CalendarClock" tone="amber" />
   </div>
 
-  <p class="section-title">Monthly Summary</p>
-  <div class="card" style="padding:6px 0">
-    <table>
-      <thead><tr><th>Pilot</th><th>Present</th><th>Absent</th><th>Leave</th><th>Attendance</th></tr></thead>
-      <tbody>
-        <tr v-for="p in summary" :key="p.name">
-          <td class="ico"><UserRound :size="14" class="muted" />{{ p.name }}</td>
-          <td>{{ p.present }} / {{ daysInMonth }}</td>
-          <td>{{ p.absent }}</td>
-          <td>{{ p.leave }}</td>
-          <td>
-            <span class="badge" :class="p.pct >= 90 ? 'active' : p.pct >= 75 ? 'idle' : 'critical'">{{ fmt(p.pct, 0) }}%</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <p class="section-title">Calendar View</p>
-  <div class="card" style="padding:16px 18px">
-    <div class="row" style="margin-bottom:14px">
-      <span class="muted" style="font-size:13px">Pilot</span>
-      <select v-model="selectedPilot" style="max-width:220px">
-        <option v-for="p in summary" :key="p.name" :value="p.name">{{ p.name }}</option>
-      </select>
-    </div>
-    <div class="pa-cal">
-      <div class="pa-cal-dow muted" v-for="d in ['S','M','T','W','T','F','S']" :key="d">{{ d }}</div>
-      <div class="pa-cal-pad" v-for="n in leadingBlanks" :key="'b'+n"></div>
-      <div class="pa-cal-cell" v-for="day in selectedCalendar" :key="day.date" :class="day.status" :title="`${day.date}: ${day.label}`">
-        {{ day.day }}
+  <div class="grid-2">
+    <div class="card flush">
+      <div class="card-head"><div class="card-head-title"><Users :size="17" /><h2>Monthly summary</h2></div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Pilot</th><th class="num">Present</th><th class="num">Absent</th><th class="num">Leave</th><th>Attendance</th></tr></thead>
+          <tbody>
+            <tr v-for="p in summary" :key="p.name" class="clickable" :class="{ sel: p.name === selectedPilot }" @click="selectedPilot = p.name">
+              <td class="cell-main nowrap">{{ p.name }}</td>
+              <td class="num">{{ p.present }}</td>
+              <td class="num">{{ p.absent }}</td>
+              <td class="num">{{ p.leave }}</td>
+              <td><span class="badge" :class="p.pct >= 90 ? 'active' : p.pct >= 75 ? 'idle' : 'critical'">{{ fmt(p.pct, 0) }}%</span></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
-    <div class="row pa-legend">
-      <span class="ico muted"><span class="dot green"></span> Present</span>
-      <span class="ico muted"><span class="dot red"></span> Absent</span>
-      <span class="ico muted"><span class="dot gray"></span> Leave</span>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-title"><CalendarDays :size="17" /><h2>Calendar</h2></div>
+        <select v-model="selectedPilot" class="pa-select" aria-label="Pilot">
+          <option v-for="p in summary" :key="p.name" :value="p.name">{{ p.name }}</option>
+        </select>
+      </div>
+      <div class="card-body">
+        <div class="pa-cal">
+          <div class="pa-cal-dow" v-for="(d, i) in ['S','M','T','W','T','F','S']" :key="i">{{ d }}</div>
+          <div v-for="n in leadingBlanks" :key="'b'+n"></div>
+          <div class="pa-cal-cell" v-for="day in selectedCalendar" :key="day.date" :class="day.status" :title="`${day.date}: ${day.label}`">
+            {{ day.day }}
+          </div>
+        </div>
+        <div class="map-legend" style="margin-top:14px">
+          <span><i class="swatch" style="background:var(--green)"></i>Present</span>
+          <span><i class="swatch" style="background:var(--crit)"></i>Absent</span>
+          <span><i class="swatch" style="background:var(--muted-2)"></i>Leave</span>
+          <span><i class="swatch" style="background:var(--surface-3);border:1px solid var(--border-strong)"></i>Upcoming</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
-import { CalendarCheck, CalendarX, CalendarClock, UserRound } from 'lucide-vue-next'
-import { motion } from 'motion-v'
+import { CalendarCheck, CalendarX, CalendarClock, CalendarDays, Users } from 'lucide-vue-next'
+import PageHeader from '../components/PageHeader.vue'
+import StatTile from '../components/StatTile.vue'
 import { MOCK_PILOTS, seededRandom, pick } from '../mock'
 import { fmt } from '../util'
 
@@ -96,17 +92,16 @@ const fleetAttendancePct = computed(() => summary.reduce((s, p) => s + p.pct, 0)
 const selectedPilot = ref(MOCK_PILOTS[0])
 const selectedCalendar = computed(() => perPilot.find((p) => p.name === selectedPilot.value)?.days || [])
 </script>
-
 <style scoped>
-.pa-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-.pa-cal-dow { text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; padding-bottom: 4px; }
-.pa-cal-pad { }
+.pa-select { width: auto; min-width: 170px; }
+tr.sel td { background: var(--brand-soft); }
+.pa-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.pa-cal-dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); padding-bottom: 2px; }
 .pa-cal-cell {
-  aspect-ratio: 1; display: grid; place-items: center; border-radius: 8px; font-size: 12.5px; font-weight: 600;
-  background: var(--surface-2); color: var(--muted);
+  aspect-ratio: 1; display: grid; place-items: center; border-radius: 6px; font-size: 12.5px; font-weight: 700;
+  background: var(--surface-2); color: var(--muted-2); border: 1px solid var(--border);
 }
-.pa-cal-cell.present { background: var(--green-soft); color: var(--green); }
-.pa-cal-cell.absent { background: var(--crit-soft); color: var(--crit); }
-.pa-cal-cell.leave { background: var(--gray-soft); color: var(--gray); }
-.pa-legend { gap: 16px; margin-top: 14px; font-size: 12.5px; flex-wrap: wrap; }
+.pa-cal-cell.present { background: var(--green-soft); color: var(--green); border-color: transparent; }
+.pa-cal-cell.absent { background: var(--crit-soft); color: var(--crit); border-color: transparent; }
+.pa-cal-cell.leave { background: var(--surface-3); color: var(--muted); border-color: transparent; }
 </style>
