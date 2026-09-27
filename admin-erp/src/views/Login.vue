@@ -8,15 +8,16 @@
 
     <main class="al-main">
       <div class="al-card">
-        <div class="al-brand">
-          <span class="al-logo"><img :src="logo" alt="AAYUNEX INNOVATIONS OPC Pvt Ltd. logo" /></span>
-          <div class="al-brand-text">
-            <strong>Fuel Guard X</strong>
-            <span>AAYUNEX INNOVATIONS OPC Pvt Ltd.</span>
+        <header class="al-head">
+          <div class="al-brand">
+            <span class="al-logo"><img :src="logo" alt="AAYUNEX INNOVATIONS OPC Pvt Ltd. logo" /></span>
+            <div class="al-brand-text">
+              <strong>Fuel Guard X</strong>
+              <span>AAYUNEX INNOVATIONS OPC Pvt Ltd.</span>
+            </div>
           </div>
-        </div>
-
-        <h1 class="al-title">Admin Console</h1>
+          <h1 class="al-title"><ShieldCheck :size="15" aria-hidden="true" /> Admin Console</h1>
+        </header>
 
         <form class="al-form" novalidate @submit.prevent="submit">
           <div class="al-field">
@@ -48,6 +49,7 @@
           <button type="submit" class="al-submit primary" :disabled="busy || !username || !password" :aria-busy="busy">
             <span v-if="busy" class="al-spin" aria-hidden="true"></span>
             {{ busy ? 'Signing in…' : 'Sign in' }}
+            <ArrowRight v-if="!busy" :size="17" aria-hidden="true" />
           </button>
         </form>
       </div>
@@ -60,7 +62,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-vue-next'
+import { ArrowRight, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from 'lucide-vue-next'
 import logo from '@shared/design/brand/aayunex-logo.png'
 import { login, justLoggedIn } from '../auth'
 import FleetBackdrop from '../components/FleetBackdrop.vue'
@@ -113,32 +115,35 @@ onMounted(() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) 
   padding: 24px 16px;
 }
 .al-card {
-  width: 100%; max-width: 400px; padding: 32px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  width: 100%; max-width: 360px; overflow: hidden;
+  background: var(--surface); border: 1px solid #1F3A5A; border-radius: 14px;
+  border-top: 4px solid var(--flame-600);
   box-shadow: 0 24px 48px rgba(0, 0, 0, .35);
 }
 
-.al-brand { display: flex; align-items: center; gap: 14px; }
+/* navy header band: brand + portal badge */
+.al-head { padding: 20px 22px 18px; background: var(--navy-800); border-bottom: 1px solid #1F3A5A; }
+.al-brand { display: flex; align-items: center; gap: 12px; }
 .al-logo {
-  flex: none; width: 60px; height: 60px; border-radius: 14px; background: #FFFFFF;
-  border: 1px solid #E2E8F0; display: grid; place-items: center;
+  flex: none; width: 52px; height: 52px; border-radius: 12px; background: #FFFFFF;
+  display: grid; place-items: center;
 }
-.al-logo img { width: 54px; height: 54px; object-fit: contain; }
+.al-logo img { width: 46px; height: 46px; object-fit: contain; }
 .al-brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
-.al-brand-text strong { font-size: 1.15rem; font-weight: 800; color: var(--text); letter-spacing: -.01em; }
-.al-brand-text span { font-size: .78rem; color: var(--muted); }
-
+.al-brand-text strong { font-size: 1.05rem; font-weight: 800; color: #FFFFFF; letter-spacing: -.01em; }
+.al-brand-text span { font-size: .74rem; color: #94A6BD; }
 .al-title {
-  margin: 24px 0 20px; padding-top: 20px; border-top: 1px solid var(--border);
-  font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; color: var(--text);
+  display: inline-flex; align-items: center; gap: 7px; margin: 16px 0 0; padding: 6px 11px;
+  border-radius: 999px; background: var(--navy-900); border: 1px solid #264B73;
+  font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--flame-500);
 }
 
-.al-form { display: flex; flex-direction: column; gap: 16px; }
-.al-field label { display: block; margin-bottom: 7px; font-size: .86rem; font-weight: 600; color: var(--text); }
+.al-form { display: flex; flex-direction: column; gap: 14px; padding: 22px; }
+.al-field label { display: block; margin-bottom: 6px; font-size: .82rem; font-weight: 600; color: var(--text); }
 .al-input { position: relative; display: flex; align-items: center; }
-.al-ic { position: absolute; left: 14px; color: var(--muted); pointer-events: none; }
+.al-ic { position: absolute; left: 13px; color: var(--muted); pointer-events: none; }
 .al-input input {
-  width: 100%; height: 48px; margin: 0; padding: 0 48px 0 44px;
+  width: 100%; height: 44px; margin: 0; padding: 0 46px 0 42px;
   font: inherit; font-size: 16px; color: var(--text); background: var(--field-bg);
   border: 1px solid var(--border-strong); border-radius: 10px; box-shadow: none;
   transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
@@ -147,7 +152,7 @@ onMounted(() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) 
 .al-input input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring); }
 .al-input input[aria-invalid="true"] { border-color: var(--danger); }
 .al-eye {
-  position: absolute; right: 5px; width: 38px; height: 38px; padding: 0; margin: 0;
+  position: absolute; right: 4px; width: 36px; height: 36px; padding: 0; margin: 0;
   display: grid; place-items: center; border: 0; border-radius: 8px;
   background: transparent; color: var(--muted); cursor: pointer; box-shadow: none; transform: none;
 }
@@ -160,9 +165,9 @@ onMounted(() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) 
 }
 
 .alogin .al-submit {
-  width: 100%; height: 48px; margin: 6px 0 0; padding: 0 20px;
-  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  font: inherit; font-size: 1rem; font-weight: 700; color: #FFFFFF;
+  width: 100%; height: 44px; margin: 4px 0 0; padding: 0 18px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font: inherit; font-size: .95rem; font-weight: 700; color: #FFFFFF;
   background: var(--brand); border: 0; border-radius: 10px;
   box-shadow: none; filter: none; transform: none; cursor: pointer;
   transition: background-color var(--dur) var(--ease);
@@ -183,7 +188,7 @@ onMounted(() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) 
 .al-foot span { display: inline-block; padding: 5px 12px; border-radius: 8px; background: #0B1F33; border: 1px solid #1B3A5C; }
 
 @media (max-width: 480px) {
-  .al-card { padding: 24px 20px; border-radius: 14px; }
-  .al-title { margin: 20px 0 16px; padding-top: 16px; font-size: 1.35rem; }
+  .al-head { padding: 18px 18px 16px; }
+  .al-form { padding: 18px; }
 }
 </style>
