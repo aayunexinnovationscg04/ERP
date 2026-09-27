@@ -1,63 +1,215 @@
+<!--
+  Admin console sign-in: one centred card (brand, username, password, sign in)
+  on a designed full-page background. Solid colours only.
+-->
 <template>
-  <AuthShell
-    portal="admin"
-    portal-name="Admin Console"
-    :portal-icon="ShieldCheck"
-    headline="Run the whole Fuel Guard X platform from one console."
-    description="Onboard companies, provision users and decide exactly which screens every role can open."
-    :points="points"
-    form-subtitle="Platform administrators only."
-    submit-label="Sign in to console"
-    security-note="Encrypted session · admin sign-in lasts at most 12 hours"
-    note="Admin accounts are created internally — there is no self sign-up."
-    :busy="busy"
-    :error="error"
-    @submit="submit"
-  />
+  <div class="alogin">
+    <!-- decorative background: a quiet fleet / tenant network -->
+    <svg class="al-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g stroke="#15314F" stroke-width="1">
+        <line v-for="x in gridX" :key="'x' + x" :x1="x" y1="0" :x2="x" y2="900" />
+        <line v-for="y in gridY" :key="'y' + y" x1="0" :y1="y" x2="1440" :y2="y" />
+      </g>
+      <g fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="0,660 180,600 330,640 470,520 620,560" stroke="#1B3A5C" />
+        <polyline points="820,340 960,300 1110,360 1260,250 1440,290" stroke="#1B3A5C" />
+        <polyline points="60,180 220,240 360,160 520,210" stroke="#1B3A5C" />
+        <polyline points="900,720 1060,650 1210,700 1440,620" stroke="#1B3A5C" />
+        <polyline points="470,520 380,360 360,160" stroke="#264B73" stroke-dasharray="2 10" />
+        <polyline points="1110,360 1060,650" stroke="#264B73" stroke-dasharray="2 10" />
+      </g>
+      <g>
+        <circle v-for="(n, i) in nodes" :key="'n' + i" :cx="n[0]" :cy="n[1]" :r="n[2]" :fill="n[3]" />
+      </g>
+    </svg>
+
+    <main class="al-main">
+      <div class="al-card">
+        <div class="al-brand">
+          <span class="al-logo"><img :src="logo" alt="AAYUNEX INNOVATIONS OPC Pvt Ltd. logo" /></span>
+          <div class="al-brand-text">
+            <strong>Fuel Guard X</strong>
+            <span>AAYUNEX INNOVATIONS OPC Pvt Ltd.</span>
+          </div>
+        </div>
+
+        <h1 class="al-title">Admin Console</h1>
+
+        <form class="al-form" novalidate @submit.prevent="submit">
+          <div class="al-field">
+            <label for="admin-username">Username</label>
+            <div class="al-input">
+              <UserRound :size="18" class="al-ic" aria-hidden="true" />
+              <input id="admin-username" ref="userEl" v-model.trim="username" name="username"
+                     autocomplete="username" autocapitalize="none" spellcheck="false" required
+                     :aria-invalid="!!error" />
+            </div>
+          </div>
+
+          <div class="al-field">
+            <label for="admin-password">Password</label>
+            <div class="al-input">
+              <LockKeyhole :size="18" class="al-ic" aria-hidden="true" />
+              <input id="admin-password" v-model="password" name="password"
+                     :type="showPw ? 'text' : 'password'" autocomplete="current-password" required
+                     :aria-invalid="!!error" />
+              <button type="button" class="al-eye" :aria-label="showPw ? 'Hide password' : 'Show password'"
+                      :aria-pressed="showPw" @click="showPw = !showPw">
+                <component :is="showPw ? EyeOff : Eye" :size="18" />
+              </button>
+            </div>
+          </div>
+
+          <p v-if="error" class="al-error" role="alert">{{ error }}</p>
+
+          <button type="submit" class="al-submit primary" :disabled="busy || !username || !password" :aria-busy="busy">
+            <span v-if="busy" class="al-spin" aria-hidden="true"></span>
+            {{ busy ? 'Signing in…' : 'Sign in' }}
+          </button>
+        </form>
+      </div>
+    </main>
+
+    <footer class="al-foot">© 2025 AAYUNEX INNOVATIONS OPC Pvt Ltd.</footer>
+  </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Building2, KeyRound, ShieldCheck, UsersRound } from 'lucide-vue-next'
-import AuthShell from '@shared/ui/AuthShell.vue'
+import { Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-vue-next'
+import logo from '@shared/design/brand/aayunex-logo.png'
 import { login, justLoggedIn } from '../auth'
 
-const points = [
-  { icon: Building2, title: 'Companies', text: 'Onboard, review and suspend fleet operators.' },
-  { icon: UsersRound, title: 'Users & roles', text: 'Admin, dealer, manager and pilot accounts.' },
-  { icon: KeyRound, title: 'Access control', text: 'Per-role and per-person screen access.' },
+const gridX = Array.from({ length: 16 }, (_, i) => i * 96)
+const gridY = Array.from({ length: 10 }, (_, i) => i * 96)
+// [x, y, r, fill] — network nodes; a few flame-orange hubs
+const nodes = [
+  [180, 600, 6, '#264B73'], [330, 640, 5, '#264B73'], [470, 520, 9, '#EA580C'], [620, 560, 5, '#264B73'],
+  [960, 300, 5, '#264B73'], [1110, 360, 9, '#EA580C'], [1260, 250, 6, '#38BDF8'], [220, 240, 5, '#264B73'],
+  [360, 160, 8, '#38BDF8'], [520, 210, 5, '#264B73'], [1060, 650, 8, '#EA580C'], [1210, 700, 5, '#264B73'],
+  [380, 360, 4, '#264B73'],
 ]
 
+const username = ref('')
+const password = ref('')
+const showPw = ref(false)
 const busy = ref(false)
 const error = ref('')
+const userEl = ref(null)
 const router = useRouter()
 const route = useRoute()
+
 // Only follow in-app paths, never an absolute URL (open-redirect guard).
 const nextPath = () => {
   const n = route.query.next
   return typeof n === 'string' && n.startsWith('/') && !n.startsWith('//') ? n : '/'
 }
 
-async function submit({ username, password }) {
+async function submit() {
+  if (!username.value || !password.value || busy.value) return
   busy.value = true
   error.value = ''
   try {
-    await login(username, password)
+    await login(username.value, password.value)
     justLoggedIn.value = true
     router.replace(nextPath())
   } catch (e) {
-    error.value = loginError(e)
+    const s = e.response?.status
+    error.value = s === 429 ? 'Too many attempts. Please wait a minute and try again.'
+      : s === 403 ? (e.response.data?.detail || 'This account cannot sign in here.')
+        : s === 401 ? 'Incorrect username or password.'
+          : 'Could not reach the server. Check your connection and try again.'
   } finally {
     busy.value = false
   }
 }
 
-function loginError(e) {
-  const s = e.response?.status
-  if (s === 429) return 'Too many attempts. Please wait a minute and try again.'
-  if (s === 403) return e.response.data?.detail || 'This account cannot sign in here.'
-  if (s === 401) return 'Incorrect username or password.'
-  return 'Could not reach the server. Check your connection and try again.'
-}
+onMounted(() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) userEl.value?.focus() })
 </script>
+
+<style scoped>
+.alogin {
+  position: relative; min-height: 100vh; min-height: 100dvh; overflow: hidden;
+  display: flex; flex-direction: column; background: var(--navy-900); font-family: var(--font-ui);
+}
+.al-bg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+.al-main {
+  position: relative; flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 24px 16px;
+}
+.al-card {
+  width: 100%; max-width: 400px; padding: 32px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, .35);
+}
+
+.al-brand { display: flex; align-items: center; gap: 14px; }
+.al-logo {
+  flex: none; width: 60px; height: 60px; border-radius: 14px; background: #FFFFFF;
+  border: 1px solid #E2E8F0; display: grid; place-items: center;
+}
+.al-logo img { width: 54px; height: 54px; object-fit: contain; }
+.al-brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.al-brand-text strong { font-size: 1.15rem; font-weight: 800; color: var(--text); letter-spacing: -.01em; }
+.al-brand-text span { font-size: .78rem; color: var(--muted); }
+
+.al-title {
+  margin: 24px 0 20px; padding-top: 20px; border-top: 1px solid var(--border);
+  font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; color: var(--text);
+}
+
+.al-form { display: flex; flex-direction: column; gap: 16px; }
+.al-field label { display: block; margin-bottom: 7px; font-size: .86rem; font-weight: 600; color: var(--text); }
+.al-input { position: relative; display: flex; align-items: center; }
+.al-ic { position: absolute; left: 14px; color: var(--muted); pointer-events: none; }
+.al-input input {
+  width: 100%; height: 48px; margin: 0; padding: 0 48px 0 44px;
+  font: inherit; font-size: 16px; color: var(--text); background: var(--field-bg);
+  border: 1px solid var(--border-strong); border-radius: 10px; box-shadow: none;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.al-input input:hover { border-color: var(--muted-2); }
+.al-input input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring); }
+.al-input input[aria-invalid="true"] { border-color: var(--danger); }
+.al-eye {
+  position: absolute; right: 5px; width: 38px; height: 38px; padding: 0; margin: 0;
+  display: grid; place-items: center; border: 0; border-radius: 8px;
+  background: transparent; color: var(--muted); cursor: pointer; box-shadow: none; transform: none;
+}
+.al-eye:hover { background: var(--surface-3); color: var(--text); transform: none; }
+.al-eye:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+.al-error {
+  margin: 0; padding: 10px 12px; border-radius: 9px; font-size: .88rem;
+  background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger-ring);
+}
+
+.alogin .al-submit {
+  width: 100%; height: 48px; margin: 6px 0 0; padding: 0 20px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  font: inherit; font-size: 1rem; font-weight: 700; color: #FFFFFF;
+  background: var(--brand); border: 0; border-radius: 10px;
+  box-shadow: none; filter: none; transform: none; cursor: pointer;
+  transition: background-color var(--dur) var(--ease);
+}
+.alogin .al-submit:hover:not(:disabled) { background: var(--brand-strong); transform: none; filter: none; box-shadow: none; }
+.alogin .al-submit:focus-visible { outline: 3px solid var(--brand-ring); outline-offset: 2px; }
+.alogin .al-submit:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+.alogin .al-submit[aria-busy="true"] { background: var(--brand); color: #FFFFFF; cursor: progress; }
+.al-spin {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .45); border-top-color: #FFFFFF; animation: al-spin .7s linear infinite;
+}
+@keyframes al-spin { to { transform: rotate(360deg); } }
+
+.al-foot {
+  position: relative; padding: 0 16px 18px; text-align: center; font-size: .8rem; color: #94A6BD;
+}
+
+@media (max-width: 480px) {
+  .al-card { padding: 24px 20px; border-radius: 14px; }
+  .al-title { margin: 20px 0 16px; padding-top: 16px; font-size: 1.35rem; }
+}
+</style>
