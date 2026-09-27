@@ -7,6 +7,8 @@ circular. Session issuing/refresh lives in core/tokens.py.
 
 from datetime import timedelta
 
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
 
@@ -30,7 +32,14 @@ def role_allowed(user, portal):
 
 
 class SessionJWTAuthentication(JWTAuthentication):
-    """Bearer access-token auth that also enforces session_version and portal."""
+    """Bearer access-token auth that also enforces session_version and portal,
+    and keeps admin "view as" sessions strictly read-only."""
+
+    def authenticate(self, request):
+        result = super().authenticate(request)
+        if result and result[1].get("view_only") and request.method not in SAFE_METHODS:
+            raise PermissionDenied("View-only session: changes are disabled.")
+        return result
 
     def get_user(self, validated_token):
         user = super().get_user(validated_token)  # also rejects inactive users
@@ -39,4 +48,9 @@ class SessionJWTAuthentication(JWTAuthentication):
             raise InvalidToken("Session has been revoked. Please sign in again.")
         if portal not in PORTALS or not role_allowed(user, portal):
             raise InvalidToken("Token is not valid for this account.")
+        if validated_token.get("view_only"):
+            # the admin who opened the view must still be an active admin
+            if not User.objects.filter(pk=validated_token.get("view_admin"), is_active=True,
+                                       role=User.Role.ADMIN).exists():
+                raise InvalidToken("View session is no longer valid.")
         return user

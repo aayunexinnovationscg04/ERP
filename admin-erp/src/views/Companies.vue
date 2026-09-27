@@ -37,7 +37,7 @@
           </td></tr>
         </tbody>
         <tbody v-else>
-          <tr v-for="c in filtered" :key="c.id">
+          <tr v-for="c in pagedRows" :key="c.id">
             <td class="cell-head">
               <div class="cell-entity">
                 <span class="entity-mark">{{ initials(c.name) }}</span>
@@ -59,9 +59,7 @@
         </tbody>
       </table>
     </div>
-    <div v-if="!loading && companies.length" class="card-foot">
-      <span>Showing {{ filtered.length }} of {{ companies.length }} {{ companies.length === 1 ? 'company' : 'companies' }}</span>
-    </div>
+    <Pager :pager="pager" />
   </div>
 
   <Modal :open="showCreate" title="Add company" description="Creates a new tenant. Add its users from the Users page afterwards." @close="showCreate = false">
@@ -111,6 +109,8 @@ import EmptyState from '../components/EmptyState.vue'
 import TableSkeleton from '../components/TableSkeleton.vue'
 import Modal from '../components/Modal.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 
 const companies = ref([])
 const users = ref([])
@@ -190,4 +190,8 @@ async function toggleStatus() {
     toast.error(apiError(e, 'Could not update the company.'))
   } finally { toggling.value = false }
 }
+
+// pagination (resets to page 1 when search/filters change)
+const pager = usePaging(filtered)
+const pagedRows = pager.rows
 </script>

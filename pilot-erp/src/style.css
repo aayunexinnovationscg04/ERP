@@ -526,3 +526,18 @@ a.badge { text-decoration: none; }
 .tone-info .stat-ic, .ic-info, .row-ic.ic-info, .ch-ic.ic-info { background: var(--info-soft); color: var(--info); }
 .tone-brand .stat-ic, .ic-brand, .row-ic.ic-brand, .ch-ic.ic-brand { background: var(--brand-soft); color: var(--brand); }
 .ic-neutral, .row-ic.ic-neutral, .ch-ic.ic-neutral { background: var(--surface-3); color: var(--muted); }
+
+/* admin "view as" banner (view-only session) */
+.view-banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 0 0 16px; padding: 10px 12px 10px 14px; border-radius: 10px;
+  background: var(--navy-900); color: #E6EDF5; font-size: .875rem; line-height: 1.4;
+}
+.view-banner > svg { flex: none; color: var(--flame-500); }
+.view-banner > span { flex: 1; min-width: 180px; }
+.view-banner b { color: #FFFFFF; }
+.view-close {
+  flex: none; min-height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid #264B73;
+  background: transparent; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer;
+}
+.view-close:hover { background: var(--navy-800); }

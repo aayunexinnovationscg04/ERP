@@ -20,6 +20,8 @@ export const auth = reactive({
   access: null,
   user: null,
   get isAuthed() { return !!this.access },
+  // Admin "view as" session: read-only, in memory only, never refreshed.
+  get viewOnly() { return !!this.user?.view_only },
 })
 
 // Set by Login.vue right after a successful sign-in; App.vue watches this to
@@ -64,6 +66,7 @@ function apply(data) {
 // Timers don't run while a device sleeps or a background tab is throttled, so
 // also renew just-in-time: before a request, and when the tab becomes visible.
 export function ensureFreshToken() {
+  if (auth.viewOnly) return Promise.resolve(Date.now() < expiresAt)
   if (auth.access && Date.now() > expiresAt - 15000) return refreshSession()
   return Promise.resolve(true)
 }
@@ -72,7 +75,8 @@ document.addEventListener('visibilitychange', () => {
 })
 
 export function clearAuth() {
-  hint.set(false)
+  // A view-as tab must not touch the flag of a real session in this browser.
+  if (!auth.viewOnly) hint.set(false)
   clearTimeout(refreshTimer)
   expiresAt = 0
   auth.access = null
@@ -91,11 +95,26 @@ export async function login(username, password) {
   return data
 }
 
+// Admin "view as": the one-time ticket from the admin console becomes a short,
+// read-only session for that user. Nothing is persisted (no cookie, no flag),
+// so it ends with the tab and never touches anyone's real session.
+export async function viewAs(ticket) {
+  const { data } = await http.post('/view-as', { ticket })
+  clearTimeout(refreshTimer)
+  auth.access = data.access
+  auth.user = data.user
+  expiresAt = Date.now() + data.access_expires_in * 1000
+  refreshTimer = setTimeout(() => endSession(), data.access_expires_in * 1000)
+  return data
+}
+
 // Rotation makes a refresh token single-use, so concurrent refreshes (several
 // 401s at once, or two tabs) must be serialised: one in-flight promise per tab,
 // and a Web Lock across tabs so each tab sends the cookie the previous one set.
 let inflight = null
 export function refreshSession() {
+  // Never swap a view-as session for whatever refresh cookie this browser holds.
+  if (auth.viewOnly) { endSession(); return Promise.resolve(false) }
   if (inflight) return inflight
   const run = () => http.post('/refresh')
   const locked = navigator.locks?.request
@@ -116,6 +135,7 @@ export function refreshSession() {
 export const sessionReady = hint.get() ? refreshSession() : Promise.resolve(false)
 
 export async function logout() {
+  if (auth.viewOnly) { clearAuth(); window.close(); return }   // view-as tab: just close it
   try { await http.post('/logout') } catch (e) { /* cookie is cleared server-side anyway */ }
   clearAuth()
   channel?.postMessage('logout')

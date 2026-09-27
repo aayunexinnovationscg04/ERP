@@ -22,13 +22,16 @@ we never grant with credentials), so that header plus SameSite=Strict blocks CSR
 """
 
 import logging
+import secrets
 import time
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import update_last_login
 from django.db import transaction
 from django.db.models import F
+from django.utils import timezone
 from rest_framework import serializers, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -39,11 +42,11 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.settings import api_settings as jwt_settings
 from rest_framework_simplejwt.token_blacklist.models import (BlacklistedToken,
                                                              OutstandingToken)
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from .access import effective_modules
 from .authentication import PORTALS, role_allowed
-from .models import User
+from .models import User, ViewAsTicket
 from .serializers import UserSerializer
 
 log = logging.getLogger("fuelguardx.auth")
@@ -225,3 +228,79 @@ class LogoutAllView(APIView):
         resp = Response(status=status.HTTP_204_NO_CONTENT)
         clear_refresh_cookie(resp, portal)
         return resp
+
+
+# --- admin "view as" (read-only impersonation) --------------------------------
+#
+# 1. Admin console: POST /api/admin/users/<id>/view-as  -> one-time ticket (60 s)
+# 2. New tab on the user's portal: POST /api/auth/view-as {ticket} + X-FGX-Portal
+#    -> 30-minute access token for that user, flagged view_only (+ which admin).
+#    No refresh cookie is set, so the user's own session is untouched.
+# 3. SessionJWTAuthentication rejects every non-GET request on such a token.
+
+VIEW_TICKET_TTL = timedelta(seconds=60)
+VIEW_SESSION_TTL = timedelta(minutes=30)
+VIEWABLE = {User.Role.DEALER: "dealer", User.Role.MANAGER: "dealer", User.Role.PILOT: "pilot"}
+
+
+def issue_view_ticket(admin, target):
+    """Returns (ticket, portal) or raises PermissionDenied."""
+    portal = VIEWABLE.get(target.role)
+    if not portal:
+        raise PermissionDenied("Only dealer, manager and pilot accounts can be viewed.")
+    if not target.is_active:
+        raise PermissionDenied("This account is disabled.")
+    ticket = secrets.token_urlsafe(32)
+    ViewAsTicket.objects.create(jti=ticket, admin=admin, target=target, portal=portal,
+                                expires_at=timezone.now() + VIEW_TICKET_TTL)
+    log.info("view-as ticket: admin=%s target=%s portal=%s", admin.pk, target.pk, portal)
+    return ticket, portal
+
+
+class ViewAsSerializer(serializers.Serializer):
+    ticket = serializers.CharField(max_length=64)
+
+
+class ViewAsRedeemView(APIView):
+    """POST {ticket} + X-FGX-Portal -> view-only access token for the ticket's user."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
+
+    def post(self, request):
+        portal = portal_from(request)
+        s = ViewAsSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        with transaction.atomic():
+            t = (ViewAsTicket.objects.select_for_update()
+                 .select_related("admin", "target")
+                 .filter(jti=s.validated_data["ticket"], used_at__isnull=True,
+                         expires_at__gt=timezone.now(), portal=portal)
+                 .first())
+            if t is None:
+                return Response({"detail": "This view link has expired. Open it again from the admin console."},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            t.used_at = timezone.now()
+            t.save(update_fields=["used_at"])
+        admin, target = t.admin, t.target
+        if not (admin.is_active and admin.role == User.Role.ADMIN) or not target.is_active \
+                or not role_allowed(target, portal):
+            return Response({"detail": "This view link is no longer valid."},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        access = AccessToken.for_user(target)
+        access.set_exp(lifetime=VIEW_SESSION_TTL)
+        access["portal"] = portal
+        access["sv"] = target.session_version
+        access["role"] = target.role
+        access["company_id"] = target.company_id
+        access["view_only"] = True
+        access["view_admin"] = admin.pk
+        log.warning("view-as session: admin=%s viewing user=%s portal=%s", admin.pk, target.pk, portal)
+
+        data = session_payload(target, access)
+        data["access_expires_in"] = int(VIEW_SESSION_TTL.total_seconds())
+        data["user"].update({"may_write": False, "view_only": True, "viewed_by": admin.username})
+        return Response(data)

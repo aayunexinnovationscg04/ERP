@@ -7,44 +7,30 @@
 
     <aside class="sidebar" :class="{ open: menuOpen }" aria-label="Main navigation">
       <div class="sb-brand">
-        <span class="sb-logo"><img :src="brandMark" alt="" /></span>
+        <span class="sb-logo"><img :src="brandMark" alt="AAYUNEX INNOVATIONS OPC Pvt Ltd. logo" /></span>
         <div class="sb-name">
           <strong>Fuel Guard X</strong>
           <small>Admin Console</small>
         </div>
+        <button
+          type="button" class="sb-toggle" @click="collapsed = !collapsed"
+          :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        >
+          <component :is="collapsed ? PanelLeftOpen : PanelLeftClose" :size="17" />
+        </button>
         <button type="button" class="sb-close" @click="menuOpen = false" aria-label="Close menu"><X :size="20" /></button>
       </div>
 
-      <!-- collapse handle, attached to the sidebar's edge (desktop) -->
-      <button
-        type="button" class="sb-handle" @click="collapsed = !collapsed"
-        :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-      >
-        <component :is="collapsed ? ChevronRight : ChevronLeft" :size="16" />
-      </button>
-
       <nav class="sb-nav">
-        <section
-          v-for="g in navGroups" :key="g.key" class="sb-sec"
-          :class="{ open: isOpen(g), current: hasActive(g) }" :style="{ '--sec': g.color }"
-        >
-          <button
-            type="button" class="sb-sec-head" :aria-expanded="isOpen(g)"
-            :aria-controls="'sec-' + g.key" @click="toggleSection(g)"
+        <section v-for="g in navGroups" :key="g.key" class="sb-sec">
+          <h2 class="sb-sec-title">{{ g.label }}</h2>
+          <router-link
+            v-for="item in g.items" :key="item.to" :to="item.to" class="sb-link"
+            :title="collapsed ? item.label : undefined" @click="menuOpen = false"
           >
-            <span class="sb-sec-ic"><component :is="g.icon" :size="16" /></span>
-            <span class="sb-sec-label">{{ g.label }}</span>
-            <ChevronDown class="sb-sec-chev" :size="16" />
-          </button>
-          <div v-show="rail || isOpen(g)" :id="'sec-' + g.key" class="sb-sec-items">
-            <router-link
-              v-for="item in g.items" :key="item.to" :to="item.to" class="sb-link"
-              :title="collapsed ? item.label : undefined" @click="menuOpen = false"
-            >
-              <component :is="item.icon" :size="17" />
-              <span class="label">{{ item.label }}</span>
-            </router-link>
-          </div>
+            <component :is="item.icon" :size="16" />
+            <span class="label">{{ item.label }}</span>
+          </router-link>
         </section>
       </nav>
 
@@ -61,13 +47,14 @@
       <header class="topbar">
         <button type="button" class="tb-btn tb-menu" @click="menuOpen = true" aria-label="Open menu"><Menu :size="22" /></button>
         <nav class="crumbs" aria-label="Breadcrumb">
-          <template v-if="current.group">
+          <template v-if="current.group && current.group !== current.page">
             <span class="c-group">{{ current.group }}</span>
             <ChevronRight class="c-sep" :size="14" />
           </template>
           <span class="c-page">{{ current.page }}</span>
         </nav>
         <div class="tb-spacer"></div>
+        <div id="page-actions" class="tb-actions"></div>
         <div class="tb-right">
           <div class="user-menu" ref="userMenuEl">
             <button
@@ -124,9 +111,9 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { motion, AnimatePresence } from 'motion-v'
 import {
-  Menu, X, Users, UsersRound, Activity, ChevronDown, ChevronLeft, ChevronRight, LogOut,
-  Building2, ChartColumn, Radar, Cpu, ScrollText, ShieldAlert, ChartLine, Truck, Server,
-  MonitorSmartphone,
+  Menu, X, Users, Activity, ChevronDown, ChevronRight, LogOut,
+  Building2, ChartColumn, Radar, Cpu, ScrollText, ShieldAlert, ChartLine,
+  MonitorSmartphone, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-vue-next'
 import { auth, justLoggedIn, logout as endSession, logoutEverywhere } from './auth'
 import './theme'  // pins the light theme
@@ -202,34 +189,34 @@ async function logoutAll() {
 
 const navGroups = [
   {
-    key: 'company', label: 'Companies', icon: Building2, color: '#F97316',
+    key: 'company', label: 'Companies',
     items: [
       { to: '/companies', label: 'Companies', icon: Building2 },
       { to: '/company-analytics', label: 'Company Analytics', icon: ChartColumn },
     ],
   },
   {
-    key: 'user', label: 'Users & Access', icon: UsersRound, color: '#38BDF8',
+    key: 'user', label: 'Users & Access',
     items: [
       { to: '/users', label: 'Users', icon: Users },
     ],
   },
   {
-    key: 'fleet', label: 'Fleet & Devices', icon: Truck, color: '#34D399',
+    key: 'fleet', label: 'Fleet & Devices',
     items: [
       { to: '/fleet-monitoring', label: 'Fleet Overview', icon: Radar },
       { to: '/devices', label: 'Devices', icon: Cpu },
     ],
   },
   {
-    key: 'security', label: 'Security & Analytics', icon: ShieldAlert, color: '#FB7185',
+    key: 'security', label: 'Security & Reports',
     items: [
       { to: '/security-analytics', label: 'Fraud & Theft Alerts', icon: ShieldAlert },
       { to: '/reports', label: 'Global Reports', icon: ChartLine },
     ],
   },
   {
-    key: 'platform', label: 'Platform', icon: Server, color: '#FBBF24',
+    key: 'platform', label: 'Platform',
     items: [
       { to: '/platform', label: 'Platform Health', icon: Activity },
       { to: '/platform-logs', label: 'Audit & Error Logs', icon: ScrollText },
@@ -237,34 +224,7 @@ const navGroups = [
   },
 ]
 
-// ---- collapsible sidebar sections: remembered per browser; the section of the
-// current page always opens so the active link is never hidden.
-const OPEN_KEY = 'fgx-admin-nav-open'
-const openSections = ref((() => {
-  try { return JSON.parse(localStorage.getItem(OPEN_KEY)) || [] } catch (e) { return [] }
-})())
-const inGroup = (g) => g.items.some((i) => route.path === i.to || route.path.startsWith(i.to + '/'))
-const hasActive = (g) => inGroup(g) || (g.key === 'user' && route.path.startsWith('/users/'))
-const isOpen = (g) => openSections.value.includes(g.key)
-// The icon rail only exists on desktop; below 960px the sidebar is a drawer.
-const desktopMq = typeof matchMedia !== 'undefined' ? matchMedia('(min-width: 961px)') : null
-const isDesktop = ref(desktopMq ? desktopMq.matches : true)
-desktopMq?.addEventListener('change', (e) => { isDesktop.value = e.matches })
-const rail = computed(() => collapsed.value && isDesktop.value)
-function toggleSection(g) {
-  if (rail.value) { collapsed.value = false; if (!isOpen(g)) openSections.value.push(g.key); return }
-  openSections.value = isOpen(g) ? openSections.value.filter((k) => k !== g.key) : [...openSections.value, g.key]
-}
-watch(openSections, (v) => { try { localStorage.setItem(OPEN_KEY, JSON.stringify(v)) } catch (e) { /* storage blocked */ } }, { deep: true })
-watch(() => route.path, () => {
-  const g = navGroups.find(hasActive)
-  if (g && !isOpen(g)) openSections.value = [...openSections.value, g.key]
-}, { immediate: true })
-
 const current = computed(() => {
-  if (route.path.startsWith('/users/') && route.path.endsWith('/permissions')) {
-    return { group: 'Users', page: 'Access overrides' }
-  }
   for (const g of navGroups) {
     const item = g.items.find((i) => route.path === i.to || route.path.startsWith(i.to + '/'))
     if (item) return { group: g.label, page: item.label }

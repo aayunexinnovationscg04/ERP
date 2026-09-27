@@ -92,6 +92,11 @@
 
       <main class="main">
         <div class="page">
+          <div v-if="auth.viewOnly" class="view-banner" role="status">
+            <Eye :size="16" aria-hidden="true" />
+            <span>Viewing as <b>{{ auth.user.username }}</b> · view only<template v-if="auth.user.viewed_by"> · opened by {{ auth.user.viewed_by }}</template></span>
+            <button type="button" class="view-close" @click="closeView">Close</button>
+          </div>
           <div v-if="suspended" class="notice amber suspended-banner" role="status">
             <TriangleAlert :size="16" />
             <span><b>{{ companyName }} is suspended.</b> Live tracking and alerts may be paused. Contact your administrator to restore the account.</span>
@@ -116,12 +121,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  Menu, X, LocateFixed, Truck, Bell, MapPin, Fuel, IdCard, PanelLeftClose, PanelLeftOpen, LogOut,
-  Sun, Moon, ChevronRight, Radar, History, BarChart3, TrendingUp, Users, CalendarCheck, Gauge,
-  Wallet, Route, CalendarClock, Clock, ShieldAlert, ClipboardList, Receipt, Sparkles, BrainCircuit,
-  Compass, FileText, LayoutDashboard, Building2, Eye, TriangleAlert,
-} from 'lucide-vue-next'
+import { Menu, X, LocateFixed, Truck, Bell, MapPin, Fuel, IdCard, PanelLeftClose, PanelLeftOpen, LogOut, Sun, Moon, ChevronRight, Radar, History, BarChart3, TrendingUp, Users, CalendarCheck, Gauge, Wallet, Route, CalendarClock, Clock, ShieldAlert, ClipboardList, Receipt, Sparkles, BrainCircuit, Compass, FileText, LayoutDashboard, Building2, Eye, TriangleAlert } from 'lucide-vue-next'
 import { motion, AnimatePresence, MotionConfig } from 'motion-v'
 import { auth, justLoggedIn, logout as endSession } from './auth'
 import { getAlerts } from './api'
@@ -295,4 +295,7 @@ watch(() => route.path, () => {
 })
 function toggleGroup(id) { openGroupId.value = openGroupId.value === id ? null : id }
 function isGroupOpen(g) { return openGroupId.value === g.id }
+
+// view-as tab: closing it ends the read-only session
+function closeView() { endSession() }
 </script>

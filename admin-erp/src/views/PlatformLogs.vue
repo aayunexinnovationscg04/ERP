@@ -33,7 +33,7 @@
           <tr class="table-empty"><td colspan="4"><EmptyState :icon="Search" title="No matching events" text="Try a different level or search." /></td></tr>
         </tbody>
         <tbody v-else>
-          <tr v-for="l in filtered" :key="l.id">
+          <tr v-for="l in pagedRows" :key="l.id">
             <td data-label="Time" class="nowrap muted num">{{ l.ts }}</td>
             <td data-label="Level"><span class="badge lvl" :class="levelClass(l.level)"><span class="bdot"></span>{{ l.level }}</span></td>
             <td data-label="Source" class="mono nowrap">{{ l.source }}</td>
@@ -42,7 +42,7 @@
         </tbody>
       </table>
     </div>
-    <div class="card-foot"><span>Showing {{ filtered.length }} of {{ logs.length }} sample events</span></div>
+    <Pager :pager="pager" />
   </div>
 </template>
 
@@ -52,6 +52,8 @@ import { ScrollText, FlaskConical, Search, CircleAlert, TriangleAlert, Info, Lis
 import PageHeader from '../components/PageHeader.vue'
 import StatCard from '../components/StatCard.vue'
 import EmptyState from '../components/EmptyState.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 
 const sources = ['ingest', 'auth', 'database', 'admin-api', 'fleet-sync', 'alerts-engine']
 const messages = {
@@ -115,6 +117,10 @@ const countByLevel = computed(() => ({
   warning: logs.filter((l) => l.level === 'warning').length,
   error: logs.filter((l) => l.level === 'error').length,
 }))
+
+// pagination (resets to page 1 when search/filters change)
+const pager = usePaging(filtered)
+const pagedRows = pager.rows
 </script>
 
 <style scoped>

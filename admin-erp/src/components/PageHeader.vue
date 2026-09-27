@@ -1,18 +1,11 @@
+<!-- Page actions (e.g. "New user") shown in the top bar next to the page name.
+     Pages no longer carry their own big title/description: the top bar names
+     the page, and the content starts straight away. -->
 <template>
-  <header class="page-head">
-    <div class="ph-main">
-      <span v-if="icon" class="ph-icon" aria-hidden="true"><component :is="icon" :size="20" /></span>
-      <div class="ph-text">
-        <h1>{{ title }}</h1>
-        <p v-if="description || $slots.description"><slot name="description">{{ description }}</slot></p>
-      </div>
-    </div>
-    <div v-if="$slots.default" class="ph-actions"><slot /></div>
-  </header>
+  <Teleport v-if="$slots.default" defer to="#page-actions"><slot /></Teleport>
 </template>
 
 <script setup>
-// Consistent page header: icon + title + one-line description on the left,
-// page-level actions (primary action last) on the right.
+// title/description/icon are kept as accepted props so existing pages don't break.
 defineProps({ title: String, description: String, icon: [Object, Function] })
 </script>

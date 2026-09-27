@@ -12,4 +12,6 @@ class MeView(APIView):
     def get(self, request):
         data = UserSerializer(request.user).data
         data["modules"] = effective_modules(request.user)   # tabs this user may access
+        if request.auth is not None and request.auth.get("view_only"):
+            data.update({"may_write": False, "view_only": True})
         return Response(data)

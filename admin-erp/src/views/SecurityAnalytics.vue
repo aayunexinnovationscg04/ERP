@@ -44,7 +44,7 @@
             </td></tr>
           </tbody>
           <tbody v-else>
-            <tr v-for="a in filtered" :key="a.id">
+            <tr v-for="a in pagedRows" :key="a.id">
               <td class="cell-head">
                 <div class="alert-cell">
                   <span class="type-ic" :class="a.severity"><component :is="typeIcon(a.type)" :size="16" /></span>
@@ -62,7 +62,7 @@
           </tbody>
         </table>
       </div>
-      <div v-if="!loading && alerts.length" class="card-foot"><span>Showing {{ filtered.length }} of {{ alerts.length }} alerts</span></div>
+      <Pager :pager="pager" />
     </section>
 
     <div class="vstack">
@@ -110,6 +110,8 @@ import PageHeader from '../components/PageHeader.vue'
 import StatCard from '../components/StatCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import TableSkeleton from '../components/TableSkeleton.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 
 const alerts = ref([])
 const loading = ref(true)
@@ -182,6 +184,10 @@ async function load() {
 }
 async function refresh() { refreshing.value = true; await load(); refreshing.value = false }
 onMounted(load)
+
+// pagination (resets to page 1 when search/filters change)
+const pager = usePaging(filtered)
+const pagedRows = pager.rows
 </script>
 
 <style scoped>

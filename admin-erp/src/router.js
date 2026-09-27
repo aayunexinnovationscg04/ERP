@@ -7,7 +7,6 @@ import { auth, sessionReady, setSessionEndHandler } from './auth'
 // as a hung/slow sign-in on a real mobile connection.
 const Login = () => import('./views/Login.vue')
 const Users = () => import('./views/Users.vue')
-const UserPermissions = () => import('./views/UserPermissions.vue')
 const Platform = () => import('./views/Platform.vue')
 const Companies = () => import('./views/Companies.vue')
 const CompanyAnalytics = () => import('./views/CompanyAnalytics.vue')
@@ -24,7 +23,6 @@ const routes = [
   { path: '/companies', component: Companies },
   { path: '/company-analytics', component: CompanyAnalytics },
   { path: '/users', component: Users },
-  { path: '/users/:id/permissions', component: UserPermissions, props: true },
   { path: '/fleet-monitoring', component: FleetMonitoring },
   { path: '/devices', component: Devices },
   { path: '/platform', component: Platform },

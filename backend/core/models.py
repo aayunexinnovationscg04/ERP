@@ -123,3 +123,19 @@ class UserModuleOverride(models.Model):
 
     def __str__(self):
         return f"{self.user_id}:{self.module}={self.allowed}"
+
+
+class ViewAsTicket(models.Model):
+    """One-time pass an admin uses to open a dealer/pilot portal as that user,
+    view-only. Valid for 60 seconds and a single use (see core/tokens.py)."""
+
+    jti = models.CharField(max_length=64, unique=True)
+    admin = models.ForeignKey(User, on_delete=models.CASCADE, related_name="+")
+    target = models.ForeignKey(User, on_delete=models.CASCADE, related_name="+")
+    portal = models.CharField(max_length=10)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"view-as {self.admin_id}->{self.target_id} ({self.portal})"

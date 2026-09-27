@@ -39,7 +39,7 @@
           </td></tr>
         </tbody>
         <tbody v-else>
-          <tr v-for="d in filtered" :key="d.id">
+          <tr v-for="d in pagedRows" :key="d.id">
             <td class="cell-head">
               <div class="cell-entity">
                 <span class="entity-mark"><Cpu :size="16" /></span>
@@ -58,7 +58,7 @@
         </tbody>
       </table>
     </div>
-    <div v-if="!loading && devices.length" class="card-foot"><span>Showing {{ filtered.length }} of {{ devices.length }} devices</span></div>
+    <Pager :pager="pager" />
   </div>
 </template>
 
@@ -71,6 +71,8 @@ import PageHeader from '../components/PageHeader.vue'
 import StatCard from '../components/StatCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import TableSkeleton from '../components/TableSkeleton.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 
 const devices = ref([])
 const loading = ref(true)
@@ -107,6 +109,10 @@ async function load() {
 }
 async function refresh() { refreshing.value = true; await load(); refreshing.value = false }
 onMounted(load)
+
+// pagination (resets to page 1 when search/filters change)
+const pager = usePaging(filtered)
+const pagedRows = pager.rows
 </script>
 
 <style scoped>

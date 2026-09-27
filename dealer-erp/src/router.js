@@ -44,6 +44,7 @@ const AiRouteOptimization = () => import('./views/AiRouteOptimization.vue')
 
 const routes = [
   { path: '/login', component: Login, meta: { public: true } },
+  { path: '/view-as', component: () => import('./views/ViewAs.vue'), meta: { public: true } },
   { path: '/', redirect: '/fleet-overview' }, // Fleet Overview: first item of the first sidebar group
   { path: '/locations', component: Locations },
   { path: '/vehicles', component: Vehicles },

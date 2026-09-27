@@ -1,5 +1,5 @@
 <template>
-  <PageHeader :icon="Users" title="Users" description="Accounts for every portal. Change roles and companies inline; access to individual screens is set per user.">
+  <PageHeader :icon="Users" title="Users" description="Accounts for every portal. Change roles and companies inline. Use View as to open a dealer's or pilot's portal exactly as they see it (view only).">
     <button type="button" class="btn btn-primary" @click="openCreate"><UserPlus :size="16" /> New user</button>
   </PageHeader>
 
@@ -30,7 +30,7 @@
     <div class="table-wrap">
       <table class="table stack users-table">
         <thead>
-          <tr><th>User</th><th>Role</th><th>Company</th><th class="t-center">Can edit</th><th class="t-center">Active</th><th class="col-login">Last sign-in</th><th class="t-right">Access</th></tr>
+          <tr><th>User</th><th>Role</th><th>Company</th><th class="t-center">Can edit</th><th class="t-center">Active</th><th class="col-login">Last sign-in</th><th class="t-right">View</th></tr>
         </thead>
         <TableSkeleton v-if="loading" :cols="7" :rows="6" />
         <tbody v-else-if="!filtered.length">
@@ -44,7 +44,7 @@
           </td></tr>
         </tbody>
         <tbody v-else>
-          <tr v-for="u in filtered" :key="u.id" :class="{ 'row-off': !u.is_active }">
+          <tr v-for="u in pagedRows" :key="u.id" :class="{ 'row-off': !u.is_active }">
             <td class="cell-head">
               <div class="cell-entity">
                 <span class="entity-mark round">{{ (u.username || '?')[0] }}</span>
@@ -88,16 +88,19 @@
               />
             </td>
             <td data-label="Last sign-in" class="nowrap muted col-login" :title="u.last_login ? fmtDateTime(u.last_login) : ''">{{ relTime(u.last_login) }}</td>
-            <td data-label="Access" class="t-right">
-              <router-link :to="`/users/${u.id}/permissions`" class="btn btn-sm access-btn" :aria-label="`Screen access for ${u.username}`" title="Screen access"><SlidersHorizontal :size="14" /> <span class="access-label">Screen access</span></router-link>
+            <td data-label="View" class="t-right">
+              <button v-if="u.role !== 'admin'" type="button" class="btn btn-sm access-btn" :disabled="!u.is_active || viewingId === u.id"
+                      :title="u.is_active ? `Open ${u.username}'s portal in a new tab (view only)` : 'Account is disabled'"
+                      :aria-label="`View as ${u.username}`" @click="viewAs(u)">
+                <Eye :size="14" /> <span class="access-label">{{ viewingId === u.id ? 'Opening…' : 'View as' }}</span>
+              </button>
+              <span v-else class="muted">—</span>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-    <div v-if="!loading && users.length" class="card-foot">
-      <span>Showing {{ filtered.length }} of {{ users.length }} {{ users.length === 1 ? 'user' : 'users' }}</span>
-    </div>
+    <Pager :pager="pager" />
   </div>
 
   <Modal :open="showCreate" title="New user" description="The user signs in to the portal that matches their role." @close="showCreate = false">
@@ -156,8 +159,8 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Users, UserPlus, UserCheck, UserX, Eye, Search, X, SlidersHorizontal, CircleAlert, Truck, Navigation } from 'lucide-vue-next'
-import { getUsers, createUser, updateUser, getCompanies } from '../api'
+import { Users, UserPlus, UserCheck, UserX, Eye, Search, X, CircleAlert, Truck, Navigation } from 'lucide-vue-next'
+import { getUsers, createUser, updateUser, getCompanies, viewAsTicket } from '../api'
 import { auth } from '../auth'
 import { fmt, fmtDateTime, relTime, roleLabel, apiError } from '../format'
 import { toast } from '../toast'
@@ -168,6 +171,8 @@ import TableSkeleton from '../components/TableSkeleton.vue'
 import Modal from '../components/Modal.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import ToggleSwitch from '../components/ToggleSwitch.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 
 const route = useRoute()
 const roles = ['dealer', 'manager', 'pilot', 'admin']
@@ -228,6 +233,31 @@ async function create() {
   } finally { creating.value = false }
 }
 
+// ---- view as: open the user's own portal in a new tab, read-only ----
+const viewingId = ref(null)
+function portalOrigin(portal) {
+  const { protocol, hostname } = location
+  if (hostname.startsWith('admin.')) return `${protocol}//${portal}.${hostname.slice(6)}`
+  return `${protocol}//${hostname}:${{ dealer: 5173, pilot: 5174 }[portal]}`   // local dev servers
+}
+async function viewAs(u) {
+  // Open the tab synchronously (inside the click) so pop-up blockers allow it.
+  const tab = window.open('about:blank', '_blank')
+  viewingId.value = u.id
+  try {
+    const { ticket, portal } = await viewAsTicket(u.id)
+    const url = `${portalOrigin(portal)}/view-as#t=${encodeURIComponent(ticket)}`
+    if (!tab) { toast.error('Allow pop-ups for this site to open the view.'); return }
+    tab.opener = null
+    tab.location.replace(url)
+  } catch (e) {
+    tab?.close()
+    toast.error(apiError(e, 'Could not open the view.'))
+  } finally {
+    viewingId.value = null
+  }
+}
+
 // ---- inline edits ----
 async function patch(u, body, okMsg = 'User updated') {
   busyId.value = u.id
@@ -252,6 +282,10 @@ async function confirmDeactivate() {
   deactivating.value = null
 }
 onMounted(load)
+
+// pagination (resets to page 1 when search/filters change)
+const pager = usePaging(filtered)
+const pagedRows = pager.rows
 </script>
 
 <style scoped>
@@ -291,6 +325,7 @@ onMounted(load)
 }
 .row-off .t-primary { color: var(--muted); }
 @media (max-width: 720px) {
-  .users-table td .select-sm:not(.role-select) { min-width: 0; max-width: 62%; }
+  .users-table td .select-sm:not(.role-select), .users-table td .role-select { min-width: 0; width: 100%; max-width: 100%; }
+  .users-table .access-btn { width: 100%; justify-content: center; min-height: 40px; }
 }
 </style>

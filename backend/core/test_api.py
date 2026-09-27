@@ -467,3 +467,53 @@ class SuspendedCompanyTests(ApiBase):
         r = c.post("/api/geofences/", {"name": "X", "kind": "restricted", "center_lat": 1,
                                        "center_lng": 1, "radius_m": 100}, format="json")
         self.assertEqual(r.status_code, 403)
+
+
+class ViewAsTests(ApiBase):
+    """Admin 'view as': one-time ticket -> read-only session on the user's portal."""
+
+    def ticket_for(self, user):
+        admin = self.client_for("sa", "SaPass1234")
+        return admin.post(f"/api/admin/users/{user.pk}/view-as/")
+
+    def redeem(self, ticket, portal):
+        return APIClient().post("/api/auth/view-as", {"ticket": ticket}, format="json",
+                                HTTP_X_FGX_PORTAL=portal)
+
+    def test_dealer_view_is_read_only(self):
+        r = self.ticket_for(self.dealer1)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["portal"], "dealer")
+        v = self.redeem(r.data["ticket"], "dealer")
+        self.assertEqual(v.status_code, 200)
+        self.assertNotIn("fgx_rt_dealer", v.cookies)            # never a refresh cookie
+        self.assertTrue(v.data["user"]["view_only"])
+        self.assertFalse(v.data["user"]["may_write"])
+        c = APIClient(); c.credentials(HTTP_AUTHORIZATION="Bearer " + v.data["access"])
+        self.assertEqual(c.get("/api/vehicles/").status_code, 200)
+        self.assertEqual(c.get("/api/auth/me").data["username"], "dealer1")
+        r = c.post("/api/geofences/", {"name": "x"}, format="json")
+        self.assertEqual(r.status_code, 403)
+
+    def test_ticket_is_single_use_and_portal_bound(self):
+        t = self.ticket_for(self.pilot1).data["ticket"]
+        self.assertEqual(self.redeem(t, "dealer").status_code, 401)   # wrong portal
+        self.assertEqual(self.redeem(t, "pilot").status_code, 200)
+        self.assertEqual(self.redeem(t, "pilot").status_code, 401)    # already used
+
+    def test_ticket_expires(self):
+        from core.models import ViewAsTicket
+        t = self.ticket_for(self.dealer1).data["ticket"]
+        ViewAsTicket.objects.filter(jti=t).update(expires_at=timezone.now() - timedelta(seconds=1))
+        self.assertEqual(self.redeem(t, "dealer").status_code, 401)
+
+    def test_only_admins_can_issue_and_admins_cannot_be_viewed(self):
+        dealer = self.client_for("dealer1", "OwnPass1234")
+        self.assertEqual(dealer.post(f"/api/admin/users/{self.dealer2.pk}/view-as/").status_code, 403)
+        self.assertEqual(self.ticket_for(self.sa).status_code, 403)
+
+    def test_view_ends_when_admin_loses_rights(self):
+        v = self.redeem(self.ticket_for(self.dealer1).data["ticket"], "dealer")
+        c = APIClient(); c.credentials(HTTP_AUTHORIZATION="Bearer " + v.data["access"])
+        User.objects.filter(pk=self.sa.pk).update(is_active=False)
+        self.assertEqual(c.get("/api/vehicles/").status_code, 401)

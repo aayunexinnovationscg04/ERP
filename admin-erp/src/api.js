@@ -29,7 +29,6 @@ api.interceptors.response.use(
 
 export default api
 
-export const getModules = () => api.get('/admin/modules').then((r) => r.data)
 // List endpoints are limit/offset paginated (default 50); admin screens ask
 // for a generous page so platform-wide lists aren't silently cut short.
 const LIST_LIMIT = 500
@@ -41,8 +40,8 @@ export const updateCompany = (id, body) => api.patch(`/admin/companies/${id}/`, 
 export const getUsers = (params = {}) => list('/admin/users/', params)
 export const createUser = (body) => api.post('/admin/users/', body).then((r) => r.data)
 export const updateUser = (id, body) => api.patch(`/admin/users/${id}/`, body).then((r) => r.data)
-export const getUserPerms = (id) => api.get(`/admin/users/${id}/permissions/`).then((r) => r.data)
-export const setUserPerms = (id, overrides) => api.put(`/admin/users/${id}/permissions/`, { overrides }).then((r) => r.data)
+// One-time ticket to open a user's portal in a new tab, view-only.
+export const viewAsTicket = (id) => api.post(`/admin/users/${id}/view-as/`).then((r) => r.data)
 export const getHealth = () => api.get('/admin/health').then((r) => r.data)
 // cross-company fleet aggregate (Admin bypasses the company scoping this
 // endpoint applies to dealers, so it returns platform-wide totals for us)

@@ -68,7 +68,7 @@
           <tr class="table-empty"><td colspan="8"><EmptyState :icon="Building2" title="No companies registered yet" /></td></tr>
         </tbody>
         <tbody v-else>
-          <tr v-for="d in rows" :key="d.id">
+          <tr v-for="d in pagedRows" :key="d.id">
             <td class="cell-head"><span class="t-primary">{{ d.name }}</span></td>
             <td data-label="Status"><span class="badge" :class="d.status === 'active' ? 'success' : 'danger'"><span class="bdot"></span>{{ d.status === 'active' ? 'Active' : 'Suspended' }}</span></td>
             <td data-label="Users" class="t-right num t-primary">{{ d.users }}</td>
@@ -81,6 +81,7 @@
         </tbody>
       </table>
     </div>
+    <Pager :pager="pager" />
   </section>
 </template>
 
@@ -94,6 +95,8 @@ import PageHeader from '../components/PageHeader.vue'
 import StatCard from '../components/StatCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import TableSkeleton from '../components/TableSkeleton.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 
 const companies = ref([])
 const users = ref([])
@@ -132,6 +135,10 @@ async function load() {
   } finally { loading.value = false }
 }
 onMounted(load)
+
+// pagination (resets to page 1 when search/filters change)
+const pager = usePaging(rows)
+const pagedRows = pager.rows
 </script>
 
 <style scoped>

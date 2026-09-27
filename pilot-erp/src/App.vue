@@ -73,6 +73,11 @@
 
     <main class="main">
       <div class="page">
+        <div v-if="auth.viewOnly" class="view-banner" role="status">
+          <Eye :size="16" aria-hidden="true" />
+          <span>Viewing as <b>{{ auth.user.username }}</b> · view only<template v-if="auth.user.viewed_by"> · opened by {{ auth.user.viewed_by }}</template></span>
+          <button type="button" class="view-close" @click="closeView">Close</button>
+        </div>
         <PageSkeleton v-if="showRouteSkeleton" />
         <AnimatePresence v-else mode="wait">
           <motion.div :key="$route.fullPath"
@@ -106,10 +111,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { motion, AnimatePresence } from 'motion-v'
-import {
-  Truck, Route, ChevronsLeft, ChevronsRight, LogOut,
-  Sun, Moon, User, ShieldAlert, Compass, Navigation,
-} from 'lucide-vue-next'
+import { Truck, Route, ChevronsLeft, ChevronsRight, LogOut, Sun, Moon, User, ShieldAlert, Compass, Navigation, Eye } from 'lucide-vue-next'
 import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
 import PageSkeleton from './components/PageSkeleton.vue'
@@ -186,4 +188,7 @@ router.afterEach(() => {
 })
 
 async function logout() { openAlerts.value = 0; await endSession(); router.push('/login') }
+
+// view-as tab: closing it ends the read-only session
+function closeView() { endSession() }
 </script>

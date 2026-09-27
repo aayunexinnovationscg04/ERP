@@ -18,6 +18,7 @@ const Profile = () => import('./views/Profile.vue')
 
 const routes = [
   { path: '/login', component: Login, meta: { public: true } },
+  { path: '/view-as', component: () => import('./views/ViewAs.vue'), meta: { public: true } },
   { path: '/', component: Home },
   { path: '/trips', component: Trips },
   { path: '/route-guidance', component: RouteGuidance },

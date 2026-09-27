@@ -46,6 +46,13 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             qs = qs.filter(company_id=company)
         return qs
 
+    @action(detail=True, methods=["post"], url_path="view-as")
+    def view_as(self, request, pk=None):
+        """One-time ticket to open this user's portal in a new tab, view-only."""
+        from .tokens import issue_view_ticket
+        ticket, portal = issue_view_ticket(request.user, self.get_object())
+        return Response({"ticket": ticket, "portal": portal})
+
     @action(detail=True, methods=["get", "put"])
     def permissions(self, request, pk=None):
         user = self.get_object()

@@ -629,3 +629,18 @@ button.danger-solid:hover:not(:disabled) { background: #B91C1C; border-color: #B
   .grid-2 { grid-template-columns: minmax(0, 1fr); }
   .hide-md { display: none !important; }
 }
+
+/* admin "view as" banner (view-only session) */
+.view-banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 0 0 16px; padding: 10px 12px 10px 14px; border-radius: 10px;
+  background: var(--navy-900); color: #E6EDF5; font-size: .875rem; line-height: 1.4;
+}
+.view-banner > svg { flex: none; color: var(--flame-500); }
+.view-banner > span { flex: 1; min-width: 180px; }
+.view-banner b { color: #FFFFFF; }
+.view-close {
+  flex: none; min-height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid #264B73;
+  background: transparent; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer;
+}
+.view-close:hover { background: var(--navy-800); }
