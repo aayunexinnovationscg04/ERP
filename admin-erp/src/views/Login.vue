@@ -4,24 +4,7 @@
 -->
 <template>
   <div class="alogin">
-    <!-- decorative background: a quiet fleet / tenant network -->
-    <svg class="al-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <g stroke="#15314F" stroke-width="1">
-        <line v-for="x in gridX" :key="'x' + x" :x1="x" y1="0" :x2="x" y2="900" />
-        <line v-for="y in gridY" :key="'y' + y" x1="0" :y1="y" x2="1440" :y2="y" />
-      </g>
-      <g fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="0,660 180,600 330,640 470,520 620,560" stroke="#1B3A5C" />
-        <polyline points="820,340 960,300 1110,360 1260,250 1440,290" stroke="#1B3A5C" />
-        <polyline points="60,180 220,240 360,160 520,210" stroke="#1B3A5C" />
-        <polyline points="900,720 1060,650 1210,700 1440,620" stroke="#1B3A5C" />
-        <polyline points="470,520 380,360 360,160" stroke="#264B73" stroke-dasharray="2 10" />
-        <polyline points="1110,360 1060,650" stroke="#264B73" stroke-dasharray="2 10" />
-      </g>
-      <g>
-        <circle v-for="(n, i) in nodes" :key="'n' + i" :cx="n[0]" :cy="n[1]" :r="n[2]" :fill="n[3]" />
-      </g>
-    </svg>
+    <FleetBackdrop />
 
     <main class="al-main">
       <div class="al-card">
@@ -70,7 +53,7 @@
       </div>
     </main>
 
-    <footer class="al-foot">© 2025 AAYUNEX INNOVATIONS OPC Pvt Ltd.</footer>
+    <footer class="al-foot"><span>© 2025 AAYUNEX INNOVATIONS OPC Pvt Ltd.</span></footer>
   </div>
 </template>
 
@@ -80,16 +63,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-vue-next'
 import logo from '@shared/design/brand/aayunex-logo.png'
 import { login, justLoggedIn } from '../auth'
-
-const gridX = Array.from({ length: 16 }, (_, i) => i * 96)
-const gridY = Array.from({ length: 10 }, (_, i) => i * 96)
-// [x, y, r, fill] — network nodes; a few flame-orange hubs
-const nodes = [
-  [180, 600, 6, '#264B73'], [330, 640, 5, '#264B73'], [470, 520, 9, '#EA580C'], [620, 560, 5, '#264B73'],
-  [960, 300, 5, '#264B73'], [1110, 360, 9, '#EA580C'], [1260, 250, 6, '#38BDF8'], [220, 240, 5, '#264B73'],
-  [360, 160, 8, '#38BDF8'], [520, 210, 5, '#264B73'], [1060, 650, 8, '#EA580C'], [1210, 700, 5, '#264B73'],
-  [380, 360, 4, '#264B73'],
-]
+import FleetBackdrop from '../components/FleetBackdrop.vue'
 
 const username = ref('')
 const password = ref('')
@@ -133,7 +107,6 @@ onMounted(() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) 
   position: relative; min-height: 100vh; min-height: 100dvh; overflow: hidden;
   display: flex; flex-direction: column; background: var(--navy-900); font-family: var(--font-ui);
 }
-.al-bg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
 .al-main {
   position: relative; flex: 1; display: flex; align-items: center; justify-content: center;
@@ -205,8 +178,9 @@ onMounted(() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) 
 @keyframes al-spin { to { transform: rotate(360deg); } }
 
 .al-foot {
-  position: relative; padding: 0 16px 18px; text-align: center; font-size: .8rem; color: #94A6BD;
+  position: relative; padding: 0 16px 16px; text-align: center; font-size: .8rem; color: #B6C3D4;
 }
+.al-foot span { display: inline-block; padding: 5px 12px; border-radius: 8px; background: #0B1F33; border: 1px solid #1B3A5C; }
 
 @media (max-width: 480px) {
   .al-card { padding: 24px 20px; border-radius: 14px; }
