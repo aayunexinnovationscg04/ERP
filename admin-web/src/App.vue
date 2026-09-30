@@ -2,7 +2,7 @@
   <Toaster />
   <WelcomeGate v-if="justLoggedIn" :name="welcomeName" @done="justLoggedIn = false" />
   <div v-if="isLogin"><router-view /></div>
-  <div v-else class="app" :class="{ collapsed }">
+  <div v-else-if="showShell" class="app" :class="{ collapsed }">
     <div class="scrim" :class="{ show: menuOpen }" @click="menuOpen = false" aria-hidden="true"></div>
 
     <aside class="sidebar" :class="{ open: menuOpen }" aria-label="Main navigation">
@@ -115,7 +115,14 @@ import ConfirmDialog from './components/ConfirmDialog.vue'
 import brandMark from '@shared/design/brand/aayunex-logo.png'
 
 const route = useRoute(); const router = useRouter()
-const isLogin = computed(() => route.path === '/login')
+// Nothing of the signed-in app may ever flash before sign-in: until the router
+// has settled the first navigation (session restore + auth guard) render
+// nothing, then show public pages (login, view-as) alone and the app shell
+// only for a signed-in user.
+const routerReady = ref(false)
+router.isReady().then(() => { routerReady.value = true })
+const isLogin = computed(() => routerReady.value && !!route.meta.public)
+const showShell = computed(() => routerReady.value && !route.meta.public && auth.isAuthed)
 const username = computed(() => auth.user?.username || 'admin')
 const initial = computed(() => username.value.charAt(0).toUpperCase())
 const welcomeName = computed(() => {
@@ -209,7 +216,7 @@ const navGroups = [
     key: 'platform', label: 'Platform',
     items: [
       { to: '/platform', label: 'Platform Health', icon: Activity },
-      { to: '/platform-logs', label: 'Audit & Error Logs', icon: ScrollText },
+      { to: '/audit-logs', label: 'Audit Logs', icon: ScrollText },
     ],
   },
 ]

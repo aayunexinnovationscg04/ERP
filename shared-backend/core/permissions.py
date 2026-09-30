@@ -10,15 +10,16 @@ from core.models import User
 
 
 class CanWriteOrReadOnly(BasePermission):
-    """Everyone authorized may READ; only Admin or an admin-granted
-    `can_edit` user may WRITE (create/update/delete + mutating actions).
+    """Everyone authorized may READ; WRITE (create/update/delete + mutating
+    actions) needs `may_write` — every account except members of a suspended
+    company (and admin "view as" sessions, blocked in authentication).
 
     Combine with a role/scope permission (e.g. IsDealerOrAdmin) — DRF ANDs them,
     so the role gate still decides *who can see the endpoint at all*, while this
     decides *who may change things*.
     """
 
-    message = "Editing is disabled for your account. Ask an administrator to enable it."
+    message = "This company is suspended, so changes are disabled. Contact your administrator."
 
     def has_permission(self, request, view):
         u = request.user

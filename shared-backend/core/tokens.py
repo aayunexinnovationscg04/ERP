@@ -45,6 +45,7 @@ from rest_framework_simplejwt.token_blacklist.models import (BlacklistedToken,
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from .access import effective_modules
+from .audit import record
 from .authentication import PORTALS, role_allowed
 from .models import User, ViewAsTicket
 from .serializers import UserSerializer
@@ -137,15 +138,23 @@ class LoginView(APIView):
         user = authenticate(request, username=s.validated_data["username"],
                             password=s.validated_data["password"])
         if user is None or not user.is_active:
+            known = User.objects.filter(username=s.validated_data["username"]).first()
+            if known:  # log failed attempts on real accounts only (no spam rows)
+                record(request, "auth.login_failed", f"Failed sign-in to the {portal} portal",
+                       user=known, target=known, target_label=known.username, ok=False, portal=portal)
             # Explicit 401: with no authentication_classes DRF would turn
             # AuthenticationFailed into a 403.
             return Response({"detail": "Invalid username or password."},
                             status=status.HTTP_401_UNAUTHORIZED)
         if not role_allowed(user, portal):
             log.warning("login refused: user=%s role=%s portal=%s", user.pk, user.role, portal)
+            record(request, "auth.login_blocked", f"Sign-in blocked: not allowed on the {portal} portal",
+                   user=user, target=user, target_label=user.username, ok=False, portal=portal)
             raise PermissionDenied(f"This account cannot sign in to the {portal} portal.")
         refresh, access = issue_pair(user, portal)
         update_last_login(None, user)
+        record(request, "auth.login", f"Signed in to the {portal} portal",
+               user=user, target=user, target_label=user.username, portal=portal)
         resp = Response(session_payload(user, access))
         set_refresh_cookie(resp, portal, refresh)
         return resp
@@ -209,7 +218,12 @@ class LogoutView(APIView):
         raw = request.COOKIES.get(cookie_name(portal))
         if raw:
             try:
-                RefreshToken(raw).blacklist()
+                token = RefreshToken(raw)
+                who = User.objects.filter(pk=token.get("user_id")).first()
+                token.blacklist()
+                if who:
+                    record(request, "auth.logout", f"Signed out of the {portal} portal",
+                           user=who, target=who, target_label=who.username, portal=portal)
             except TokenError:
                 pass  # already expired/revoked - nothing left to kill
         resp = Response(status=status.HTTP_204_NO_CONTENT)
@@ -225,6 +239,8 @@ class LogoutAllView(APIView):
     def post(self, request):
         portal = portal_from(request)
         revoke_all_sessions(request.user)
+        record(request, "auth.logout_all", "Signed out of all devices",
+               target=request.user, target_label=request.user.username, portal=portal)
         resp = Response(status=status.HTTP_204_NO_CONTENT)
         clear_refresh_cookie(resp, portal)
         return resp

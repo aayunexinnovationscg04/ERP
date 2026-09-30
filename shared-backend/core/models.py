@@ -44,8 +44,8 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.DEALER)
     phone = models.CharField(max_length=20, blank=True)
-    # Write gate: non-admins can VIEW their data but cannot CHANGE anything
-    # unless an Admin grants this. Admin always has full write access.
+    # Legacy per-user write gate, no longer checked (see may_write). Kept so old
+    # rows and API clients keep working.
     can_edit = models.BooleanField(
         default=False,
         help_text="If on, this user may make changes (create/edit/delete). "
@@ -59,10 +59,9 @@ class User(AbstractUser):
     def may_write(self):
         if self.role == self.Role.ADMIN:
             return True
-        # A suspended company is read-only for everyone in it, whatever can_edit says.
-        if self.company_id and self.company.status == Company.Status.SUSPENDED:
-            return False
-        return self.can_edit
+        # Every dealer/manager/pilot has full permissions; only a suspended
+        # company is read-only for everyone in it. (`can_edit` is no longer used.)
+        return not (self.company_id and self.company.status == Company.Status.SUSPENDED)
 
     def __str__(self):
         return f"{self.username} ({self.role})"
@@ -139,3 +138,39 @@ class ViewAsTicket(models.Model):
 
     def __str__(self):
         return f"view-as {self.admin_id}->{self.target_id} ({self.portal})"
+
+
+class AuditLog(models.Model):
+    """One action taken by an account: sign-in/out, or any change it made.
+
+    Written by core.audit.record() (explicit, with before/after changes) and by
+    core.audit.AuditMiddleware (a catch-all for any other successful write), and
+    read by the admin Audit Logs screen. Rows are never edited.
+    """
+
+    at = models.DateTimeField(auto_now_add=True, db_index=True)
+    actor = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="audit_logs")
+    # copied at write time so the log still reads correctly if the account changes
+    actor_username = models.CharField(max_length=150, blank=True)
+    actor_role = models.CharField(max_length=20, blank=True, db_index=True)
+    company = models.ForeignKey(Company, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    company_name = models.CharField(max_length=200, blank=True)
+    action = models.CharField(max_length=60, db_index=True)   # e.g. "geofence.update"
+    summary = models.CharField(max_length=300)                 # one readable line
+    target_type = models.CharField(max_length=40, blank=True)
+    target_id = models.CharField(max_length=64, blank=True)
+    target_label = models.CharField(max_length=200, blank=True)
+    changes = models.JSONField(default=dict, blank=True)       # {field: [before, after]}
+    ok = models.BooleanField(default=True)                     # False for e.g. a failed sign-in
+    portal = models.CharField(max_length=10, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=300, blank=True)
+    method = models.CharField(max_length=8, blank=True)
+    path = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["-at", "-id"]
+        indexes = [models.Index(fields=["actor", "-at"]), models.Index(fields=["actor_role", "-at"])]
+
+    def __str__(self):
+        return f"{self.at:%Y-%m-%d %H:%M} {self.actor_username} {self.action}"

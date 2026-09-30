@@ -47,6 +47,15 @@ active flag revokes all their tokens instantly. Details: `shared-backend/core/to
 | PUT | `/api/admin/users/{id}/permissions/` | `{overrides:{module: true/false/null}}` (null clears) |
 | GET | `/api/admin/roles` | role × module access matrix |
 | PUT | `/api/admin/roles` | `{role:{module: bool}}` — set global role defaults |
+| GET | `/api/admin/audit` | audit log, newest first. Filters: `role=dealer\|pilot`, `actor`, `company`, `action` (prefix, e.g. `geofence`), `from`/`to` (date or ISO time), `q`; `limit`/`offset`. Response adds `stats: {changes, signins, failed}` for the whole filtered set |
+
+**Audit trail** (`core/audit.py`): sign-in (and failed sign-ins on real accounts), sign-out,
+sign-out-everywhere, geofence create/edit/delete, vehicle rename, alert acknowledge and device
+commands are recorded with before/after `changes`, IP and device. `AuditMiddleware` also records
+any other successful write by a dealer, manager or pilot. Passwords and tokens are never stored.
+
+**Write permission:** every dealer, manager and pilot can make changes (`may_write`); only members
+of a **suspended** company are read-only. The old per-user `can_edit` flag is no longer checked.
 
 `GET /api/auth/me` (and login/refresh) return `modules: [...]` — the caller's **effective**
 accessible tabs (per-user override > role default > built-in default; admin = all).

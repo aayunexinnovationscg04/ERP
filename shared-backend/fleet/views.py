@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from core.permissions import (CanWriteOrReadOnly, CompanyScopedQuerysetMixin,
                               IsDealerOrAdmin, ModuleAccess)
+from core.audit import diff, record, snapshot
 from ingest.models import Command
 
 from .models import Device, Pilot, Geofence, Telemetry, Trip, Vehicle
@@ -59,8 +60,13 @@ class VehicleViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
             return Response({"error": "local_name is required"}, status=400)
         if len(name) > 10:
             return Response({"error": "local_name must be 10 characters or fewer"}, status=400)
+        before = vehicle.local_name
         vehicle.local_name = name
         vehicle.save(update_fields=["local_name"])
+        if before != name:
+            record(request, "vehicle.rename", f"Renamed {vehicle.registration_number} to \"{name}\"",
+                   target=vehicle, target_label=vehicle.registration_number,
+                   changes={"local_name": [before or None, name]})
         return Response({"id": vehicle.id, "local_name": vehicle.local_name})
 
     @action(detail=True)
@@ -114,6 +120,8 @@ class DeviceViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
         if not payload:
             return Response({"error": "payload is required"}, status=400)
         cmd = Command.objects.create(device=device, payload=str(payload))
+        record(request, "device.command", f"Sent command \"{payload}\" to {device.device_id}",
+               target=device, target_label=device.device_id, changes={"command": [None, str(payload)]})
         return Response({"ok": True, "command_id": cmd.id, "status": cmd.status}, status=201)
 
 
@@ -126,8 +134,31 @@ class GeofenceViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         return self.scoped(Geofence.objects.all())
 
+    GEOFENCE_FIELDS = ["name", "kind", "purpose", "center_lat", "center_lng", "radius_m", "active"]
+
     def perform_create(self, serializer):
-        serializer.save(company=self.request.user.company)
+        g = serializer.save(company=self.request.user.company)
+        record(self.request, "geofence.create", f"Created geofence \"{g.name}\"", target=g, target_label=g.name,
+               changes=diff({}, snapshot(g, self._fields(g))))
+
+    def perform_update(self, serializer):
+        before = snapshot(serializer.instance, self._fields(serializer.instance))
+        g = serializer.save()
+        changes = diff(before, snapshot(g, self._fields(g)))
+        verb = ("Switched on" if changes.get("active") == [False, True] else
+                "Switched off" if changes.get("active") == [True, False] else "Edited")
+        record(self.request, "geofence.update", f"{verb} geofence \"{g.name}\"", target=g, target_label=g.name,
+               changes=changes)
+
+    def perform_destroy(self, instance):
+        before = snapshot(instance, self._fields(instance))
+        name, pk = instance.name, instance.pk
+        instance.delete()
+        record(self.request, "geofence.delete", f"Deleted geofence \"{name}\"", target_type="geofence",
+               target_id=pk, target_label=name, changes=diff(before, {}))
+
+    def _fields(self, g):
+        return [f for f in self.GEOFENCE_FIELDS if hasattr(g, f)]
 
 
 class DashboardViewSet(CompanyScopedQuerysetMixin, viewsets.ViewSet):

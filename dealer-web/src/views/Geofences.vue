@@ -172,7 +172,7 @@ function drawZones() {
   })
   if (all.length) {
     const total = all.reduce((acc, b) => acc.extend(b), L.latLngBounds(all[0].getSouthWest(), all[0].getNorthEast()))
-    map.fitBounds(total.pad(0.2), { maxZoom: 15 })
+    map.fitBounds(total.pad(0.2), { maxZoom: 15, animate: false })
   }
 }
 
@@ -180,7 +180,7 @@ function focusZone(z) {
   if (!map) return
   if (matchMedia('(max-width: 1199px)').matches) mapEl.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   const b = boundsById[z.id]
-  if (b && b.isValid()) map.fitBounds(b.pad(0.4), { maxZoom: 16 })
+  if (b && b.isValid()) map.fitBounds(b.pad(0.4), { maxZoom: 16, animate: false })
 }
 
 function updateDraftPreview() {

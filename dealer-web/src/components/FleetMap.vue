@@ -89,15 +89,17 @@ function draw() {
   if (f && f.lat != null) return
   if (pts.length && fitKey !== lastFitKey) {
     lastFitKey = fitKey
-    if (pts.length === 1) map.setView(pts[0], 15)
-    else map.fitBounds(L.latLngBounds(pts).pad(0.2), { maxZoom: 15 })
+    // programmatic moves don't animate: a pan/zoom animation still running when
+    // the page changes is what raised Leaflet's '_leaflet_pos' error
+    if (pts.length === 1) map.setView(pts[0], 15, { animate: false })
+    else map.fitBounds(L.latLngBounds(pts).pad(0.2), { maxZoom: 15, animate: false })
   }
 }
 
 function centreOnFocus() {
   const f = props.focus != null ? props.markers.find((m) => m.id === props.focus) : null
   if (map && f && f.lat != null) {
-    map.setView([f.lat, f.lng], Math.max(map.getZoom(), 14))
+    map.setView([f.lat, f.lng], Math.max(map.getZoom(), 14), { animate: false })
     markerById[f.id]?.openTooltip()
   }
 }

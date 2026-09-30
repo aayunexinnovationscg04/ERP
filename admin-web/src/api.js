@@ -45,6 +45,7 @@ export const getIngestDevices = () => api.get('/admin/ingest/devices').then((r) 
 export const getIngestPackets = (id, limit = 50) => api.get(`/admin/ingest/devices/${id}/packets`, { params: { limit } }).then((r) => r.data)
 // One-time ticket to open a user's portal in a new tab, view-only.
 export const viewAsTicket = (id) => api.post(`/admin/users/${id}/view-as/`).then((r) => r.data)
+export const getAudit = (params = {}) => api.get('/admin/audit', { params }).then((r) => r.data)
 export const getHealth = () => api.get('/admin/health').then((r) => r.data)
 // cross-company fleet aggregate (Admin bypasses the company scoping this
 // endpoint applies to dealers, so it returns platform-wide totals for us)

@@ -3,7 +3,7 @@
   <MotionConfig reduced-motion="user">
   <WelcomeGate v-if="justLoggedIn" :name="welcomeName" @done="justLoggedIn = false" />
   <div v-if="isLogin"><router-view /></div>
-  <div v-else class="app" :class="{ collapsed }">
+  <div v-else-if="showShell" class="app" :class="{ collapsed }">
     <div class="scrim" :class="{ show: menuOpen }" @click="menuOpen = false" aria-hidden="true"></div>
 
     <aside class="sidebar" :class="{ open: menuOpen }" aria-label="Main navigation">
@@ -65,7 +65,7 @@
         <div class="tb-spacer"></div>
         <div id="page-actions" class="tb-actions"></div>
         <div class="tb-right">
-          <span v-if="!canWrite" class="ro-pill" title="Your account can view data but not change it.">
+          <span v-if="!canWrite" class="ro-pill" title="This company is suspended: you can view data but not change it.">
             <Eye :size="14" /><span>View only</span>
           </span>
           <router-link v-if="canOpen('/alerts')" to="/alerts" class="tb-btn tb-alerts" :title="openAlerts ? `${openAlerts} open alert(s)` : 'Alerts'"
@@ -121,7 +121,14 @@ import { pageMeta } from './pagemeta'
 
 const route = useRoute()
 const router = useRouter()
-const isLogin = computed(() => route.path === '/login')
+// Nothing of the signed-in app may ever flash before sign-in: until the router
+// has settled the first navigation (session restore + auth guard) render
+// nothing, then show public pages (login, view-as) alone and the app shell
+// only for a signed-in user.
+const routerReady = ref(false)
+router.isReady().then(() => { routerReady.value = true })
+const isLogin = computed(() => routerReady.value && !!route.meta.public)
+const showShell = computed(() => routerReady.value && !route.meta.public && auth.isAuthed)
 
 // Route-level chunks are lazy (see router.js). A slow chunk fetch gets a
 // skeleton instead of a frozen page; the 150ms delay avoids a flash.

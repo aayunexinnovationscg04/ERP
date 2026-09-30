@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .admin_views import (AdminUserViewSet, CompanyViewSet, ModulesView,
                           PlatformHealthView, RoleMatrixView)
+from .audit_views import AuditLogView
 from .tokens import LoginView, LogoutAllView, LogoutView, RefreshView, ViewAsRedeemView
 from .views import MeView
 
@@ -20,4 +21,5 @@ urlpatterns = [
     path("admin/modules", ModulesView.as_view(), name="admin-modules"),
     path("admin/roles", RoleMatrixView.as_view(), name="admin-roles"),
     path("admin/health", PlatformHealthView.as_view(), name="admin-health"),
+    path("admin/audit", AuditLogView.as_view(), name="admin-audit"),
 ] + router.urls

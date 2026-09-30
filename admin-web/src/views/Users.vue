@@ -7,7 +7,7 @@
     <StatCard :label="kindLabel + 's'" :value="fmt(people.length)" :icon="kindIcon" tone="navy" :loading="loading" />
     <StatCard label="Active" :value="fmt(activeCount)" :icon="UserCheck" tone="green" :loading="loading" />
     <StatCard label="Disabled" :value="fmt(people.length - activeCount)" :icon="UserX" :tone="people.length - activeCount ? 'amber' : 'navy'" :loading="loading" />
-    <StatCard label="Read-only" :value="fmt(readOnlyCount)" :icon="Eye" tone="info" :loading="loading" />
+    <StatCard label="Never signed in" :value="fmt(neverCount)" :icon="Clock" :tone="neverCount ? 'amber' : 'navy'" :loading="loading" />
   </div>
 
   <div class="card">
@@ -26,7 +26,7 @@
     <div class="table-wrap">
       <table class="table stack users-table">
         <thead>
-          <tr><th>{{ kindLabel }}</th><th v-if="isDealers">Role</th><th>Company</th><th class="t-center">Can edit</th><th class="t-center">Active</th><th class="col-login">Last sign-in</th><th class="t-right">Actions</th></tr>
+          <tr><th>{{ kindLabel }}</th><th v-if="isDealers">Role</th><th>Company</th><th class="t-center">Active</th><th class="col-login">Last sign-in</th><th class="t-right">Actions</th></tr>
         </thead>
         <TableSkeleton v-if="loading" :cols="cols" :rows="6" />
         <tbody v-else-if="!filtered.length">
@@ -61,12 +61,6 @@
                 <option value="" disabled>Select a company</option>
                 <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
               </select>
-            </td>
-            <td data-label="Can edit" class="t-center col-switch">
-              <ToggleSwitch
-                :model-value="u.can_edit" :disabled="busyId === u.id" :aria-label="`Allow ${u.username} to edit`"
-                @change="(v) => patch(u, { can_edit: v }, v ? 'Edit rights granted' : 'Account set to read-only')"
-              />
             </td>
             <td data-label="Active" class="t-center col-switch">
               <ToggleSwitch
@@ -165,7 +159,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Users, UserPlus, UserCheck, UserX, Eye, EyeOff, KeyRound, Wand2, Search, X, CircleAlert, Truck, Navigation } from 'lucide-vue-next'
+import { Clock, Users, UserPlus, UserCheck, UserX, Eye, EyeOff, KeyRound, Wand2, Search, X, CircleAlert, Truck, Navigation } from 'lucide-vue-next'
 import { getUsers, createUser, updateUser, getCompanies, viewAsTicket } from '../api'
 import { auth } from '../auth'
 import { fmt, fmtDateTime, relTime, roleLabel, apiError } from '../format'
@@ -186,7 +180,7 @@ const isDealers = computed(() => props.kind !== 'pilot')
 const kindLabel = computed(() => (isDealers.value ? 'Dealer' : 'Pilot'))
 const kindIcon = computed(() => (isDealers.value ? Truck : Navigation))
 const kindRoles = computed(() => (isDealers.value ? ['dealer', 'manager'] : ['pilot']))
-const cols = computed(() => (isDealers.value ? 7 : 6))
+const cols = computed(() => (isDealers.value ? 6 : 5))
 
 const route = useRoute()
 const users = ref([]); const companies = ref([])
@@ -202,7 +196,7 @@ watch(() => props.kind, () => { q.value = '' })
 
 const people = computed(() => users.value.filter((u) => kindRoles.value.includes(u.role)))
 const activeCount = computed(() => people.value.filter((u) => u.is_active).length)
-const readOnlyCount = computed(() => people.value.filter((u) => !u.can_edit).length)
+const neverCount = computed(() => people.value.filter((u) => !u.last_login).length)
 const filtered = computed(() => {
   const term = q.value.trim().toLowerCase()
   return people.value.filter((u) => {

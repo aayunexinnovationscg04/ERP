@@ -13,7 +13,7 @@ const CompanyAnalytics = () => import('./views/CompanyAnalytics.vue')
 const FleetMonitoring = () => import('./views/FleetMonitoring.vue')
 const Devices = () => import('./views/Devices.vue')
 const DeviceData = () => import('./views/DeviceData.vue')
-const PlatformLogs = () => import('./views/PlatformLogs.vue')
+const AuditLogs = () => import('./views/AuditLogs.vue')
 const SecurityAnalytics = () => import('./views/SecurityAnalytics.vue')
 const Reports = () => import('./views/Reports.vue')
 
@@ -30,7 +30,8 @@ const routes = [
   { path: '/devices', component: Devices },
   { path: '/device-data', component: DeviceData },
   { path: '/platform', component: Platform },
-  { path: '/platform-logs', component: PlatformLogs },
+  { path: '/audit-logs', component: AuditLogs },
+  { path: '/platform-logs', redirect: '/audit-logs' },
   { path: '/security-analytics', component: SecurityAnalytics },
   { path: '/reports', component: Reports },
 ]

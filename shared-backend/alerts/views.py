@@ -3,6 +3,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from core.audit import record
 from core.permissions import (CanWriteOrReadOnly, CompanyScopedQuerysetMixin,
                               IsDealerOrAdmin, ModuleAccess)
 
@@ -34,5 +35,10 @@ class AlertViewSet(CompanyScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
         alert.status = Alert.Status.ACKNOWLEDGED
         alert.acknowledged_by = request.user
         alert.acknowledged_at = timezone.now()
+        before = alert.status
         alert.save(update_fields=["status", "acknowledged_by", "acknowledged_at"])
+        where = f" · {alert.vehicle.registration_number}" if alert.vehicle_id else ""
+        record(request, "alert.acknowledge", f"Acknowledged alert: {alert.title}{where}",
+               target=alert, target_label=f"{alert.title}{where}",
+               changes={"status": [before, alert.status]})
         return Response(AlertSerializer(alert).data)
