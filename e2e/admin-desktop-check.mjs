@@ -4,7 +4,7 @@ import { portalUrl } from './portals.mjs';
 
 const BASE = portalUrl('admin');
 const SHOTS = '/tmp/claude-0/-root/f5d22171-f394-46dc-86a0-d1cf4d84238b/scratchpad/shots';
-const CREDS = JSON.parse(fs.readFileSync('/root/aayunex_innovations/ERP/e2e/creds.json'));
+const CREDS = JSON.parse(fs.readFileSync('/root/aayunex/aayunex-erp/e2e/creds.json'));
 
 async function run() {
   const b = await chromium.launch({ headless: true, args: ['--no-sandbox'] });

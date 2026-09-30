@@ -7,7 +7,7 @@ const BASE = portalUrl('pilot');
 const SHOTS = process.env.SHOTS || (process.cwd() + '/shots');
 fs.mkdirSync(SHOTS, { recursive: true });
 
-const CREDS = JSON.parse(fs.readFileSync('/root/aayunex_innovations/ERP/e2e/creds.json'));
+const CREDS = JSON.parse(fs.readFileSync('/root/aayunex/aayunex-erp/e2e/creds.json'));
 const { user, pass } = CREDS.pilot;
 
 const WIDTHS = [

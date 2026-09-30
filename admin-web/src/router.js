@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { auth, sessionReady, setSessionEndHandler } from './auth'
 
 // Route-level code-split (dynamic import) instead of static imports — see
-// dealer-erp/src/router.js for why: statically importing every view meant
+// dealer-web/src/router.js for why: statically importing every view meant
 // Login couldn't render until the whole app's JS had downloaded, which reads
 // as a hung/slow sign-in on a real mobile connection.
 const Login = () => import('./views/Login.vue')

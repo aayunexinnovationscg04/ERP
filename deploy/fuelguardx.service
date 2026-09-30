@@ -10,8 +10,8 @@ Type=notify
 # user later, relocate the project out of /root (e.g. /opt/fuelguardx) and set
 # User=fuelguardx + ReadWritePaths.
 User=root
-WorkingDirectory=/root/aayunex_innovations/ERP/backend
-ExecStart=/root/aayunex_innovations/ERP/backend/.venv/bin/gunicorn config.wsgi:application \
+WorkingDirectory=/root/aayunex/aayunex-erp/shared-backend
+ExecStart=/root/aayunex/aayunex-erp/shared-backend/.venv/bin/gunicorn config.wsgi:application \
     --bind 127.0.0.1:8000 \
     --workers 3 \
     --timeout 60 \

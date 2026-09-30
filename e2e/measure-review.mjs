@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import fs from 'fs';
 import { portalUrl } from './portals.mjs';
-const CREDS = JSON.parse(fs.readFileSync('/root/aayunex_innovations/ERP/e2e/creds.json'));
+const CREDS = JSON.parse(fs.readFileSync('/root/aayunex/aayunex-erp/e2e/creds.json'));
 const { user, pass } = CREDS.pilot;
 const run = async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });

@@ -1,4 +1,4 @@
-// Verify admin-erp mobile UX against the local dev server (not prod).
+// Verify admin-web mobile UX against the local dev server (not prod).
 import { chromium } from 'playwright';
 import fs from 'fs';
 import { portalUrl } from './portals.mjs';
@@ -6,7 +6,7 @@ import { portalUrl } from './portals.mjs';
 const BASE = portalUrl('admin');
 const SHOTS = '/tmp/claude-0/-root/f5d22171-f394-46dc-86a0-d1cf4d84238b/scratchpad/shots';
 fs.mkdirSync(SHOTS, { recursive: true });
-const CREDS = JSON.parse(fs.readFileSync('/root/aayunex_innovations/ERP/e2e/creds.json'));
+const CREDS = JSON.parse(fs.readFileSync('/root/aayunex/aayunex-erp/e2e/creds.json'));
 
 const WIDTHS = [
   { w: 360, h: 780, label: '360' },

@@ -13,7 +13,7 @@ A byte-offset cursor makes each run O(new bytes). If the log is truncated/rotate
 (size < cursor) the cursor resets to 0 and the seq-dedup prevents duplicates.
 
     .venv/bin/python manage.py sync_receiver \
-        --path /root/aayunex_innovations/receiver_dashboard/data/events.jsonl [--company <slug>]
+        --path /root/aayunex/aayunex-erp/receiver-dashboard/data/events.jsonl [--company <slug>]
 """
 
 import datetime
@@ -27,7 +27,7 @@ from core.models import Company
 from fleet.derivation import process_telemetry
 from fleet.models import Device, Telemetry
 
-DEFAULT_PATH = "/root/aayunex_innovations/receiver_dashboard/data/events.jsonl"
+DEFAULT_PATH = "/root/aayunex/aayunex-erp/receiver-dashboard/data/events.jsonl"
 
 
 def _num(d, *keys):

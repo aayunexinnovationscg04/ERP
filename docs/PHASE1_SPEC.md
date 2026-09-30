@@ -35,7 +35,7 @@ Super-Admin ERP, and billing/AI are Phases 2–3 on the same backend.
 ## Repo layout
 ```
 fuelguardx/
-├── backend/                    # ONE Django project (config/)
+├── shared-backend/             # ONE Django project (config/)
 │   ├── core/                   # Company, User (custom), roles, RBAC, JWT, CompanySettings
 │   ├── fleet/                  # Vehicle, Device, Driver, Telemetry, Trip, Geofence, GeofenceEvent
 │   ├── ingest/                 # /api/telemetry (firmware-compatible), Command queue

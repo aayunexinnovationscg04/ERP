@@ -30,7 +30,7 @@ One HTTPS host, path-routed, TLS by Caddy → nginx (loopback) → gunicorn → 
 
 ## 3. Security posture (done)
 
-- `DEBUG=False`; secrets only in gitignored `backend/.env` (mode 600).
+- `DEBUG=False`; secrets only in gitignored `shared-backend/.env` (mode 600).
 - JWT auth, 2h access token; login throttled 10/min per IP.
 - nginx bound to `127.0.0.1` — no plaintext public port; only Caddy/TLS is public.
 - Security headers + HSTS; `server_tokens off`; unused public `/api/telemetry` blocked.
@@ -40,7 +40,7 @@ One HTTPS host, path-routed, TLS by Caddy → nginx (loopback) → gunicorn → 
 
 ## 3b. Live data pipeline (device → ERP)
 
-The device posts to the **legacy receiver** (`/root/aayunex_innovations/receiver_dashboard/data/events.jsonl`,
+The device posts to the **legacy receiver** (`/root/aayunex/aayunex-erp/receiver-dashboard/data/events.jsonl`,
 append-only). A **bridge** imports new rows into the ERP every 60s so the ERP stays live:
 `fuelguardx-sync.timer` → `manage.py sync_receiver`. Identity is the fixed **`device_id`**
 only (client IP is never used for identity); a byte-offset cursor + `(device,_seq)` dedup make
@@ -80,7 +80,7 @@ These are built-to-spec but cannot be truthfully "completed" in software alone:
   need a paid maps routing API (Google/Mapbox) + key. Not wired.
 - **AI analytics** (mileage/fuel/maintenance/delay prediction) — Phase 3; needs a data
   history + model. Not built.
-- **ERP/billing** (orders, challans, invoices, expenses) — Phase 3 business module.
+- **aayunex-erp/billing** (orders, challans, invoices, expenses) — Phase 3 business module.
 - **Driver attendance / performance / salary** — Phase 2 HR module.
 
 ## 6. Operations quick reference
@@ -98,7 +98,7 @@ journalctl -u fuelguardx -f
 tail -f /var/log/nginx/fuelguardx.error.log
 
 # redeploy a frontend (example: driver)
-cd /root/aayunex_innovations/ERP/driver-erp && npm run build && \
+cd /root/aayunex/aayunex-erp/driver-erp && npm run build && \
   rm -rf /var/www/fuelguardx/pilot && cp -r dist /var/www/fuelguardx/pilot && \
   chmod -R a+rX /var/www/fuelguardx/pilot
 

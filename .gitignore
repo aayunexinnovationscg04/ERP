@@ -7,8 +7,8 @@ venv/
 env/
 *.sqlite3
 db.sqlite3
-/backend/staticfiles/
-/backend/media/
+/shared-backend/staticfiles/
+/shared-backend/media/
 local_settings.py
 
 # ---- Secrets / env ----
@@ -32,7 +32,7 @@ dist-ssr/
 
 # ---- Logs / data ----
 *.log
-/backend/data/
+/shared-backend/data/
 /data/
 
 # ---- Editor / OS ----
@@ -48,3 +48,7 @@ e2e/shots-showcase/
 e2e/node_modules/
 e2e/mobile/
 backups/
+
+# ---- separate repos / local data living beside the ERP ----
+/receiver-dashboard/
+/shared-db/backups/

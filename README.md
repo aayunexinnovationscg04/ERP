@@ -5,18 +5,20 @@ AI-powered transport intelligence & fuel-security platform. One shared backend, 
 ## Monorepo layout
 
 ```
-ERP/
-├── backend/        # Django + DRF + Django Admin (PostgreSQL) — the shared brain
-├── dealer-erp/     # Vue 3 + Vite → dealer.aayunexinnovations.com  (fleet owners / managers)
-├── pilot-erp/      # Vue 3 + Vite → pilot.aayunexinnovations.com   (drivers, mobile-first)
-├── admin-erp/      # Vue 3 + Vite → admin.aayunexinnovations.com   (platform admin)
-├── landing/        # static page → erp.aayunexinnovations.com       ("choose your portal")
-├── shared/
-│   ├── design/     # tokens.css (one palette for all portals), brand mark
-│   └── ui/         # shared Vue components (AuthShell sign-in screen + portal scenes)
-├── deploy/         # Caddy, nginx (+ snippets), systemd units, deploy runbook
-├── e2e/            # Playwright checks
-└── docs/           # API + specs
+/root/aayunex/
+├── aayunex-erp/            # this repo
+│   ├── shared-backend/     # Django + DRF + Django Admin — one API for all portals
+│   ├── shared-db/          # PostgreSQL notes + backups/ (DB itself runs as a system service)
+│   ├── admin-web/          # Vue 3 + Vite → admin.aayunexinnovations.com   (platform admin)
+│   ├── dealer-web/         # Vue 3 + Vite → dealer.aayunexinnovations.com  (fleet owners / managers)
+│   ├── pilot-web/          # Vue 3 + Vite → pilot.aayunexinnovations.com   (drivers, mobile-first)
+│   ├── receiver-dashboard/ # legacy device receiver :8080 (own git repo, ignored here)
+│   ├── landing/            # static page → erp.aayunexinnovations.com       ("choose your portal")
+│   ├── shared/             # design tokens, brand mark, shared Vue components
+│   ├── deploy/             # Caddy, nginx (+ snippets), systemd units, deploy runbook
+│   ├── e2e/                # Playwright checks
+│   └── docs/               # API + specs
+└── main-website/           # aayunexinnovations.com (own git repo)
 ```
 
 One repo, but each app builds and deploys independently: Django as a JSON API, each Vue app as a

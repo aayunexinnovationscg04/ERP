@@ -34,7 +34,7 @@ served by Caddy → the old receiver on `:8080`, unchanged by any of the above.
 - An account can only sign in to its own portal (admin → admin, dealer/manager
   → dealer, pilot → pilot). Changing a user's password, role, company or active
   flag signs them out everywhere immediately.
-- Details: `backend/core/tokens.py`, `backend/core/authentication.py`, `docs/API.md`.
+- Details: `shared-backend/core/tokens.py`, `shared-backend/core/authentication.py`, `docs/API.md`.
 
 ## Files
 | Repo file | Installed as |
@@ -57,15 +57,15 @@ Do these in order. DNS for `erp`, `admin`, `dealer`, `pilot` already points at
 carry the new portal/session claims).
 
 ```bash
-cd /root/aayunex_innovations/ERP
+cd /root/aayunex/aayunex-erp
 
-# 1. Backend settings — backend/.env
+# 1. Backend settings — shared-backend/.env
 #    DJANGO_ALLOWED_HOSTS=admin.aayunexinnovations.com,dealer.aayunexinnovations.com,pilot.aayunexinnovations.com,localhost,127.0.0.1
 #    CSRF_TRUSTED_ORIGINS=https://admin.aayunexinnovations.com
 #    (CORS_ALLOWED_ORIGINS can stay as is; production is same-origin.)
 
 # 2. Backend code: migrate (adds User.session_version + token blacklist tables), restart
-cd backend
+cd shared-backend
 .venv/bin/python manage.py migrate
 .venv/bin/python manage.py collectstatic --noinput
 systemctl restart fuelguardx && systemctl status fuelguardx --no-pager
@@ -119,7 +119,7 @@ for app in dealer pilot admin landing; do rm -rf /var/www/fuelguardx/$app && mv 
 ## Everyday commands
 ```bash
 # Django (after backend code/settings/migration changes)
-cd /root/aayunex_innovations/ERP/backend && .venv/bin/python manage.py migrate
+cd /root/aayunex/aayunex-erp/shared-backend && .venv/bin/python manage.py migrate
 systemctl restart fuelguardx
 journalctl -u fuelguardx -f
 
@@ -127,7 +127,7 @@ journalctl -u fuelguardx -f
 DATABASE_URL=postgres://<role-with-CREATEDB>:<pw>@127.0.0.1:5432/postgres .venv/bin/python manage.py test
 
 # Prune expired refresh-token records (rotation adds one per refresh). Run daily, e.g. cron:
-#   17 3 * * * cd /root/aayunex_innovations/ERP/backend && .venv/bin/python manage.py flushexpiredtokens
+#   17 3 * * * cd /root/aayunex/aayunex-erp/shared-backend && .venv/bin/python manage.py flushexpiredtokens
 .venv/bin/python manage.py flushexpiredtokens
 
 # nginx (only if the conf or snippets change)
@@ -135,12 +135,12 @@ nginx -t && systemctl reload nginx
 tail -f /var/log/nginx/fuelguardx.error.log
 
 # Redeploy one SPA (swap, keep a rollback copy)
-cd /root/aayunex_innovations/ERP/dealer-erp && npm run build
+cd /root/aayunex/aayunex-erp/dealer-web && npm run build
 rm -rf /var/www/fuelguardx/dealer.bak && mv /var/www/fuelguardx/dealer /var/www/fuelguardx/dealer.bak
 cp -r dist /var/www/fuelguardx/dealer
 
 # Local development: run any portal against a local API
-cd dealer-erp && API_TARGET=http://127.0.0.1:8000 npm run dev    # http://localhost:5173
+cd dealer-web && API_TARGET=http://127.0.0.1:8000 npm run dev    # http://localhost:5173
 ```
 
 ## Not yet done

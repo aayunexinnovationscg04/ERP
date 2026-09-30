@@ -10,7 +10,7 @@ on every refresh; a reused refresh token is rejected. All `/api/auth/*` POSTs ne
 `X-FGX-Portal: admin|dealer|pilot`; an account may only sign in to its role's portal
 (admin → admin, dealer/manager → dealer, pilot → pilot). Refresh lifetime: admin 12 h hard
 cap; dealer/pilot 7 days idle, 30 days max. Changing a user's password, role, company or
-active flag revokes all their tokens instantly. Details: `backend/core/tokens.py`.
+active flag revokes all their tokens instantly. Details: `shared-backend/core/tokens.py`.
 
 | Method | Path | Body | Notes |
 |---|---|---|---|

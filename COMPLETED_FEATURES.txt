@@ -20,7 +20,7 @@ TESTING (all green):
 0. INFRASTRUCTURE & PROJECT SETUP
 ================================================================================
 [x] Monorepo created and connected to GitHub (git@github.com:aayunexinnovationscg04/ERP.git)
-[x] Repo layout: backend/ + owner-erp/ + driver-erp/ + superadmin-erp/ + shared/ + docs/
+[x] Repo layout: shared-backend/ + owner-erp/ + driver-erp/ + superadmin-erp/ + shared/ + docs/
 [x] .gitignore (secrets, .env, .venv, node_modules, data all excluded)
 [x] PostgreSQL 16 installed, running, enabled at boot
 [x] Database + role 'fuelguardx' created

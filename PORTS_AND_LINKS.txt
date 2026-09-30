@@ -5,7 +5,7 @@ VPS public IP : 31.42.125.144
 Domain        : dashboard.aayunexinnovations.com  ->  31.42.125.144
 --------------------------------------------------------------------------------
 NOTE ON SECRETS: real secrets (DB password, Django SECRET_KEY) are NOT in this
-file. They live in /root/aayunex_innovations/ERP/backend/.env (gitignored, mode 600). The dev login
+file. They live in /root/aayunex/aayunex-erp/shared-backend/.env (gitignored, mode 600). The dev login
 passwords below are for the pilot only - CHANGE THEM BEFORE PRODUCTION.
 ================================================================================
 
@@ -57,7 +57,7 @@ DATABASE (PRIVATE - no web link, and must stay that way)
   Host/Port 127.0.0.1 : 5432   (local-only; refuses public connections = correct)
   Database  fuelguardx
   User      fuelguardx
-  Password  see DATABASE_URL in /root/aayunex_innovations/ERP/backend/.env
+  Password  see DATABASE_URL in /root/aayunex/aayunex-erp/shared-backend/.env
   Connect on the server:   su postgres -c "psql fuelguardx"
   A database is NOT a website - never expose 5432 to the internet.
 
@@ -105,7 +105,7 @@ TEST / DEV LOGINS (pilot only - CHANGE BEFORE PRODUCTION)
   The old weak passwords (admin123 / owner123) were ROTATED to strong random ones
   on 2026-07-26. Passwords are NOT stored in this committed file anymore.
   See the gitignored file (server only, mode 600):
-      /root/aayunex_innovations/ERP/deploy/PILOT_CREDENTIALS.txt
+      /root/aayunex/aayunex-erp/deploy/PILOT_CREDENTIALS.txt
   Users:  admin  -> Super Admin ERP + Django admin
           owner1 -> Owner ERP ("Aayunex Transport")
           driver1 -> Driver ERP (assigned to CG04-TEST-01 / esp32-01)

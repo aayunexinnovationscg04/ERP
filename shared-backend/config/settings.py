@@ -1,7 +1,7 @@
 """
 Django settings for Fuel Guard X backend.
 
-Config comes from backend/.env (see .env.example). Secrets never live in code.
+Config comes from shared-backend/.env (see .env.example). Secrets never live in code.
 """
 
 import os
