@@ -112,7 +112,9 @@ onMounted(() => {
   // A map created inside a just-revealed container can grab a stale size.
   requestAnimationFrame(() => map?.invalidateSize())
 })
-onBeforeUnmount(() => map && map.remove())
+// stop any pan/zoom animation first and drop the reference, so a queued frame
+// can't touch a removed map (Leaflet '_leaflet_pos' error on fast page changes)
+onBeforeUnmount(() => { if (map) { map.stop(); map.off(); map.remove(); map = null } })
 watch(() => [props.markers, props.track], draw, { deep: true })
 watch(() => props.focus, () => { draw(); centreOnFocus() })
 defineExpose({ invalidate: () => map?.invalidateSize() })

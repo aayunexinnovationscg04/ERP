@@ -32,6 +32,7 @@
             <span class="label">{{ item.label }}</span>
           </router-link>
         </section>
+        <PortalStrip />
       </nav>
 
       <div class="sb-foot">
@@ -106,6 +107,7 @@ import {
 } from 'lucide-vue-next'
 import { auth, justLoggedIn, logout as endSession, logoutEverywhere } from './auth'
 import './theme'  // pins the light theme
+import PortalStrip from './components/PortalStrip.vue'
 import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
 import PageSkeleton from './components/PageSkeleton.vue'

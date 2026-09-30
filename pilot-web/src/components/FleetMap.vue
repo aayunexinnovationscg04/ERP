@@ -88,6 +88,6 @@ onMounted(() => {
     ro.observe(el.value)
   }
 })
-onBeforeUnmount(() => { ro && ro.disconnect(); map && map.remove() })
+onBeforeUnmount(() => { ro && ro.disconnect(); if (map) { map.stop(); map.off(); map.remove(); map = null } })
 watch(() => [props.markers, props.track], draw, { deep: true })
 </script>

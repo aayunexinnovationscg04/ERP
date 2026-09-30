@@ -546,3 +546,6 @@ a.badge { text-decoration: none; }
 /* list items fade in with a CSS stagger (set via animation-delay) — cheap, no JS */
 .item-in { animation: page-in .22s cubic-bezier(.4, 0, .2, 1) both; }
 @media (prefers-reduced-motion: reduce) { .item-in { animation: none; } }
+
+/* the sidebar's portal strip (components/PortalStrip.vue) hides in the collapsed icon rail */
+.app.collapsed .portal-strip { display: none; }

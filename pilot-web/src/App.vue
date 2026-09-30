@@ -50,6 +50,7 @@
             <span v-if="item.to === '/alerts' && openAlerts" class="count" :aria-label="`${openAlerts} open alerts`">{{ openAlerts > 99 ? '99+' : openAlerts }}</span>
           </router-link>
         </template>
+        <PortalStrip />
       </nav>
 
       <div class="side-foot">
@@ -103,6 +104,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Truck, Route, ChevronsLeft, ChevronsRight, LogOut, Sun, Moon, User, ShieldAlert, Compass, Navigation, Eye } from 'lucide-vue-next'
+import PortalStrip from './components/PortalStrip.vue'
 import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
 import PageSkeleton from './components/PageSkeleton.vue'

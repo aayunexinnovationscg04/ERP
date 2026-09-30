@@ -32,6 +32,7 @@
             <span v-if="item.to === '/alerts' && openAlerts" class="nav-count">{{ openAlerts > 99 ? '99+' : openAlerts }}</span>
           </router-link>
         </section>
+        <PortalStrip />
       </nav>
 
       <div class="sb-foot">
@@ -110,6 +111,7 @@ import { MotionConfig } from 'motion-v'
 import { auth, justLoggedIn, logout as endSession } from './auth'
 import { getAlerts } from './api'
 import { useTheme } from './theme'
+import PortalStrip from './components/PortalStrip.vue'
 import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
 import PageSkeleton from './components/PageSkeleton.vue'

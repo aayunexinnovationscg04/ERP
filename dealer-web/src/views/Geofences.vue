@@ -289,7 +289,7 @@ watch(() => [draft.value.radius_m, draft.value.purpose], () => {
 })
 
 onMounted(load)
-onBeforeUnmount(() => { if (map) map.remove() })
+onBeforeUnmount(() => { if (map) { map.stop(); map.off(); map.remove(); map = null } })
 </script>
 <style scoped>
 .gf-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
