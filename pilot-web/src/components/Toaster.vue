@@ -2,9 +2,9 @@
   <div class="toaster" aria-live="polite">
     <transition-group name="toast">
       <div v-for="t in toasts" :key="t.id" class="toast" :class="t.type" role="status">
-        <component :is="icon(t.type)" :size="20" :stroke-width="2.25" class="toast-ic" />
+        <component :is="icon(t.type)" :size="18" class="toast-ic" />
         <span class="toast-msg">{{ t.message }}</span>
-        <button type="button" class="toast-x" aria-label="Dismiss" @click="dismiss(t.id)"><X :size="16" /></button>
+        <button type="button" class="toast-x" aria-label="Dismiss" @click="dismiss(t.id)"><X :size="15" /></button>
       </div>
     </transition-group>
   </div>
@@ -18,35 +18,35 @@ const icon = (t) => (t === 'success' ? CircleCheck : t === 'error' ? CircleAlert
 
 <style scoped>
 .toaster {
-  position: fixed; z-index: 9999; left: 50%; transform: translateX(-50%);
-  bottom: 24px; width: min(calc(100vw - 32px), 420px);
-  display: flex; flex-direction: column; gap: 10px; align-items: stretch; pointer-events: none;
-}
-/* phones: sit just above the bottom tab bar */
-@media (max-width: 767.98px) {
-  .toaster { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 12px); }
+  position: fixed; z-index: 9999; right: 20px; bottom: 20px;
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+  width: min(calc(100vw - 32px), 380px); pointer-events: none;
 }
 .toast {
-  pointer-events: auto;
-  display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 6px 6px 14px;
+  pointer-events: auto; width: 100%;
+  display: flex; align-items: center; gap: 10px; padding: 12px 10px 12px 14px;
   border-radius: var(--radius); background: var(--surface); color: var(--text);
-  border: 1px solid var(--border-strong); border-left-width: 4px; box-shadow: var(--shadow-lg);
-  font-size: .9375rem; font-weight: 600;
+  border: 1px solid var(--border); border-left: 3px solid var(--info); box-shadow: var(--shadow-lg);
+  font-size: .875rem; font-weight: 600;
 }
 .toast.success { border-left-color: var(--green); }
 .toast.error { border-left-color: var(--red); }
-.toast.info { border-left-color: var(--info); }
-.toast-ic { flex: none; }
+.toast-ic { flex: none; color: var(--info); }
 .toast.success .toast-ic { color: var(--green); }
 .toast.error .toast-ic { color: var(--red); }
-.toast.info .toast-ic { color: var(--info); }
-.toast-msg { flex: 1; min-width: 0; padding: 6px 0; }
+.toast-msg { flex: 1; min-width: 0; }
 .toast-x {
-  flex: none; width: 40px; height: 40px; padding: 0; border: 0; border-radius: var(--radius-sm);
+  flex: none; width: 28px; height: 28px; border: 0; border-radius: var(--radius-xs);
   display: grid; place-items: center; background: transparent; color: var(--muted);
 }
 .toast-x:hover { background: var(--surface-3); color: var(--text); }
-.toast-enter-active, .toast-leave-active { transition: opacity .22s var(--ease), transform .22s var(--ease); }
+@media (max-width: 720px) { .toast-x { width: 40px; height: 40px; margin: -6px -6px -6px 0; } }
+.toast-enter-active, .toast-leave-active { transition: all .22s var(--ease); }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(10px); }
 .toast-move { transition: transform .22s var(--ease); }
+@media (max-width: 720px) {
+  /* top on phones so toasts never cover a bottom sheet's action buttons */
+  .toaster { left: 12px; right: 12px; top: calc(var(--topbar-h) + 8px); bottom: auto; width: auto; align-items: stretch; flex-direction: column-reverse; }
+  .toast-enter-from, .toast-leave-to { transform: translateY(-10px); }
+}
 </style>

@@ -1,63 +1,46 @@
 <template>
-  <div class="page-head">
-    <div class="ph-text">
-      <h1>Traffic &amp; Delays</h1>
-    </div>
-  </div>
+  <PageHeader :preview="showTrip" />
 
-  <TripGate :state="tripState"
-    no-trip-text="Shown while your truck is on a trip.">
-    <div class="notice sample-note" role="note">
-      <Info :size="16" :stroke-width="2.25" />
-      <span><strong>Sample data</strong> · not live yet</span>
+  <TripGate :state="tripState" no-trip-text="Shown while your truck is on a trip.">
+    <div class="kpis">
+      <StatTile label="Traffic now" :value="summary.condition" :icon="TrafficCone" tone="amber" />
+      <StatTile label="Delay" :value="'+' + summary.delayMin" unit="min" :icon="Clock" tone="red" />
+      <StatTile label="ETA" :value="summary.adjustedEta" :icon="Flag" tone="brand" />
+      <StatTile label="Notices" :value="notices.length" :icon="CircleAlert" tone="blue" />
     </div>
 
-    <div class="tr-grid">
-      <motion.section class="card card-pad tr-hero" aria-label="Traffic summary"
-        :initial="{ opacity: 0, y: reduced ? 0 : 8 }" :animate="{ opacity: 1, y: 0 }" :transition="pageTransition(reduced)">
-        <div class="tr-top">
-          <div>
-            <div class="stat-label">Traffic now</div>
-            <div class="tr-cond">{{ summary.condition }}</div>
-          </div>
-          <span class="badge badge-lg warning"><Clock :size="15" :stroke-width="2.5" /> +{{ summary.delayMin }} min</span>
+    <div class="grid-2">
+      <section class="card flush" aria-label="Traffic and delay notices">
+        <div class="card-head">
+          <div class="card-head-title"><CircleAlert :size="18" /><h2>Notices</h2></div>
         </div>
-
-        <!-- 3-step level meter: Light / Moderate / Heavy -->
-        <div class="meter" role="img" :aria-label="`Traffic level: ${summary.condition}`">
-          <span v-for="(lvl, i) in LEVELS" :key="lvl" class="seg" :class="{ on: i <= levelIndex, ['l' + i]: true }"></span>
-        </div>
-        <div class="meter-labels"><span v-for="lvl in LEVELS" :key="lvl">{{ lvl }}</span></div>
-
-        <div class="stat-grid" style="margin-top:16px">
-          <div class="stat tone-brand">
-            <div class="stat-top"><span class="stat-ic"><Clock :size="17" :stroke-width="2.25" /></span><span class="stat-label">ETA</span></div>
-            <div class="stat-value">{{ summary.adjustedEta }}</div>
-          </div>
-          <div class="stat tone-amber">
-            <div class="stat-top"><span class="stat-ic"><TrafficCone :size="17" :stroke-width="2.25" /></span><span class="stat-label">Notices</span></div>
-            <div class="stat-value">{{ notices.length }}</div>
-          </div>
-        </div>
-        <div class="dest">
-          <MapPin :size="18" :stroke-width="2.25" />
-          <div><div class="stat-label">Delivery</div><div class="dest-v">{{ summary.deliveryLocation }}</div></div>
-        </div>
-      </motion.section>
-
-      <section aria-label="Traffic and delay notices">
-        <div class="section-title tr-list-title"><span>Notices</span></div>
-        <div class="stack">
-          <article v-for="(n, i) in notices" :key="n.id" class="card notice-card item-in" :class="'sev-' + n.severity"
-            :style="{ animationDelay: Math.min(i, 8) * 40 + 'ms' }">
-            <span class="row-ic" :class="TONE[n.severity]"><component :is="n.icon" :size="20" :stroke-width="2.25" /></span>
-            <div class="row-main">
-              <div class="row-title">{{ n.title }}</div>
-              <div class="row-sub">{{ n.detail }}</div>
-              <div class="row-sub loc"><MapPin :size="13" :stroke-width="2.25" /> {{ n.location }}</div>
+        <div class="list">
+          <article v-for="(n, i) in notices" :key="n.id" class="list-row notice-row item-in" :style="{ animationDelay: Math.min(i, 8) * 40 + 'ms' }">
+            <span class="icon-chip" :class="TONE[n.severity]"><component :is="n.icon" :size="16" /></span>
+            <div class="grow">
+              <div class="title">{{ n.title }}</div>
+              <div class="sub">{{ n.detail }}</div>
+              <div class="sub loc"><MapPin :size="12" /> {{ n.location }}</div>
             </div>
-            <span class="badge" :class="BADGE[n.severity]">+{{ n.delayMin }} min</span>
+            <span class="badge nt" :class="BADGE[n.severity]">+{{ n.delayMin }} min</span>
           </article>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Traffic level">
+        <div class="card-head">
+          <div class="card-head-title"><Gauge :size="18" /><h2>Traffic level</h2></div>
+          <span class="badge warning">{{ summary.condition }}</span>
+        </div>
+        <div class="card-body">
+          <!-- 3-step level meter: Light / Moderate / Heavy -->
+          <div class="lvl" role="img" :aria-label="`Traffic level: ${summary.condition}`">
+            <span v-for="(lvl, i) in LEVELS" :key="lvl" class="lvl-seg" :class="{ on: i <= levelIndex, ['l' + i]: true }"></span>
+          </div>
+          <div class="lvl-labels"><span v-for="lvl in LEVELS" :key="lvl">{{ lvl }}</span></div>
+          <div class="kvs" style="margin-top:16px">
+            <div style="grid-column:1/-1"><span class="k">Delivery</span><span class="v">{{ summary.deliveryLocation }}</span></div>
+          </div>
         </div>
       </section>
     </div>
@@ -66,14 +49,14 @@
 
 <script setup>
 import { computed } from 'vue'
-import { motion } from 'motion-v'
-import { MapPin, Clock, TrafficCone, Construction, CircleAlert, Info } from 'lucide-vue-next'
+import { MapPin, Clock, TrafficCone, Construction, CircleAlert, Flag, Gauge } from 'lucide-vue-next'
 import TripGate from '../components/TripGate.vue'
+import PageHeader from '../components/PageHeader.vue'
+import StatTile from '../components/StatTile.vue'
 import { useTripState } from '../tripState'
-import { usePrefersReducedMotion, pageTransition, EASE } from '../motion'
 
-const reduced = usePrefersReducedMotion()
 const tripState = useTripState()
+const showTrip = computed(() => !tripState.loading.value && !tripState.failed.value && tripState.assigned.value && tripState.onTrip.value)
 
 // Sample data — shaped like a future live traffic feed (a condition summary
 // plus located notices) so it can be pointed at a real source later.
@@ -91,37 +74,21 @@ const notices = [
   { id: 1, severity: 'warning', icon: TrafficCone, title: 'Heavy congestion ahead', detail: 'Slow-moving traffic near Ring Road junction', location: 'Ring Road, 6 km ahead', delayMin: 8 },
   { id: 2, severity: 'info', icon: Construction, title: 'Road work', detail: 'One lane closed for resurfacing', location: 'NH-30 near Tilda', delayMin: 3 },
 ]
-const TONE = { critical: 'ic-red', warning: 'ic-amber', info: 'ic-info' }
+const TONE = { critical: 'crit', warning: 'amber', info: 'info' }
 const BADGE = { critical: 'critical', warning: 'warning', info: 'info' }
 </script>
 
 <style scoped>
-.sample-note { margin-bottom: 14px; }
-.tr-grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 1100px) { .tr-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 18px; align-items: start; } }
-.tr-list-title { margin-top: 10px; }
-@media (min-width: 1100px) { .tr-list-title { margin-top: 0; } }
-
-.tr-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.tr-cond { font-size: 2.25rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; color: var(--ink-strong); margin-top: 4px; }
-
-.meter { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 18px; }
-.seg { height: 10px; border-radius: var(--radius-pill); background: var(--surface-3); }
-.seg.on.l0 { background: var(--green); }
-.seg.on.l1 { background: var(--amber-strong); }
-.seg.on.l2 { background: var(--red); }
-.meter-labels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; font-size: .75rem; font-weight: 700; color: var(--muted); }
-.meter-labels span:nth-child(2) { text-align: center; }
-.meter-labels span:nth-child(3) { text-align: right; }
-
-.dest { display: flex; gap: 12px; align-items: flex-start; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); }
-.dest svg { flex: none; margin-top: 2px; }
-.dest-v { color: var(--ink-strong); font-weight: 700; margin-top: 2px; }
-
-.notice-card { display: flex; align-items: flex-start; gap: 14px; padding: 16px; border-left: 4px solid var(--border-strong); }
-.notice-card.sev-critical { border-left-color: var(--crit); }
-.notice-card.sev-warning { border-left-color: var(--amber); }
-.notice-card.sev-info { border-left-color: var(--info); }
-.loc { display: flex; align-items: center; gap: 5px; }
+.notice-row { align-items: flex-start; }
+.notice-row .sub { white-space: normal; }
+.loc { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
 .loc svg { flex: none; }
+.lvl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.lvl-seg { height: 10px; border-radius: var(--radius-pill); background: var(--surface-3); }
+.lvl-seg.on.l0 { background: var(--green); }
+.lvl-seg.on.l1 { background: var(--amber); }
+.lvl-seg.on.l2 { background: var(--red); }
+.lvl-labels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.lvl-labels span:nth-child(2) { text-align: center; }
+.lvl-labels span:nth-child(3) { text-align: right; }
 </style>

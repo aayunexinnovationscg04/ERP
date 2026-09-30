@@ -2,108 +2,105 @@
   <Toaster />
   <WelcomeGate v-if="justLoggedIn" :name="welcomeName" @done="justLoggedIn = false" />
   <div v-if="isLogin"><router-view /></div>
-  <div v-else class="app" :class="{ collapsed }">
-    <!-- phone: fixed top bar (brand + theme + sign out). Primary nav lives in
-         the thumb-reachable bottom tab bar. -->
-    <header class="topbar">
-      <div class="brand-lockup">
-        <span class="logo-tile"><img :src="logo" alt="" /></span>
-        <span class="brand-text">
-          <span class="brand-name">Fuel Guard X</span>
-          <span class="brand-sub">AAYUNEX INNOVATIONS OPC Pvt Ltd.</span>
-        </span>
-      </div>
-      <span class="spacer"></span>
-      <button class="icon-btn" type="button" @click="toggleTheme"
-        :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
-        :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
-        <Sun v-if="theme === 'dark'" :size="20" :stroke-width="2.25" />
-        <Moon v-else :size="20" :stroke-width="2.25" />
-      </button>
-      <button class="icon-btn" type="button" @click="logout" aria-label="Log out" title="Log out">
-        <LogOut :size="20" :stroke-width="2.25" />
-      </button>
-    </header>
+  <div v-else-if="showShell" class="app" :class="{ collapsed }">
+    <div class="scrim" :class="{ show: menuOpen }" @click="menuOpen = false" aria-hidden="true"></div>
 
-    <!-- tablet: icon rail · desktop: full sidebar (collapsible to the rail) -->
-    <aside class="sidebar" aria-label="Main navigation">
-      <div class="side-head">
-        <div class="brand-lockup">
-          <span class="logo-tile"><img :src="logo" alt="" /></span>
-          <span class="brand-text">
-            <span class="brand-name">Fuel Guard X</span>
-            <span class="brand-sub">Pilot App</span>
-          </span>
-        </div>
-        <button class="icon-btn collapse-btn" type="button" @click="collapsed = !collapsed"
-          :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="18" :stroke-width="2.25" />
+    <aside class="sidebar" :class="{ open: menuOpen }" aria-label="Main navigation">
+      <div class="sb-brand">
+        <router-link :to="homePath" class="sb-home" title="Fuel Guard X">
+          <span class="sb-logo"><img :src="logo" alt="AAYUNEX INNOVATIONS OPC Pvt Ltd. logo" /></span>
+          <span class="sb-name"><strong>Fuel Guard X</strong><small>Pilot App</small></span>
+        </router-link>
+        <button type="button" class="sb-toggle" @click="collapsed = !collapsed"
+                :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+          <component :is="collapsed ? PanelLeftOpen : PanelLeftClose" :size="17" />
+        </button>
+        <button type="button" class="sb-close" @click="menuOpen = false" aria-label="Close menu" title="Close menu">
+          <X :size="20" />
         </button>
       </div>
 
-      <nav class="side-nav">
-        <template v-for="g in visibleNavGroups" :key="g.label">
-          <div class="side-section">{{ g.label }}</div>
-          <router-link v-for="item in g.items" :key="item.to" :to="item.to" class="side-link" :title="item.label">
-            <component :is="item.icon" :size="20" :stroke-width="2.25" />
-            <span>{{ item.short || item.label }}</span>
-            <span v-if="item.to === '/alerts' && openAlerts" class="count" :aria-label="`${openAlerts} open alerts`">{{ openAlerts > 99 ? '99+' : openAlerts }}</span>
+      <nav class="sb-nav" @click="onNavClick">
+        <section v-for="g in visibleGroups" :key="g.id" class="sb-sec">
+          <h2 class="sb-sec-title">{{ g.label }}</h2>
+          <router-link v-for="item in g.items" :key="item.to" :to="item.to"
+            class="sb-link" :class="{ 'router-link-active': inSection(item.to) }"
+            :title="collapsed ? item.label : undefined">
+            <component :is="item.icon" :size="16" />
+            <span class="label">{{ item.label }}</span>
+            <span v-if="item.to === '/alerts' && openAlerts" class="nav-count" :aria-label="`${openAlerts} open alerts`">{{ openAlerts > 99 ? '99+' : openAlerts }}</span>
           </router-link>
-        </template>
+        </section>
         <PortalStrip />
       </nav>
 
-      <div class="side-foot">
-        <div class="side-user" :title="auth.user?.username">
+      <div class="sb-foot">
+        <div class="sb-user" :title="collapsed ? userName : undefined">
           <span class="avatar">{{ initials }}</span>
-          <span class="side-user-text">
-            <strong>{{ auth.user?.username || 'Pilot' }}</strong>
-            <small>{{ auth.user?.company?.name || 'Pilot' }}</small>
+          <span class="sb-user-text">
+            <strong>{{ userName }}</strong>
+            <small>{{ roleLabel }}</small>
           </span>
         </div>
-        <button class="side-btn" type="button" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
-          <Sun v-if="theme === 'dark'" :size="18" :stroke-width="2.25" />
-          <Moon v-else :size="18" :stroke-width="2.25" />
-          <span class="label">{{ theme === 'dark' ? 'Light mode' : 'Dark mode' }}</span>
-        </button>
-        <button class="side-btn logout" type="button" @click="logout" title="Log out">
-          <LogOut :size="18" :stroke-width="2.25" /><span class="label">Log out</span>
-        </button>
+        <button type="button" class="sb-icon-btn sb-logout" @click="logout" title="Log out" aria-label="Log out"><LogOut :size="17" /></button>
       </div>
     </aside>
 
-    <main class="main">
-      <div class="page">
-        <div v-if="auth.viewOnly" class="view-banner" role="status">
-          <Eye :size="16" aria-hidden="true" />
-          <span>Viewing as <b>{{ auth.user.username }}</b> · view only<template v-if="auth.user.viewed_by"> · opened by {{ auth.user.viewed_by }}</template></span>
-          <button type="button" class="view-close" @click="closeView">Close</button>
+    <div class="main-col">
+      <header class="topbar">
+        <button type="button" class="tb-btn tb-menu" aria-label="Open menu" :aria-expanded="menuOpen" @click="menuOpen = true">
+          <Menu :size="22" />
+        </button>
+        <router-link v-if="crumb?.parentTo" :to="crumb.parentTo" class="tb-btn tb-back" :aria-label="`Back to ${crumb.group}`"><ArrowLeft :size="20" /></router-link>
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <template v-if="crumb">
+            <router-link v-if="crumb.parentTo" :to="crumb.parentTo" class="c-group c-link">{{ crumb.group }}</router-link>
+            <span v-else class="c-group">{{ crumb.group }}</span>
+            <ChevronRight class="c-sep" :size="14" />
+            <span class="c-page">{{ crumb.page }}</span>
+          </template>
+          <span v-else class="c-page">Fuel Guard X</span>
+        </nav>
+        <div class="tb-spacer"></div>
+        <div id="page-actions" class="tb-actions"></div>
+        <div class="tb-right">
+          <router-link v-if="canOpen('/alerts')" to="/alerts" class="tb-btn tb-alerts" :title="openAlerts ? `${openAlerts} open alert(s)` : 'Alerts'"
+                       :aria-label="openAlerts ? `${openAlerts} open alerts` : 'Alerts'">
+            <Bell :size="18" />
+            <span v-if="openAlerts" class="dotcount">{{ openAlerts > 99 ? '99+' : openAlerts }}</span>
+          </router-link>
+          <button type="button" class="tb-btn tb-theme" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+                  :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+            <Sun v-if="theme === 'dark'" :size="18" />
+            <Moon v-else :size="18" />
+          </button>
         </div>
-        <PageSkeleton v-if="showRouteSkeleton" />
-        <div v-else :key="$route.fullPath" class="page-in">
-          <router-view v-slot="{ Component }"><component :is="Component" /></router-view>
-        </div>
-      </div>
-    </main>
+      </header>
 
-    <!-- phone bottom tab bar: five primary destinations. Route Guidance is
-         reached from the active trip on the Trips page. -->
-    <nav class="tabbar" aria-label="Main navigation">
-      <router-link v-for="t in visibleTabs" :key="t.to" :to="t.to" class="tab" :aria-label="t.label">
-        <span class="tab-ic">
-          <component :is="t.icon" :size="22" :stroke-width="2.25" />
-          <span v-if="t.to === '/alerts' && openAlerts" class="tab-badge">{{ openAlerts > 9 ? '9+' : openAlerts }}</span>
-        </span>
-        <span class="tab-label">{{ t.label }}</span>
-      </router-link>
-    </nav>
+      <main class="main">
+        <div class="page">
+          <div v-if="auth.viewOnly" class="view-banner" role="status">
+            <Eye :size="16" aria-hidden="true" />
+            <span>Viewing as <b>{{ auth.user.username }}</b> · view only<template v-if="auth.user.viewed_by"> · opened by {{ auth.user.viewed_by }}</template></span>
+            <button type="button" class="view-close" @click="closeView">Close</button>
+          </div>
+          <PageSkeleton v-if="showRouteSkeleton" />
+          <div v-else :key="$route.fullPath" class="page-in">
+            <router-view v-slot="{ Component }"><component :is="Component" /></router-view>
+          </div>
+        </div>
+      </main>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Truck, Route, ChevronsLeft, ChevronsRight, LogOut, Sun, Moon, User, ShieldAlert, Compass, Navigation, Eye } from 'lucide-vue-next'
+import {
+  Truck, Route, Navigation, Compass, ShieldAlert, User, Bell, Menu, X, ArrowLeft, ChevronRight,
+  PanelLeftClose, PanelLeftOpen, LogOut, Sun, Moon, Eye,
+} from 'lucide-vue-next'
 import PortalStrip from './components/PortalStrip.vue'
 import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
@@ -112,47 +109,89 @@ import { auth, justLoggedIn, logout as endSession } from './auth'
 import { getSummary } from './api'
 import { useTheme } from './theme'
 import logo from '@shared/design/brand/aayunex-logo.png'
-import { canOpen } from './access'
+import { canOpen, firstAllowedPath } from './access'
 
 const route = useRoute()
 const router = useRouter()
-const isLogin = computed(() => route.path === '/login')
+// Nothing of the signed-in app may ever flash before sign-in: until the router
+// has settled the first navigation (session restore + auth guard) render
+// nothing, then show public pages (login, view-as) alone and the app shell
+// only for a signed-in user.
+const routerReady = ref(false)
+router.isReady().then(() => { routerReady.value = true })
+const isLogin = computed(() => routerReady.value && !!route.meta.public)
+const showShell = computed(() => routerReady.value && !route.meta.public && auth.isAuthed)
 const welcomeName = computed(() => {
   const u = auth.user?.username
   return u ? u.charAt(0).toUpperCase() + u.slice(1) : 'Pilot'
 })
-const initials = computed(() => (auth.user?.username || 'P').charAt(0).toUpperCase())
+const userName = computed(() => {
+  const u = auth.user
+  if (!u) return 'Pilot'
+  const full = [u.first_name, u.last_name].filter(Boolean).join(' ')
+  return full || u.username || 'Pilot'
+})
+const initials = computed(() => {
+  const parts = (userName.value || '?').replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/)
+  return ((parts[0]?.[0] || '?') + (parts[1]?.[0] || '')).toUpperCase()
+})
+const roleLabel = computed(() => {
+  const c = auth.user?.company?.name
+  return c ? `Pilot · ${c}` : 'Pilot'
+})
+
+const menuOpen = ref(false)
 const collapsed = ref(localStorage.getItem('fgx-pilot-sidebar-collapsed') === '1')
 watch(collapsed, (v) => localStorage.setItem('fgx-pilot-sidebar-collapsed', v ? '1' : '0'))
 const { theme, toggleTheme } = useTheme()
 
-const navGroups = [
-  { label: 'Vehicle', items: [{ to: '/', label: 'My Truck', icon: Truck }] },
+// The document scrolls; start each page at the top and close the phone drawer.
+watch(() => route.path, () => { menuOpen.value = false; window.scrollTo({ top: 0, left: 0 }); revealActiveLink() })
+// The nav scrolls on short screens: keep the current page's link in view.
+function revealActiveLink() {
+  nextTick(() => document.querySelector('.sb-nav .sb-link.router-link-active')?.scrollIntoView({ block: 'nearest' }))
+}
+onMounted(revealActiveLink)
+watch(menuOpen, (open) => { document.documentElement.classList.toggle('drawer-open', open) })
+function onKey(e) { if (e.key === 'Escape' && menuOpen.value) menuOpen.value = false }
+onMounted(() => window.addEventListener('keydown', onKey))
+onBeforeUnmount(() => { window.removeEventListener('keydown', onKey); document.documentElement.classList.remove('drawer-open') })
+function onNavClick(e) { if (e.target.closest('a')) menuOpen.value = false }
+
+const NAV_GROUPS = [
+  { id: 'vehicle', label: 'Vehicle', items: [{ to: '/', label: 'My Truck', icon: Truck }] },
   {
-    label: 'Trip operations',
+    id: 'trips', label: 'Trips',
     items: [
       { to: '/trips', label: 'Trips', icon: Route },
-      { to: '/route-guidance', label: 'Route Guidance', short: 'Guidance', icon: Navigation },
-      { to: '/navigation', label: 'Traffic & Delays', short: 'Traffic', icon: Compass },
+      { to: '/route-guidance', label: 'Route Guidance', icon: Navigation },
+      { to: '/navigation', label: 'Traffic & Delays', icon: Compass },
     ],
   },
-  { label: 'Safety', items: [{ to: '/alerts', label: 'Alerts', icon: ShieldAlert }] },
-  { label: 'Account', items: [{ to: '/profile', label: 'Profile', icon: User }] },
+  { id: 'safety', label: 'Safety', items: [{ to: '/alerts', label: 'Alerts', icon: ShieldAlert }] },
+  { id: 'account', label: 'Account', items: [{ to: '/profile', label: 'Profile', icon: User }] },
 ]
-const tabs = [
-  { to: '/', label: 'My Truck', icon: Truck },
-  { to: '/trips', label: 'Trips', icon: Route },
-  { to: '/navigation', label: 'Traffic', icon: Compass },
-  { to: '/alerts', label: 'Alerts', icon: ShieldAlert },
-  { to: '/profile', label: 'Profile', icon: User },
-]
+// '/' only matches itself; other items also stay lit on their sub-paths.
+function inSection(base) { return base === '/' ? route.path === '/' : route.path === base || route.path.startsWith(base + '/') }
+
 // Only screens this pilot may open (Role Management modules).
-const visibleNavGroups = computed(() => navGroups
+const visibleGroups = computed(() => NAV_GROUPS
   .map((g) => ({ ...g, items: g.items.filter((i) => canOpen(i.to)) }))
   .filter((g) => g.items.length))
-const visibleTabs = computed(() => tabs.filter((t) => canOpen(t.to)))
+const homePath = computed(() => (auth.user ? firstAllowedPath() : '/'))
 
-// Open-alert count for the Alerts tab/nav badge (same /pilot/summary the
+// Breadcrumb names the page (pages carry no big title of their own).
+const crumb = computed(() => {
+  for (const g of NAV_GROUPS) {
+    const item = g.items.find((i) => inSection(i.to))
+    if (!item) continue
+    if (route.path === item.to) return { group: g.label, page: item.label }
+    return { group: item.label, parentTo: item.to, page: 'Details' }
+  }
+  return null
+})
+
+// Open-alert count for the Alerts link + top-bar bell (same /pilot/summary the
 // home page reads), refreshed on every navigation.
 const openAlerts = ref(0)
 async function refreshCount() {
@@ -160,9 +199,6 @@ async function refreshCount() {
   try { openAlerts.value = (await getSummary()).open_alerts || 0 } catch (e) { /* keep last */ }
 }
 watch([() => route.path, () => auth.isAuthed], () => { refreshCount() }, { immediate: true })
-
-// The phone layout scrolls the document; start each page at the top.
-watch(() => route.path, () => { if (typeof window !== 'undefined') window.scrollTo(0, 0) })
 
 // Route chunks are lazy (see router.js). A slow first fetch shows a skeleton
 // after 150ms instead of a frozen page.
@@ -178,7 +214,7 @@ router.afterEach(() => {
   showRouteSkeleton.value = false
 })
 
-async function logout() { openAlerts.value = 0; await endSession(); router.push('/login') }
+async function logout() { openAlerts.value = 0; menuOpen.value = false; await endSession(); router.push('/login') }
 
 // view-as tab: closing it ends the read-only session
 function closeView() { endSession() }

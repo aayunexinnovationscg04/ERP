@@ -1,65 +1,74 @@
 <template>
-  <div class="page-head">
-    <div class="ph-text">
-      <h1>Alerts</h1>
-      <div v-if="!loading && alerts.length" class="ph-sub">{{ openCount }} open · {{ alerts.length }} total</div>
+  <template v-if="loading">
+    <div class="kpis"><div class="skel sk-chip" v-for="n in 3" :key="n"></div></div>
+    <div class="skel sk-row" v-for="n in 5" :key="'r'+n"></div>
+  </template>
+
+  <div v-else-if="!alerts.length" class="card">
+    <EmptyState :icon="ShieldCheck" title="All clear" text="No alerts for your truck." />
+  </div>
+
+  <template v-else>
+    <div class="kpis alert-kpis">
+      <StatTile label="Open" :value="openCount" :icon="Bell" tone="brand" />
+      <StatTile label="Critical" :value="critCount" :icon="Siren" tone="crit" />
+      <StatTile label="Total" :value="alerts.length" :icon="ShieldAlert" tone="blue" />
     </div>
-  </div>
 
-  <div v-if="!loading && alerts.length" class="filter-chips" role="toolbar" aria-label="Filter alerts">
-    <button v-for="c in shownCats" :key="c.key" type="button" class="filter-chip" :class="{ active: activeCat === c.key }"
-      :aria-pressed="activeCat === c.key" @click="activeCat = c.key">
-      {{ c.label }}<span class="filter-chip-count">{{ countFor(c) }}</span>
-    </button>
-  </div>
-
-  <div v-if="loading">
-    <div v-for="n in 4" :key="n" class="skel" style="height:118px; margin-bottom:12px"></div>
-  </div>
-
-  <div v-else-if="!alerts.length" class="card empty-state">
-    <span class="empty-ic ok"><ShieldCheck :size="34" :stroke-width="1.75" /></span>
-    <h2>All clear</h2>
-    <p>No alerts for your truck.</p>
-  </div>
-
-  <div v-else-if="!filtered.length" class="card empty-state">
-    <span class="empty-ic"><CircleCheck :size="34" :stroke-width="1.75" /></span>
-    <h2>No {{ activeCatLabel }} alerts</h2>
-    <div class="empty-actions"><button type="button" class="btn" @click="activeCat = 'all'">Show all</button></div>
-  </div>
-
-  <div v-else class="alert-list">
-    <article v-for="(a, i) in filtered" :key="a.id" class="card alert-card item-in" :class="'sev-' + sev(a.severity)" :style="{ animationDelay: Math.min(i, 8) * 30 + 'ms' }">
-      <div class="ac-top">
-        <span class="row-ic" :class="SEV_TONE[sev(a.severity)]">
-          <component :is="SEV_ICON[sev(a.severity)]" :size="20" :stroke-width="2.25" />
-        </span>
-        <div class="ac-main">
-          <div class="ac-title">{{ a.title || a.type_label || a.type }}</div>
-          <div class="ac-meta">
-            <template v-if="a.title && a.type_label && !a.title.toLowerCase().includes(a.type_label.toLowerCase())"><span>{{ a.type_label }}</span><span class="sep">·</span></template>
-            <time :datetime="a.created_at" :title="dateTime(a.created_at)">{{ timeAgo(a.created_at) }}</time>
+    <div class="card flush">
+      <div class="card-head">
+        <div class="toolbar al-toolbar">
+          <div class="chips" role="group" aria-label="Filter alerts">
+            <button v-for="c in shownCats" :key="c.key" type="button" class="chip" :class="{ on: activeCat === c.key }"
+              :aria-pressed="activeCat === c.key" @click="activeCat = c.key">
+              {{ c.label }}<span class="chip-count">{{ countFor(c) }}</span>
+            </button>
           </div>
         </div>
-        <span class="badge" :class="SEV_BADGE[sev(a.severity)]">{{ SEV_LABEL[sev(a.severity)] }}</span>
       </div>
-      <p v-if="a.message" class="ac-msg">{{ a.message }}</p>
-      <div class="ac-foot">
-        <span class="badge" :class="STATUS_BADGE[a.status] || 'neutral'"><span class="dot"></span>{{ STATUS_LABEL[a.status] || a.status }}</span>
-        <span class="spacer"></span>
-        <a v-if="a.lat != null && a.lng != null" class="btn btn-sm btn-ghost ac-map"
-          :href="`https://www.google.com/maps/search/?api=1&query=${a.lat},${a.lng}`" target="_blank" rel="noopener">
-          <MapPin :size="16" :stroke-width="2.25" /> Location
-        </a>
-      </div>
-    </article>
-  </div>
+
+      <EmptyState v-if="!filtered.length" :icon="CircleCheck" :title="`No ${activeCatLabel} alerts`">
+        <button type="button" @click="activeCat = 'all'">Show all</button>
+      </EmptyState>
+
+      <template v-else>
+        <div class="list">
+          <article v-for="a in pager.rows.value" :key="a.id" class="list-row alert-card" :class="'sev-' + sev(a.severity)">
+            <span class="icon-chip" :class="SEV_TONE[sev(a.severity)]"><component :is="SEV_ICON[sev(a.severity)]" :size="16" /></span>
+            <div class="grow">
+              <div class="al-top">
+                <span class="title">{{ a.title || a.type_label || a.type }}</span>
+                <span class="badge" :class="SEV_BADGE[sev(a.severity)]">{{ SEV_LABEL[sev(a.severity)] }}</span>
+              </div>
+              <p v-if="a.message" class="al-body">{{ a.message }}</p>
+              <div class="al-foot">
+                <span class="sub">
+                  <template v-if="a.title && a.type_label && !a.title.toLowerCase().includes(a.type_label.toLowerCase())">{{ a.type_label }} · </template>
+                  <time :datetime="a.created_at" :title="dateTime(a.created_at)">{{ timeAgo(a.created_at) }}</time>
+                </span>
+                <span class="spacer"></span>
+                <a v-if="a.lat != null && a.lng != null" class="btn sm ghost al-map"
+                  :href="`https://www.google.com/maps/search/?api=1&query=${a.lat},${a.lng}`" target="_blank" rel="noopener">
+                  <MapPin :size="14" /> Location
+                </a>
+                <span class="badge plain al-status" :class="STATUS_BADGE[a.status] || 'gray'">{{ STATUS_LABEL[a.status] || a.status }}</span>
+              </div>
+            </div>
+          </article>
+        </div>
+        <Pager :pager="pager" />
+      </template>
+    </div>
+  </template>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { CircleCheck, TriangleAlert, ShieldAlert, Info, ShieldCheck, MapPin } from 'lucide-vue-next'
+import { CircleCheck, TriangleAlert, ShieldAlert, Info, ShieldCheck, MapPin, Bell, Siren } from 'lucide-vue-next'
+import StatTile from '../components/StatTile.vue'
+import EmptyState from '../components/EmptyState.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 import { getMyAlerts } from '../api'
 import { timeAgo, dateTime } from '../format'
 
@@ -92,14 +101,16 @@ const filtered = computed(() => {
   const c = CATEGORIES.find((x) => x.key === activeCat.value) || CATEGORIES[0]
   return alerts.value.filter((a) => matchesCategory(a, c))
 })
+const pager = usePaging(filtered, 10, [activeCat])
 const openCount = computed(() => alerts.value.filter((a) => a.status === 'open').length)
+const critCount = computed(() => alerts.value.filter((a) => a.severity === 'critical').length)
 
 function sev(s) { return s === 'critical' || s === 'warning' ? s : 'info' }
 const SEV_ICON = { critical: ShieldAlert, warning: TriangleAlert, info: Info }
-const SEV_TONE = { critical: 'ic-red', warning: 'ic-amber', info: 'ic-info' }
+const SEV_TONE = { critical: 'crit', warning: 'amber', info: 'info' }
 const SEV_BADGE = { critical: 'critical', warning: 'warning', info: 'info' }
 const SEV_LABEL = { critical: 'Critical', warning: 'Warning', info: 'Info' }
-const STATUS_BADGE = { open: 'brand', acknowledged: 'neutral', resolved: 'valid' }
+const STATUS_BADGE = { open: 'brand', acknowledged: 'gray', resolved: 'green' }
 const STATUS_LABEL = { open: 'Open', acknowledged: 'Acknowledged', resolved: 'Resolved' }
 
 onMounted(async () => {
@@ -109,20 +120,13 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.alert-list { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 1100px) { .alert-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
-
-.alert-card { padding: 16px; border-left: 4px solid var(--border-strong); display: flex; flex-direction: column; gap: 12px; }
-.alert-card.sev-critical { border-left-color: var(--crit); }
-.alert-card.sev-warning { border-left-color: var(--amber); }
-.alert-card.sev-info { border-left-color: var(--info); }
-.ac-top { display: flex; align-items: flex-start; gap: 12px; }
-.ac-main { flex: 1; min-width: 0; }
-.ac-title { font-weight: 800; font-size: 1rem; color: var(--ink-strong); line-height: 1.3; }
-.ac-meta { color: var(--muted); font-size: .8125rem; font-weight: 600; margin-top: 3px; }
-.ac-meta .sep { margin: 0 6px; color: var(--muted-2); }
-.ac-msg { color: var(--text); font-size: .9375rem; line-height: 1.5; }
-.ac-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
-.ac-when { font-size: .8125rem; }
-.ac-map { margin: -4px -8px -4px 0; color: var(--info); }
+.al-toolbar { margin: 0; width: 100%; }
+.alert-card { align-items: flex-start; }
+.alert-card .icon-chip { margin-top: 1px; }
+.al-top { display: flex; align-items: center; gap: 10px; justify-content: space-between; min-width: 0; }
+.al-top .title { white-space: normal; }
+.al-body { margin-top: 3px; font-size: 13.5px; color: var(--text); }
+.al-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; min-width: 0; }
+.al-foot .sub { white-space: normal; }
+.al-map { color: var(--info); }
 </style>

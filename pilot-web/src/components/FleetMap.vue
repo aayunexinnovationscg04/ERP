@@ -4,7 +4,7 @@
     <div v-if="!hasPoints" class="map-empty"><span><MapPinOff :size="16" /> {{ emptyText }}</span></div>
     <a v-if="googleMapsUrl" :href="googleMapsUrl" target="_blank" rel="noopener"
       class="map-overlay-btn" title="Open this location in Google Maps">
-      <ExternalLink :size="16" :stroke-width="2.25" /> <span>Open in Maps</span>
+      <ExternalLink :size="14" /> <span>Open in Maps</span>
     </a>
   </div>
 </template>
@@ -73,7 +73,7 @@ function draw() {
     pts.push([m.lat, m.lng])
   })
 
-  if (pts.length && !fitted) { map.fitBounds(L.latLngBounds(pts).pad(0.25), { maxZoom: 15 }); fitted = true }
+  if (pts.length && !fitted) { map.fitBounds(L.latLngBounds(pts).pad(0.25), { maxZoom: 15, animate: false }); fitted = true }
 }
 
 onMounted(() => {
