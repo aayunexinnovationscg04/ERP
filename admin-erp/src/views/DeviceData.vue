@@ -9,10 +9,10 @@
   </PageHeader>
 
   <div class="stats">
-    <StatCard label="Reporting (24 h)" :value="fmt(reporting)" :icon="RadioTower" tone="navy" :loading="loading" />
-    <StatCard label="Packets (24 h)" :value="fmt(packets24)" :icon="Activity" tone="info" :loading="loading" />
+    <StatCard label="Reporting today" :value="fmt(reporting)" :icon="RadioTower" tone="navy" :loading="loading" />
+    <StatCard label="Packets today" :value="fmt(packets24)" :icon="Activity" tone="info" :loading="loading" />
     <StatCard label="Online now" :value="fmt(onlineCount)" :icon="Wifi" tone="green" :loading="loading" />
-    <StatCard label="Not assigned" :value="fmt(unassigned)" :icon="CircleDashed" :tone="unassigned ? 'amber' : 'navy'" :loading="loading" />
+    <StatCard label="Unassigned" :value="fmt(unassigned)" :icon="CircleDashed" :tone="unassigned ? 'amber' : 'navy'" :loading="loading" />
   </div>
 
   <div class="card">
@@ -151,7 +151,7 @@ const filters = computed(() => [
   { key: 'all', label: 'All', count: devices.value.length },
   { key: 'online', label: 'Online', count: onlineCount.value },
   { key: 'offline', label: 'Offline', count: devices.value.length - onlineCount.value },
-  { key: 'unassigned', label: 'Not assigned', count: unassigned.value },
+  { key: 'unassigned', label: 'Unassigned', count: unassigned.value },
 ])
 const filtered = computed(() => {
   const term = q.value.trim().toLowerCase()

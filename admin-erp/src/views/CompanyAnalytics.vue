@@ -4,14 +4,14 @@
   <div class="stats">
     <StatCard label="Companies" :value="fmt(companies.length)" :icon="Building2" tone="navy" :loading="loading" />
     <StatCard label="Company users" :value="fmt(totals.users)" :icon="Users" tone="info" :loading="loading" :sub="loading ? '' : `${fmt(totals.active)} active accounts`" />
-    <StatCard label="Signed in, last 30 days" :value="fmt(totals.recent)" :icon="LogIn" tone="green" :loading="loading" :sub="loading ? '' : pctText(totals.recent, totals.users) + ' of company users'" />
+    <StatCard label="Active (30 d)" :value="fmt(totals.recent)" :icon="LogIn" tone="green" :loading="loading" :sub="loading ? '' : pctText(totals.recent, totals.users) + ' of company users'" />
     <StatCard label="Never signed in" :value="fmt(totals.never)" :icon="UserX" :tone="totals.never ? 'amber' : 'navy'" :loading="loading" />
   </div>
 
   <div class="grid-2">
     <section class="card">
       <div class="card-head">
-        <div><h2>Users by company</h2><div class="sub">Accounts per company, split by role</div></div>
+        <h2>Users by company</h2>
       </div>
       <div class="card-body">
         <div v-if="loading" class="bars"><div v-for="n in 4" :key="n" class="skel skel-row"></div></div>
@@ -37,7 +37,7 @@
 
     <section class="card">
       <div class="card-head">
-        <div><h2>Sign-in activity</h2><div class="sub">Share of each company's users who signed in during the last 30 days</div></div>
+        <h2>Signed in, last 30 days</h2>
       </div>
       <div class="card-body">
         <div v-if="loading" class="bars"><div v-for="n in 4" :key="n" class="skel skel-row"></div></div>
@@ -54,9 +54,9 @@
   </div>
 
   <section class="card mt">
-    <div class="card-head"><div><h2>Company breakdown</h2></div></div>
+    <div class="card-head"><h2>Company breakdown</h2></div>
     <div class="table-wrap">
-      <table class="table stack breakdown">
+      <table class="table stack cols-3 breakdown">
         <thead>
           <tr>
             <th>Company</th><th>Status</th><th class="t-right">Users</th><th class="t-right">Dealers</th>

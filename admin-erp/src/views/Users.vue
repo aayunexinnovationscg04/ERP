@@ -7,7 +7,7 @@
     <StatCard :label="kindLabel + 's'" :value="fmt(people.length)" :icon="kindIcon" tone="navy" :loading="loading" />
     <StatCard label="Active" :value="fmt(activeCount)" :icon="UserCheck" tone="green" :loading="loading" />
     <StatCard label="Disabled" :value="fmt(people.length - activeCount)" :icon="UserX" :tone="people.length - activeCount ? 'amber' : 'navy'" :loading="loading" />
-    <StatCard label="View only (can't edit)" :value="fmt(readOnlyCount)" :icon="Eye" tone="info" :loading="loading" />
+    <StatCard label="Read-only" :value="fmt(readOnlyCount)" :icon="Eye" tone="info" :loading="loading" />
   </div>
 
   <div class="card">
@@ -46,13 +46,14 @@
                 <span class="entity-mark round">{{ (u.username || '?')[0] }}</span>
                 <div>
                   <div class="t-primary">{{ u.username }} <span v-if="isSelf(u)" class="badge outline" style="height:20px;margin-left:4px">You</span></div>
-                  <div class="t-secondary">{{ u.email || u.phone || 'No contact details' }}</div>
-                  <div class="t-secondary login-inline">Last sign-in: {{ relTime(u.last_login) }}</div>
+                  <div v-if="u.email || u.phone" class="t-secondary">{{ u.email || u.phone }}</div>
+                  <div class="t-secondary login-inline">{{ u.last_login ? 'Signed in ' + relTime(u.last_login) : 'Never signed in' }}</div>
                 </div>
               </div>
+              <span v-if="isDealers" class="role-badge head-role" :class="'r-' + u.role">{{ roleLabel(u.role) }}</span>
             </td>
-            <td v-if="isDealers" data-label="Role"><span class="role-badge" :class="'r-' + u.role">{{ roleLabel(u.role) }}</span></td>
-            <td data-label="Company">
+            <td v-if="isDealers" data-label="Role" class="col-role"><span class="role-badge" :class="'r-' + u.role">{{ roleLabel(u.role) }}</span></td>
+            <td data-label="Company" class="col-company">
               <select
                 :value="u.company ?? ''" class="select select-sm" :disabled="busyId === u.id" aria-label="Company"
                 @change="patch(u, { company: $event.target.value || null }, 'Company updated')"
@@ -61,13 +62,13 @@
                 <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
               </select>
             </td>
-            <td data-label="Can edit" class="t-center">
+            <td data-label="Can edit" class="t-center col-switch">
               <ToggleSwitch
                 :model-value="u.can_edit" :disabled="busyId === u.id" :aria-label="`Allow ${u.username} to edit`"
                 @change="(v) => patch(u, { can_edit: v }, v ? 'Edit rights granted' : 'Account set to read-only')"
               />
             </td>
-            <td data-label="Active" class="t-center">
+            <td data-label="Active" class="t-center col-switch">
               <ToggleSwitch
                 :model-value="u.is_active" :disabled="isSelf(u) || busyId === u.id" :aria-label="`${u.username} active`"
                 :title="isSelf(u) ? 'You cannot deactivate your own account' : ''"
@@ -95,7 +96,7 @@
     <Pager :pager="pager" />
   </div>
 
-  <Modal :open="showCreate" :title="`New ${kindLabel.toLowerCase()}`" :description="isDealers ? 'Signs in to the Dealer portal.' : 'Signs in to the Pilot app.'" @close="showCreate = false">
+  <Modal :open="showCreate" :title="`New ${kindLabel.toLowerCase()}`" @close="showCreate = false">
     <form id="user-form" class="form-grid" autocomplete="off" @submit.prevent="create">
       <div class="field">
         <label for="nu-username">Username<span class="req">*</span></label>
@@ -130,7 +131,7 @@
     </template>
   </Modal>
 
-  <Modal :open="!!resetting" :title="`New password for ${resetting?.username}`" description="They'll be signed out everywhere and must use the new password." size="sm" @close="resetting = null">
+  <Modal :open="!!resetting" :title="`New password for ${resetting?.username}`" description="Signs them out on all devices." size="sm" @close="resetting = null">
     <form id="reset-form" class="form-grid" autocomplete="off" @submit.prevent="savePassword">
       <div class="field span-2">
         <label for="rp-password">New password<span class="req">*</span></label>
@@ -330,6 +331,7 @@ const pagedRows = pager.rows
 .pw-row .btn { flex: none; width: 44px; padding: 0; justify-content: center; }
 .users-table td .select-sm { width: auto; min-width: 150px; max-width: 200px; }
 .login-inline { display: none; }
+.head-role { display: none; }
 @media (max-width: 1180px) and (min-width: 721px) {
   .users-table .col-login { display: none; }
   .login-inline { display: block; }
@@ -342,6 +344,15 @@ const pagedRows = pager.rows
 }
 .row-off .t-primary { color: var(--muted); }
 @media (max-width: 720px) {
+  .users-table .cell-head { justify-content: space-between; }
+  .head-role { display: inline-flex; flex: none; }
+  .users-table .col-role, .users-table .col-login { display: none; }
+  .login-inline { display: block; }
+  .users-table .col-company { grid-column: 1 / -1; }
+  .users-table .col-company::before { display: none; }
+  .users-table .col-switch { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 0 12px; min-height: 44px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  .users-table .col-switch::before { margin: 0; font-size: .75rem; letter-spacing: .02em; text-transform: none; color: var(--text); font-weight: 600; }
   .users-table td .select-sm { min-width: 0; width: 100%; max-width: 100%; }
   .row-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
   .users-table .access-btn { width: 100%; justify-content: center; min-height: 40px; }

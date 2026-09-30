@@ -38,7 +38,7 @@
 
     <div class="grid-main-side">
       <section class="card">
-        <div class="card-head"><div><h2>Telemetry ingest</h2><div class="sub">Records received from devices</div></div></div>
+        <div class="card-head"><h2>Telemetry ingest</h2></div>
         <div class="card-body">
           <div v-if="!h"><div class="skel skel-row" v-for="n in 3" :key="n" style="margin-bottom:14px"></div></div>
           <template v-else>
@@ -54,7 +54,7 @@
       </section>
 
       <section class="card">
-        <div class="card-head"><div><h2>Utilization</h2></div></div>
+        <div class="card-head"><h2>Utilization</h2></div>
         <div class="card-body">
           <div v-if="!h"><div class="skel skel-row" v-for="n in 2" :key="n" style="margin-bottom:18px"></div></div>
           <template v-else>
@@ -84,7 +84,7 @@
     </div>
 
     <section class="card">
-      <div class="card-head"><div><h2>Users by role</h2><div class="sub">All accounts, every company</div></div></div>
+      <div class="card-head"><h2>Users by role</h2></div>
       <div class="card-body">
         <div v-if="!h" class="bars"><div class="skel skel-row" v-for="n in 4" :key="n"></div></div>
         <EmptyState v-else-if="!hasRoleData" :icon="Users" title="No users yet" />

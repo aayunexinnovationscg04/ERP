@@ -5,7 +5,7 @@
   </PageHeader>
 
   <div class="stats">
-    <StatCard label="Registered devices" :value="fmt(devices.length)" :icon="Cpu" tone="navy" :loading="loading" />
+    <StatCard label="Devices" :value="fmt(devices.length)" :icon="Cpu" tone="navy" :loading="loading" />
     <StatCard label="Online" :value="fmt(onlineCount)" :icon="Wifi" tone="green" :loading="loading" :sub="loading ? '' : pct(onlineCount) + ' of fleet'" />
     <StatCard label="Offline" :value="fmt(devices.length - onlineCount)" :icon="WifiOff" :tone="devices.length - onlineCount ? 'red' : 'navy'" :loading="loading" />
     <StatCard label="Pending commands" :value="fmt(pendingTotal)" :icon="Send" :tone="pendingTotal ? 'amber' : 'navy'" :loading="loading" sub="Queued for delivery to devices" />
@@ -43,7 +43,7 @@
             <td class="cell-head">
               <div class="cell-entity">
                 <span class="entity-mark"><Cpu :size="16" /></span>
-                <div><div class="t-primary mono">{{ d.device_id }}</div><div class="t-secondary">{{ d.label || 'No label' }}</div></div>
+                <div><div class="t-primary mono">{{ d.device_id }}</div><div v-if="d.label" class="t-secondary">{{ d.label }}</div></div>
               </div>
             </td>
             <td data-label="Connection"><span class="badge" :class="d.online ? 'success' : 'neutral'"><span class="bdot"></span>{{ d.online ? 'Online' : 'Offline' }}</span></td>

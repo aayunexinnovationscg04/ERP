@@ -21,9 +21,9 @@
       </StatCard>
     </div>
 
-    <div class="grid-2">
+    <div class="grid-2" style="align-items:start">
       <section class="card">
-        <div class="card-head"><div><h2>Fleet status</h2><div class="sub">Share of all vehicles by current state</div></div></div>
+        <div class="card-head"><h2>Fleet status</h2></div>
         <div class="card-body">
           <div v-if="!s" class="skel skel-row"></div>
           <template v-else>
@@ -33,19 +33,12 @@
             <div class="legend">
               <span v-for="d in statusRows" :key="d.key"><i :style="{ background: d.color }"></i>{{ d.label }} <b>{{ d.count }}</b> <span class="muted">({{ pctOf(d.count) }})</span></span>
             </div>
-            <div class="bars" style="margin-top:22px">
-              <div v-for="d in statusRows" :key="d.key" class="bar-row">
-                <span class="bar-label"><span class="sw" :style="{ background: d.color }"></span>{{ d.label }}</span>
-                <div class="bar-track"><span class="bar-fill" :style="{ width: (s.vehicles_total ? d.count / s.vehicles_total * 100 : 0) + '%', background: d.color }"></span></div>
-                <span class="bar-val">{{ d.count }}</span>
-              </div>
-            </div>
           </template>
         </div>
       </section>
 
       <section class="card">
-        <div class="card-head"><div><h2>Last 24 hours</h2><div class="sub">Trips started in the last 24 hours, all companies</div></div></div>
+        <div class="card-head"><h2>Last 24 hours</h2></div>
         <div class="card-body">
           <div v-if="!s"><div class="skel skel-row" v-for="n in 3" :key="n" style="margin-bottom:14px"></div></div>
           <template v-else>

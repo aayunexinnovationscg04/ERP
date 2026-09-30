@@ -3,7 +3,7 @@
 
   <div class="notice info">
     <FlaskConical :size="16" />
-    <span><strong>Sample data.</strong> <span class="muted">The usage-analytics pipeline is not connected yet, so these figures are generated examples that show how this report will look.</span></span>
+    <span><strong>Sample data</strong> <span class="muted">· live usage analytics not connected yet</span></span>
   </div>
 
   <div class="stats">
@@ -14,7 +14,7 @@
   </div>
 
   <section class="card">
-    <div class="card-head"><div><h2>API calls per day</h2><div class="sub">Last 7 days</div></div></div>
+    <div class="card-head"><h2>API calls, last 7 days</h2></div>
     <div class="card-body">
       <div class="chart" @mouseleave="hover = null">
         <svg viewBox="0 0 700 200" preserveAspectRatio="none" role="img" aria-label="API calls per day over the last 7 days" class="chart-svg">
@@ -38,9 +38,9 @@
   </section>
 
   <section class="card mt">
-    <div class="card-head"><div><h2>Daily breakdown</h2></div></div>
+    <div class="card-head"><h2>Daily breakdown</h2></div>
     <div class="table-wrap">
-      <table class="table stack">
+      <table class="table stack cols-3">
         <thead><tr><th>Day</th><th class="t-right">Sign-ins</th><th class="t-right">Active sessions</th><th class="t-right">API calls</th></tr></thead>
         <tbody>
           <tr v-for="(d, i) in days" :key="d">

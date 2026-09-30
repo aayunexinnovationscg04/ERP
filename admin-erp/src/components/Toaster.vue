@@ -40,6 +40,7 @@ const icon = (t) => (t === 'success' ? CircleCheck : t === 'error' ? CircleAlert
   display: grid; place-items: center; background: transparent; color: var(--muted);
 }
 .toast-x:hover { background: var(--surface-3); color: var(--text); }
+@media (max-width: 720px) { .toast-x { width: 40px; height: 40px; margin: -6px -6px -6px 0; } }
 .toast-enter-active, .toast-leave-active { transition: all .22s var(--ease); }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(10px); }
 .toast-move { transition: transform .22s var(--ease); }

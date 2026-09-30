@@ -3,7 +3,7 @@
 
   <div class="notice info">
     <FlaskConical :size="16" />
-    <span><strong>Sample data.</strong> <span class="muted">A persisted audit-log store is not connected yet, so the events below are generated examples that show how this screen will work.</span></span>
+    <span><strong>Sample data</strong> <span class="muted">· live audit log not connected yet</span></span>
   </div>
 
   <div class="stats">

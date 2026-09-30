@@ -7,7 +7,7 @@
     <StatCard label="Total companies" :value="fmt(companies.length)" :icon="Building2" tone="navy" :loading="loading" />
     <StatCard label="Active" :value="fmt(activeCount)" :icon="CircleCheck" tone="green" :loading="loading" />
     <StatCard label="Suspended" :value="fmt(companies.length - activeCount)" :icon="Ban" :tone="companies.length - activeCount ? 'red' : 'navy'" :loading="loading" />
-    <StatCard label="Users in companies" :value="fmt(companyUserTotal)" :icon="Users" tone="info" :loading="loading" />
+    <StatCard label="Users" :value="fmt(companyUserTotal)" :icon="Users" tone="info" :loading="loading" />
   </div>
 
   <div class="card">
@@ -62,7 +62,7 @@
     <Pager :pager="pager" />
   </div>
 
-  <Modal :open="showCreate" title="Add company" description="Creates a new tenant. Add its users from the Users page afterwards." @close="showCreate = false">
+  <Modal :open="showCreate" title="Add company" @close="showCreate = false">
     <form id="company-form" class="form-grid" @submit.prevent="create">
       <div class="field span-2">
         <label for="co-name">Company name<span class="req">*</span></label>
@@ -71,7 +71,7 @@
       <div class="field span-2">
         <label for="co-slug">Slug<span class="req">*</span></label>
         <input id="co-slug" v-model="form.slug" class="input mono" required maxlength="80" pattern="[a-zA-Z0-9_\-]+" placeholder="shree-logistics" autocomplete="off" @input="slugTouched = true" />
-        <span class="help">Unique short ID. Letters, numbers, hyphens and underscores only.</span>
+        <span class="help">Letters, numbers, - and _ only.</span>
       </div>
       <div v-if="formError" class="form-error span-2"><CircleAlert :size="16" /> {{ formError }}</div>
     </form>

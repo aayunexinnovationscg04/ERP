@@ -6,9 +6,9 @@
 
   <div class="stats">
     <StatCard label="Open alerts" :value="fmt(openCount)" :icon="Siren" :tone="openCount ? 'crit' : 'green'" :loading="loading" />
-    <StatCard label="Critical, open" :value="fmt(critOpen)" :icon="OctagonAlert" :tone="critOpen ? 'red' : 'navy'" :loading="loading" />
-    <StatCard label="Fuel theft & tamper" :value="fmt(theftCount)" :icon="Fuel" :tone="theftCount ? 'amber' : 'navy'" :loading="loading" sub="All statuses" />
-    <StatCard label="Acknowledged / resolved" :value="fmt(alerts.length - openCount)" :icon="CircleCheck" tone="green" :loading="loading" />
+    <StatCard label="Critical" :value="fmt(critOpen)" :icon="OctagonAlert" :tone="critOpen ? 'red' : 'navy'" :loading="loading" />
+    <StatCard label="Fuel theft & tamper" :value="fmt(theftCount)" :icon="Fuel" :tone="theftCount ? 'amber' : 'navy'" :loading="loading" />
+    <StatCard label="Handled" :value="fmt(alerts.length - openCount)" :icon="CircleCheck" tone="green" :loading="loading" />
   </div>
 
   <div class="grid-main-side sec-grid">
@@ -67,7 +67,7 @@
 
     <div class="vstack">
       <section class="card">
-        <div class="card-head"><div><h2>Last 7 days</h2><div class="sub">Alerts raised per day</div></div><span v-if="!loading" class="t-primary num">{{ weekTotal }}</span></div>
+        <div class="card-head"><h2>Last 7 days</h2><span v-if="!loading" class="t-primary num">{{ weekTotal }}</span></div>
         <div class="card-body">
           <div v-if="loading" class="skel skel-block"></div>
           <div v-else class="cols" role="img" :aria-label="days.map((d) => `${d.label}: ${d.count}`).join(', ')">
@@ -81,7 +81,7 @@
       </section>
 
       <section class="card">
-        <div class="card-head"><div><h2>By type</h2><div class="sub">All alerts on record</div></div></div>
+        <div class="card-head"><h2>By type</h2></div>
         <div class="card-body">
           <div v-if="loading" class="bars"><div class="skel skel-row" v-for="n in 4" :key="n"></div></div>
           <EmptyState v-else-if="!byType.length" :icon="ShieldCheck" title="No alerts yet" />
@@ -204,7 +204,7 @@ const pagedRows = pager.rows
 .col-bar { flex: 1; width: 100%; max-width: 28px; display: flex; align-items: flex-end; background: var(--surface-3); border-radius: 4px; overflow: hidden; }
 .col-bar span { display: block; width: 100%; background: var(--crit); border-radius: 4px 4px 0 0; min-height: 0; }
 .col-lbl { font-size: .72rem; color: var(--muted); white-space: nowrap; }
-@media (max-width: 1360px) {
+@media (max-width: 1560px) {
   .sec-grid { grid-template-columns: minmax(0, 1fr); }
   .sec-grid > .vstack { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }
