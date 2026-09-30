@@ -73,7 +73,11 @@
               </td>
               <td class="muted hide-md">{{ v.device_id || '—' }}</td>
               <td class="nowrap"><span class="ico"><span class="dot" :class="freshness(v)"></span>{{ ago(v.latest?.received_at) }}</span></td>
-              <td><router-link class="row-link" :to="`/vehicles/${v.id}`" title="Open vehicle" @click.stop><ChevronRight :size="17" /></router-link></td>
+              <td class="nowrap">
+                <a v-if="v.latest?.has_gps_fix" class="row-link gmaps-link" :href="gmaps(v)" target="_blank" rel="noopener"
+                   title="Open in Google Maps" :aria-label="`Open ${v.registration_number} in Google Maps`" @click.stop><Navigation2 :size="16" /></a>
+                <router-link class="row-link" :to="`/vehicles/${v.id}`" title="Open vehicle" @click.stop><ChevronRight :size="17" /></router-link>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -89,6 +93,8 @@
               <template v-if="v.latest?.total_litres != null"> · {{ fmt(v.latest.total_litres) }} L</template></div>
           </span>
           <span class="badge" :class="v.status">{{ v.status }}</span>
+          <a v-if="v.latest?.has_gps_fix" class="ghost icon-btn gmaps-link" :href="gmaps(v)" target="_blank" rel="noopener"
+             :aria-label="`Open ${v.registration_number} in Google Maps`" @click.stop><Navigation2 :size="16" /></a>
           <button v-if="canWrite" type="button" class="ghost icon-btn" aria-label="Rename vehicle" @click.stop="renaming = v"><Pencil :size="15" /></button>
         </div>
       </div>
@@ -102,9 +108,10 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import {
-  ArrowDownAZ, ArrowUpNarrowWide, ChevronRight, Fuel, LocateFixed, Navigation, PauseCircle, Pencil, Search, SearchX,
+  ArrowDownAZ, ArrowUpNarrowWide, ChevronRight, Navigation2, Fuel, LocateFixed, Navigation, PauseCircle, Pencil, Search, SearchX,
   Truck, Wrench, WifiOff,
 } from 'lucide-vue-next'
+import { googleMapsUrl } from '../gmaps'
 import { getVehicles } from '../api'
 import { auth } from '../auth'
 import { freshness, ago, fmt } from '../util'
@@ -191,6 +198,8 @@ async function load() {
 watch(priorityStatus, load)
 onMounted(() => { load(); timer = setInterval(load, 15000) })
 onBeforeUnmount(() => clearInterval(timer))
+
+const gmaps = (v) => googleMapsUrl([v.latest.latitude, v.latest.longitude])
 </script>
 
 <style scoped>

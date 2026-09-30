@@ -27,7 +27,7 @@ isolated from the others by the browser.
 Legacy device telemetry (`/api/telemetry`, plain HTTP, port 80) is still
 served by Caddy → the old receiver on `:8080`, unchanged by any of the above.
 
-## Auth model (since the ui-revamp branch)
+## Auth model
 - Access token: 10 min JWT, held only in SPA memory, sent as `Authorization: Bearer`.
 - Refresh token: `HttpOnly; Secure; SameSite=Strict` cookie `fgx_rt_<portal>`,
   path `/api/auth/`, rotated on every refresh, old one blacklisted.
@@ -50,7 +50,7 @@ built SPAs, the landing page and Django's collected static live under
 
 ---
 
-## One-time cutover: path-routed → subdomains (ui-revamp branch)
+## One-time cutover: path-routed → subdomains (done 2026-09-27)
 
 Do these in order. DNS for `erp`, `admin`, `dealer`, `pilot` already points at
 31.42.125.144. Everyone has to sign in again once afterwards (old tokens don't

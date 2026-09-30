@@ -112,7 +112,7 @@ import Pager from '../components/Pager.vue'
 import { usePaging } from '../paging'
 import { getGeofences, createGeofence, updateGeofence, deleteGeofence } from '../api'
 import { auth } from '../auth'
-import { TILE_URL, TILE_ATTRIBUTION, TILE_SUBDOMAINS } from '../tiles'
+import { attachBaseMap } from '../tiles'
 import { toast } from '../toast'
 
 const canWrite = computed(() => auth.user?.may_write !== false)
@@ -143,7 +143,7 @@ const confirmDel = ref(null)
 const draft = ref({ name: '', radius_m: 300, purpose: 'allowed', lat: null, lng: null })
 
 const mapEl = ref(null)
-let map, zoneLayer, draftLayer, draftMarker, draftCircle
+let map, zoneLayer, draftLayer, draftMarker, draftCircle, detachBase
 const boundsById = {}
 
 const canSave = computed(() =>
@@ -269,7 +269,7 @@ async function load() {
 function initMap() {
   if (map || !mapEl.value) return
   map = L.map(mapEl.value, { zoomControl: true }).setView([21.145, 79.088], 12)
-  L.tileLayer(TILE_URL, { subdomains: TILE_SUBDOMAINS, maxZoom: 20, attribution: TILE_ATTRIBUTION }).addTo(map)
+  detachBase = attachBaseMap(L, map)
   zoneLayer = L.layerGroup().addTo(map)
   draftLayer = L.layerGroup().addTo(map)
   map.on('click', (e) => {
@@ -289,7 +289,7 @@ watch(() => [draft.value.radius_m, draft.value.purpose], () => {
 })
 
 onMounted(load)
-onBeforeUnmount(() => { if (map) { map.stop(); map.off(); map.remove(); map = null } })
+onBeforeUnmount(() => { detachBase?.(); if (map) { map.stop(); map.off(); map.remove(); map = null } })
 </script>
 <style scoped>
 .gf-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

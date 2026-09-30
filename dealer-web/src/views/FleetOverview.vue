@@ -192,7 +192,7 @@ async function load() {
   } catch (e) { /* keep last good data */ }
   finally { loading.value = false }
 }
-onMounted(() => { load(); timer = setInterval(load, 30000) })
+onMounted(() => { load(); timer = setInterval(load, 15000) })
 onBeforeUnmount(() => clearInterval(timer))
 </script>
 

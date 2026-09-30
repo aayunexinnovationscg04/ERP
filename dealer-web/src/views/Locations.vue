@@ -20,7 +20,7 @@
           <span><i class="swatch" style="background:#64748B"></i>Offline</span>
         </div>
       </div>
-      <FleetMap :markers="markers" :focus="focusId" map-class="lm-map" @select="(id) => (focusId = id)" />
+      <FleetMap :markers="markers" :track="focusTrack" :focus="focusId" map-class="lm-map" @select="(id) => (focusId = id)" />
       <div v-if="focused?.latest?.has_gps_fix" class="coord-row">
         <div><span class="k">Latitude</span><b class="num">{{ Number(focused.latest.latitude).toFixed(6) }}</b></div>
         <div><span class="k">Longitude</span><b class="num">{{ Number(focused.latest.longitude).toFixed(6) }}</b></div>
@@ -57,9 +57,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { LocateFixed, Pencil, Search, SearchX, Maximize2, ChevronRight } from 'lucide-vue-next'
-import { getVehicles } from '../api'
+import { getVehicles, getVehicleTrack } from '../api'
+import { recentTrack } from '../recent-track'
 import { auth } from '../auth'
 import { freshness, ago, fmt } from '../util'
 import FleetMap from '../components/FleetMap.vue'
@@ -98,7 +99,20 @@ function onRenamed(name) {
   renaming.value = null
 }
 
+// the focused truck's recent road: drawn on the map and used by its Google Maps button
+const focusTrack = ref([])
+async function loadTrack() {
+  const id = focusId.value
+  if (id == null) { focusTrack.value = []; return }
+  try {
+    const pts = recentTrack(await getVehicleTrack(id, 300))
+    if (focusId.value === id) focusTrack.value = pts
+  } catch (e) { /* keep the pin-only view */ }
+}
+watch(focusId, () => { focusTrack.value = []; loadTrack() })
+
 async function load() {
+  loadTrack()
   try { vehicles.value = await getVehicles() }
   catch (e) { /* keep last good data */ }
   finally { loading.value = false }

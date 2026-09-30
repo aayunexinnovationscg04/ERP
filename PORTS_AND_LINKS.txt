@@ -1,6 +1,6 @@
 ================================================================================
 FUEL GUARD X - PORTS, LINKS & ACCESS
-Last updated: 2026-09-27 (subdomain-per-portal layout, ui-revamp branch)
+Last updated: 2026-09-30 (subdomain-per-portal layout; single branch: main)
 VPS public IP : 31.42.125.144
 Domain        : dashboard.aayunexinnovations.com  ->  31.42.125.144
 --------------------------------------------------------------------------------

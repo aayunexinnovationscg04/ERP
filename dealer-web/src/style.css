@@ -499,8 +499,6 @@ a.list-row:hover, .list-row.clickable:hover { background: var(--surface-2); text
 .map-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
 
-/* OSM ships light tiles only — dim them for the dark theme (tile pane only) */
-:root[data-theme="dark"] .map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.6); }
 .leaflet-container { background: var(--surface-2); font-family: var(--font-ui); }
 .leaflet-popup-content-wrapper, .leaflet-tooltip {
   border-radius: var(--radius-sm); background: var(--surface); color: var(--text);
@@ -751,3 +749,10 @@ button.danger-solid:hover:not(:disabled) { background: #B91C1C; border-color: #B
 
 /* the sidebar's portal strip (components/PortalStrip.vue) hides in the collapsed icon rail */
 .app.collapsed .portal-strip { display: none; }
+
+/* one-tap Google Maps link on vehicle rows */
+.gmaps-link { color: var(--brand); }
+.gmaps-link:hover { color: var(--brand-strong); }
+
+/* OpenStreetMap ships light tiles only: dim them for the dark theme (tiles only, not pins) */
+:root[data-theme="dark"] .osm-tiles { filter: invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.6); }
