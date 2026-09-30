@@ -1,32 +1,26 @@
 <template>
-  <PageHeader title="Fleet Overview"
-    :description="companyName ? `Live status of every vehicle at ${companyName}.` : 'Live status of every vehicle in your fleet.'">
-    <router-link to="/locations" class="btn"><LocateFixed :size="16" /> Live map</router-link>
-    <router-link to="/vehicles" class="btn primary"><Truck :size="16" /> All vehicles</router-link>
+  <PageHeader>
+    <router-link v-if="canOpen('/locations')" to="/locations" class="btn"><LocateFixed :size="16" /> Live map</router-link>
+    <router-link v-if="canOpen('/vehicles')" to="/vehicles" class="btn primary"><Truck :size="16" /> All vehicles</router-link>
   </PageHeader>
 
-  <div v-if="loading" class="kpis"><div class="skel sk-chip" v-for="n in 5" :key="n"></div></div>
+  <div v-if="loading" class="kpis"><div class="skel sk-chip" v-for="n in 4" :key="n"></div></div>
   <div v-else class="kpis">
-    <StatTile label="Total vehicles" :value="vehicles.length" :icon="Truck" tone="navy" to="/vehicles"
-      :sub="withGps + ' reporting GPS'" />
-    <StatTile label="Active" :value="counts.active" :icon="Navigation" tone="green" :sub="pctOf(counts.active)" />
-    <StatTile label="Idle" :value="counts.idle" :icon="PauseCircle" tone="amber" :sub="pctOf(counts.idle)" />
-    <StatTile label="Offline" :value="counts.offline" :icon="WifiOff" tone="gray" :sub="pctOf(counts.offline)" />
-    <StatTile label="Open alerts" :value="alerts.length" :icon="ShieldAlert" tone="crit" to="/alerts"
-      :sub="critCount ? `${critCount} critical` : 'None critical'" />
+    <StatTile label="Total vehicles" :value="vehicles.length" :icon="Truck" tone="navy" to="/vehicles" />
+    <StatTile label="Active" :value="counts.active" :icon="Navigation" tone="green" />
+    <StatTile label="Offline" :value="counts.offline" :icon="WifiOff" tone="gray" />
+    <StatTile v-if="canOpen('/alerts')" label="Open alerts" :value="alerts.length" :icon="ShieldAlert" tone="crit" to="/alerts" />
   </div>
 
   <div v-if="!loading && !vehicles.length" class="card">
-    <EmptyState :icon="Truck" title="No vehicles yet"
-      text="Vehicles appear here once your administrator installs a Fuel Guard X device and links it to your company." />
+    <EmptyState :icon="Truck" title="No vehicles yet" />
   </div>
 
   <template v-else>
     <div class="grid-2">
       <div class="card flush">
         <div class="card-head">
-          <div class="card-head-title"><LocateFixed :size="17" /><div><h2>Live fleet map</h2>
-            <div class="card-sub">{{ markers.length }} of {{ vehicles.length }} vehicles with a GPS fix</div></div></div>
+          <div class="card-head-title"><LocateFixed :size="17" /><h2>Live fleet map</h2></div>
           <div class="map-legend">
             <span><i class="swatch" style="background:#059669"></i>Active</span>
             <span><i class="swatch" style="background:#D97706"></i>Idle</span>
@@ -60,10 +54,9 @@
               </div>
             </div>
           </div>
-          <div class="card-foot">Critical = expired document or in maintenance. Needs attention = document expiring within 30 days or vehicle offline.</div>
         </div>
 
-        <div class="card">
+        <div v-if="canOpen('/alerts')" class="card">
           <div class="card-head">
             <div class="card-head-title"><Bell :size="17" /><h2>Open alerts</h2></div>
             <router-link to="/alerts" class="link-more">View all <ChevronRight :size="14" /></router-link>
@@ -85,8 +78,7 @@
 
     <div class="card flush section">
       <div class="card-head">
-        <div class="card-head-title"><Truck :size="17" /><div><h2>Vehicle roster</h2>
-          <div class="card-sub">Refreshes every 30 seconds</div></div></div>
+        <div class="card-head-title"><Truck :size="17" /><h2>Vehicle roster</h2></div>
       </div>
       <div v-if="loading" class="card-body"><div class="skel sk-row" v-for="n in 5" :key="n"></div></div>
       <div v-else class="table-wrap hide-sm">
@@ -96,7 +88,7 @@
             <th class="hide-sm">Last update</th><th>Health</th><th style="width:48px"></th>
           </tr></thead>
           <tbody>
-            <tr v-for="v in roster" :key="v.id" class="clickable" @click="$router.push(`/vehicles/${v.id}`)">
+            <tr v-for="v in pager.rows.value" :key="v.id" class="clickable" @click="$router.push(`/vehicles/${v.id}`)">
               <td>
                 <div class="cell-with-icon">
                   <span class="dot" :class="freshness(v)" :title="'Telemetry ' + ago(v.latest?.received_at)"></span>
@@ -114,7 +106,7 @@
         </table>
       </div>
       <div v-if="!loading" class="list show-sm">
-        <router-link v-for="v in roster" :key="v.id" :to="`/vehicles/${v.id}`" class="list-row">
+        <router-link v-for="v in pager.rows.value" :key="v.id" :to="`/vehicles/${v.id}`" class="list-row">
           <span class="dot" :class="freshness(v)"></span>
           <span class="grow">
             <div class="title">{{ v.local_name }}</div>
@@ -123,6 +115,7 @@
           <span class="badge" :class="v.status">{{ v.status }}</span>
         </router-link>
       </div>
+      <Pager v-if="!loading" :pager="pager" />
     </div>
   </template>
 </template>
@@ -130,18 +123,19 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
-  Truck, Navigation, PauseCircle, WifiOff, ShieldAlert, ShieldCheck, LocateFixed, HeartPulse, Bell,
+  Truck, Navigation, WifiOff, ShieldAlert, ShieldCheck, LocateFixed, HeartPulse, Bell,
   ChevronRight, TriangleAlert,
 } from 'lucide-vue-next'
 import { getVehicles, getAlerts } from '../api'
-import { auth } from '../auth'
 import { ago, fmt, freshness } from '../util'
 import PageHeader from '../components/PageHeader.vue'
 import StatTile from '../components/StatTile.vue'
 import EmptyState from '../components/EmptyState.vue'
 import FleetMap from '../components/FleetMap.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
+import { canOpen } from '../access'
 
-const companyName = computed(() => auth.user?.company?.name || '')
 const vehicles = ref([])
 const alerts = ref([])
 const loading = ref(true)
@@ -153,15 +147,10 @@ const counts = computed(() => ({
   idle: vehicles.value.filter((v) => v.status === 'idle' || v.status === 'maintenance').length,
   offline: vehicles.value.filter((v) => v.status === 'offline').length,
 }))
-const critCount = computed(() => alerts.value.filter((a) => a.severity === 'critical').length)
-function pctOf(n) {
-  return vehicles.value.length ? `${Math.round((n / vehicles.value.length) * 100)}% of fleet` : '—'
-}
 
 const markers = computed(() => vehicles.value
   .filter((v) => v.latest?.has_gps_fix && v.latest.latitude != null)
   .map((v) => ({ id: v.id, lat: v.latest.latitude, lng: v.latest.longitude, label: `${v.local_name} · ${v.registration_number}`, status: v.status, speed: v.latest.speed_kmph != null ? fmt(v.latest.speed_kmph, 0) : null })))
-const withGps = computed(() => markers.value.length)
 
 // Health derived from real signals: document expiry + vehicle status.
 function healthOf(v) {
@@ -173,6 +162,7 @@ function healthOf(v) {
   return { key: 'good', label: 'Good', cls: 'active' }
 }
 const roster = computed(() => vehicles.value.map((v) => ({ ...v, health: healthOf(v) })))
+const pager = usePaging(roster, 10)
 const healthDefs = computed(() => {
   const c = { good: 0, warning: 0, critical: 0 }
   roster.value.forEach((v) => { c[v.health.key]++ })
@@ -196,7 +186,7 @@ const donutSegs = computed(() => {
 
 async function load() {
   try {
-    const [v, a] = await Promise.all([getVehicles(), getAlerts({ status: 'open' })])
+    const [v, a] = await Promise.all([getVehicles(), canOpen('/alerts') ? getAlerts({ status: 'open' }).catch(() => []) : []])
     vehicles.value = v
     alerts.value = a
   } catch (e) { /* keep last good data */ }

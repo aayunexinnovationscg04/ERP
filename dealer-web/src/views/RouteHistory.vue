@@ -1,27 +1,26 @@
 <template>
-  <PageHeader title="Route History" description="Pick a vehicle to see its recorded trips and where they started and ended.">
-    <label v-if="vehicles.length" class="field rh-pick">
-      <span class="sr-only">Vehicle</span>
-      <select v-model="vehicleId" aria-label="Vehicle">
-        <option v-for="v in vehicles" :key="v.id" :value="v.id">{{ v.local_name }} · {{ v.registration_number }}</option>
-      </select>
-    </label>
-  </PageHeader>
-
   <div v-if="loading" class="grid-2">
     <div class="skel sk-map"></div>
     <div class="card card-body"><div class="skel sk-row" v-for="n in 5" :key="n"></div></div>
   </div>
 
   <div v-else-if="!vehicles.length" class="card">
-    <EmptyState :icon="History" title="No route history yet" text="Trips are recorded automatically once a vehicle with a Fuel Guard X device starts moving." />
+    <EmptyState :icon="History" title="No route history yet" />
   </div>
 
   <template v-else>
+    <div class="rh-bar">
+      <label class="rh-pick">
+        <span class="sr-only">Vehicle</span>
+        <select v-model="vehicleId" aria-label="Vehicle">
+          <option v-for="v in vehicles" :key="v.id" :value="v.id">{{ v.local_name }} · {{ v.registration_number }}</option>
+        </select>
+      </label>
+    </div>
     <div class="kpis">
       <StatTile label="Trips recorded" :value="trips.length" :icon="RouteIcon" tone="blue" />
-      <StatTile label="Distance" :value="fmt(totalKm, 0)" unit="km" :icon="Milestone" tone="navy" sub="Across listed trips" />
-      <StatTile label="Fuel used" :value="fmt(totalFuel)" unit="L" :icon="Fuel" tone="brand" sub="Across listed trips" />
+      <StatTile label="Distance" :value="fmt(totalKm, 0)" unit="km" :icon="Milestone" tone="navy" />
+      <StatTile label="Fuel used" :value="fmt(totalFuel)" unit="L" :icon="Fuel" tone="brand" />
       <StatTile label="Top speed" :value="fmt(topSpeed, 0)" unit="km/h" :icon="Gauge" :tone="topSpeed > 80 ? 'amber' : 'green'" />
     </div>
 
@@ -29,8 +28,8 @@
       <div class="card flush">
         <div class="card-head">
           <div class="card-head-title"><MapIcon :size="17" /><div><h2>{{ selTrip ? 'Trip on ' + dt(selTrip.started_at) : 'Recent track' }}</h2>
-            <div class="card-sub">{{ selTrip ? (selTrip.start_lat != null ? 'Start → end of the selected trip' : 'No start/end position recorded for this trip') : track.length + ' telemetry point(s)' }}</div></div></div>
-          <button v-if="selTrip" type="button" class="sm" @click="selTripId = null">Show recent track</button>
+            <div v-if="selTrip && selTrip.start_lat == null" class="card-sub">No start/end position</div></div></div>
+          <button v-if="selTrip" type="button" class="sm" @click="selTripId = null"><MapIcon :size="14" /> Recent track</button>
         </div>
         <div v-if="tripLoading" class="skel" style="height:440px;border-radius:0"></div>
         <FleetMap v-else :markers="markers" :track="mapTrack" :end-label="selTrip ? 'End' : 'Latest'" />
@@ -40,7 +39,7 @@
         <div class="card-head"><div class="card-head-title"><History :size="17" /><h2>Trips</h2></div></div>
         <EmptyState v-if="!trips.length && !tripLoading" compact :icon="RouteIcon" title="No trips for this vehicle" />
         <div v-else class="list rh-list">
-          <div v-for="t in (allTrips ? trips : trips.slice(0, 12))" :key="t.id" class="list-row clickable" :class="{ sel: t.id === selTripId }" role="button" tabindex="0"
+          <div v-for="t in pager.rows.value" :key="t.id" class="list-row clickable" :class="{ sel: t.id === selTripId }" role="button" tabindex="0"
                @click="selTripId = t.id" @keydown.enter="selTripId = t.id">
             <span class="icon-chip" :class="t.status === 'active' ? 'green' : 'gray'"><RouteIcon :size="16" /></span>
             <span class="grow">
@@ -50,9 +49,7 @@
             <span class="badge" :class="t.status === 'active' ? 'active' : 'offline'">{{ t.status === 'active' ? 'Live' : 'Done' }}</span>
           </div>
         </div>
-        <div v-if="trips.length > 12" class="card-foot" style="text-align:center">
-          <button type="button" class="sm ghost" @click="allTrips = !allTrips">{{ allTrips ? 'Show fewer' : `Show all ${trips.length} trips` }}</button>
-        </div>
+        <Pager v-if="trips.length" :pager="pager" />
       </div>
     </div>
   </template>
@@ -64,7 +61,8 @@ import { History, Route as RouteIcon, Map as MapIcon, Milestone, Fuel, Gauge } f
 import { getVehicles, getVehicleTrack, getVehicleTrips } from '../api'
 import { fmt } from '../util'
 import FleetMap from '../components/FleetMap.vue'
-import PageHeader from '../components/PageHeader.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 import StatTile from '../components/StatTile.vue'
 import EmptyState from '../components/EmptyState.vue'
 
@@ -75,7 +73,6 @@ const track = ref([])
 const loading = ref(true)
 const tripLoading = ref(false)
 const selTripId = ref(null)
-const allTrips = ref(false)
 
 const dt = (iso) => new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 function duration(t) {
@@ -89,6 +86,8 @@ const selTrip = computed(() => trips.value.find((t) => t.id === selTripId.value)
 const totalKm = computed(() => trips.value.reduce((s, t) => s + (t.distance_km || 0), 0))
 const totalFuel = computed(() => trips.value.reduce((s, t) => s + (t.fuel_consumed_litres || 0), 0))
 const topSpeed = computed(() => trips.value.reduce((m, t) => Math.max(m, t.max_speed_kmph || 0), 0))
+
+const pager = usePaging(trips, 10, [vehicleId])
 
 const mapTrack = computed(() => {
   const t = selTrip.value
@@ -122,8 +121,9 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.rh-pick { min-width: 260px; }
+.rh-bar { display: flex; margin-bottom: 12px; }
+.rh-pick { width: 340px; max-width: 100%; }
 .rh-list { max-height: 440px; overflow-y: auto; }
 .list-row.sel { background: var(--brand-soft); box-shadow: inset 3px 0 0 var(--brand); }
-@media (max-width: 720px) { .rh-pick { min-width: 0; width: 100%; } .rh-list { max-height: none; } }
+@media (max-width: 720px) { .rh-pick { width: 100%; } .rh-list { max-height: none; } }
 </style>

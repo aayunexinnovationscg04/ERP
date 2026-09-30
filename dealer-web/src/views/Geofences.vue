@@ -1,11 +1,10 @@
 <template>
-  <PageHeader title="Geofences" description="Zones that trigger an alert when a vehicle enters a restricted area or leaves an allowed one.">
+  <PageHeader>
     <button v-if="canWrite" :class="createMode ? '' : 'primary'" @click="toggleCreate">
       <component :is="createMode ? X : Plus" :size="16" />
       {{ createMode ? 'Cancel' : 'New zone' }}
     </button>
   </PageHeader>
-  <p v-if="!canWrite" class="notice amber" style="margin:-4px 0 16px"><Lock :size="16" /> View only — ask an admin to enable editing to add or change zones.</p>
 
   <div v-if="loading" class="grid-2">
     <div class="skel sk-map"></div>
@@ -16,9 +15,8 @@
     <div class="stack">
       <div v-if="createMode" class="card gf-create">
         <div class="card-head">
-          <div class="card-head-title"><CircleDashed :size="17" /><div><h2>New circular zone</h2>
-            <div class="card-sub">{{ draft.lat == null ? 'Step 1 — click the map to drop the zone centre.' : 'Drag the marker or click again to move the centre.' }}</div></div></div>
-          <span class="badge" :class="draft.lat == null ? 'idle' : 'active'">{{ draft.lat == null ? 'Centre not set' : 'Centre set' }}</span>
+          <div class="card-head-title"><CircleDashed :size="17" /><h2>New zone</h2></div>
+          <span class="badge" :class="draft.lat == null ? 'idle' : 'active'">{{ draft.lat == null ? 'Tap map to set centre' : 'Centre set' }}</span>
         </div>
         <div class="card-body">
           <div class="gf-form">
@@ -63,17 +61,17 @@
 
     <div class="card flush">
       <div class="card-head">
-        <div class="card-head-title"><MapPin :size="17" /><div><h2>Zones</h2>
-          <div class="card-sub">{{ zones.length }} total · {{ zones.filter((z) => z.active).length }} active</div></div></div>
+        <div class="card-head-title"><MapPin :size="17" /><h2>Zones</h2></div>
+        <span v-if="zones.length" class="muted" style="font-size:12.5px">{{ zones.filter((z) => z.active).length }} / {{ zones.length }} on</span>
       </div>
 
       <EmptyState v-if="!zones.length" :icon="MapPin" title="No zones yet"
-        :text="canWrite ? 'Use “New zone”, then click the map to draw your first geofence.' : 'No geofences have been set up for your fleet.'">
+        :text="canWrite ? '' : ''">
         <button v-if="canWrite && !createMode" class="primary" @click="toggleCreate"><Plus :size="16" /> New zone</button>
       </EmptyState>
 
       <div v-else class="list">
-        <div v-for="z in zones" :key="z.id" class="list-row clickable gf-row" role="button" tabindex="0"
+        <div v-for="z in pager.rows.value" :key="z.id" class="list-row clickable gf-row" role="button" tabindex="0"
              @click="focusZone(z)" @keydown.enter="focusZone(z)">
           <span class="icon-chip" :class="purposeChip(z.purpose)"><component :is="purposeIcon(z.purpose)" :size="16" /></span>
           <span class="grow">
@@ -90,26 +88,28 @@
           <span v-else class="badge" :class="z.active ? 'active' : 'off'">{{ z.active ? 'Active' : 'Off' }}</span>
         </div>
       </div>
+      <Pager v-if="zones.length" :pager="pager" />
     </div>
   </div>
 
   <Modal v-if="confirmDel" title="Delete zone?" @close="confirmDel = null">
-    <p style="margin:0 0 6px">“<b>{{ confirmDel.name }}</b>” will be removed and stop generating alerts.</p>
-    <p class="muted" style="font-size:13px">This cannot be undone.</p>
-    <div class="row" style="margin-top:18px;justify-content:flex-end">
+    <p style="margin:0">“<b>{{ confirmDel.name }}</b>” will be removed. This cannot be undone.</p>
+    <template #footer>
       <button type="button" @click="confirmDel = null">Cancel</button>
-      <button type="button" class="danger-solid" @click="remove(confirmDel)"><Trash2 :size="15" /> Delete zone</button>
-    </div>
+      <button type="button" class="danger-solid" @click="remove(confirmDel)"><Trash2 :size="15" /> Delete</button>
+    </template>
   </Modal>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import L from 'leaflet'
-import { Plus, X, Save, MapPin, Trash2, Lock, ShieldCheck, Ban, Building2, CircleDashed, Map as MapIcon } from 'lucide-vue-next'
+import L from '../leaflet'
+import { Plus, X, Save, MapPin, Trash2, ShieldCheck, Ban, Building2, CircleDashed, Map as MapIcon } from 'lucide-vue-next'
 import PageHeader from '../components/PageHeader.vue'
 import EmptyState from '../components/EmptyState.vue'
 import Modal from '../components/Modal.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 import { getGeofences, createGeofence, updateGeofence, deleteGeofence } from '../api'
 import { auth } from '../auth'
 import { TILE_URL, TILE_ATTRIBUTION, TILE_SUBDOMAINS } from '../tiles'
@@ -135,6 +135,7 @@ function purposeChip(p) { return PURPOSE_CHIP[p] || 'gray' }
 
 const loading = ref(true)
 const zones = ref([])
+const pager = usePaging(zones, 10)
 const createMode = ref(false)
 const saving = ref(false)
 const saveErr = ref('')
@@ -300,6 +301,7 @@ onBeforeUnmount(() => { if (map) map.remove() })
 .sw span { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #FFFFFF; transition: transform var(--dur) var(--ease); }
 .gf-toggle.on .sw { background: var(--green); }
 .gf-toggle.on .sw span { transform: translateX(12px); }
+.gf-row .title, .gf-row .sub { white-space: normal; overflow-wrap: anywhere; }
 .gf-del:hover { color: var(--red); background: var(--red-soft); }
 @media (max-width: 480px) { .gf-form { grid-template-columns: 1fr; } }
 </style>

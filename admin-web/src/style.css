@@ -547,7 +547,9 @@ tr.group-row:hover { background: transparent; }
 .toggle .thumb {
   position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
   border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  transition: transform .18s cubic-bezier(.4, 0, .2, 1);
 }
+.toggle.on .thumb { transform: translateX(18px); }
 .mcheck {
   width: 22px; height: 22px; border-radius: var(--radius-xs);
   border: 1.5px solid var(--border-strong); background: var(--field-bg);
@@ -684,3 +686,8 @@ tr.group-row:hover { background: transparent; }
   .pager-btn { min-width: 40px; height: 40px; }
   .pager-num { display: none; }
 }
+
+/* page change: a light CSS fade (no JS animation, no layout measuring) */
+.page-in { animation: page-in .16s cubic-bezier(.4, 0, .2, 1) both; }
+@keyframes page-in { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .page-in { animation: none; } }

@@ -6,10 +6,9 @@
     <template #description>
       <span v-if="v">{{ v.registration_number }}<template v-if="v.make || v.model"> · {{ [v.make, v.model].filter(Boolean).join(' ') }}</template>
         · updated {{ ago(latest?.received_at) }}</span>
-      <span v-else>&nbsp;</span>
     </template>
     <button v-if="v && canWrite" type="button" @click="renaming = true"><Pencil :size="15" /> Rename</button>
-    <router-link v-if="v" :to="`/fuel/${v.id}`" class="btn"><Fuel :size="16" /> Fuel details</router-link>
+    <router-link v-if="v && canOpen('/fuel')" :to="`/fuel/${v.id}`" class="btn"><Fuel :size="16" /> Fuel details</router-link>
   </PageHeader>
 
   <div v-if="loading" class="grid-2">
@@ -20,29 +19,26 @@
   </div>
 
   <EmptyState v-else-if="!v" class="card" :icon="TruckIcon" title="Vehicle not found"
-    text="It may have been removed, or it belongs to another company.">
+    text="">
     <router-link to="/vehicles" class="btn">Back to vehicles</router-link>
   </EmptyState>
 
   <template v-else>
     <!-- live metric strip -->
     <div class="kpis">
-      <StatTile label="Speed" :value="latest ? fmt(latest.speed_kmph, 0) : '—'" :unit="latest ? 'km/h' : ''" :icon="Gauge" tone="blue"
-        :sub="maxSpeed ? `Max ${fmt(maxSpeed, 0)} km/h recently` : ''" />
+      <StatTile label="Speed" :value="latest ? fmt(latest.speed_kmph, 0) : '—'" :unit="latest ? 'km/h' : ''" :icon="Gauge" tone="blue" />
       <StatTile label="Fuel" :value="latest?.total_litres != null ? fmt(latest.total_litres) : '—'" :unit="latest?.total_litres != null ? 'L' : ''"
-        :icon="Droplet" tone="brand" :sub="v.tank_capacity_litres ? `${v.tank_capacity_litres} L tank` : 'Tank size not set'" />
+        :icon="Droplet" tone="brand" />
       <StatTile label="Fuel lock" :value="latest ? (latest.lock_active ? 'Locked' : 'Open') : '—'" :icon="latest?.lock_active ? Lock : LockOpen"
         :tone="latest?.lock_active ? 'green' : 'amber'" />
-      <StatTile label="GPS" :value="latest ? (latest.has_gps_fix ? 'Fixed' : 'No fix') : '—'" :icon="Satellite" :tone="latest?.has_gps_fix ? 'green' : 'gray'"
-        :sub="latest?.has_gps_fix ? `${latest.satellites} satellites` : ''" />
+      <StatTile label="GPS" :value="latest ? (latest.has_gps_fix ? `Fixed · ${latest.satellites ?? 0} sats` : 'No fix') : '—'" :icon="Satellite" :tone="latest?.has_gps_fix ? 'green' : 'gray'" />
     </div>
 
     <div class="grid-2">
       <div class="stack">
         <div class="card flush">
           <div class="card-head">
-            <div class="card-head-title"><RouteIcon :size="17" /><div><h2>Route history</h2>
-              <div class="card-sub">{{ track.length }} telemetry point(s)</div></div></div>
+            <div class="card-head-title"><RouteIcon :size="17" /><h2>Route history</h2></div>
           </div>
           <FleetMap :markers="markers" :track="trackLatLng" height="420px" />
         </div>
@@ -127,12 +123,10 @@
             </div>
           </div>
         </div>
-        <p v-else-if="v.device && !canWrite" class="viewonly"><Lock :size="14" /> View only — device commands need edit access.</p>
 
         <div class="card" v-if="v.latest_raw">
           <div class="card-head">
-            <div class="card-head-title"><FileCode :size="17" /><div><h2>Last raw payload</h2>
-              <div class="card-sub">Device {{ v.device?.device_id }}</div></div></div>
+            <div class="card-head-title"><FileCode :size="17" /><h2>Last raw payload</h2></div>
             <button type="button" class="sm" @click="showRaw = !showRaw">
               <component :is="showRaw ? EyeOff : Eye" :size="15" /> {{ showRaw ? 'Hide' : 'Show' }}
             </button>
@@ -145,24 +139,22 @@
     <div class="card flush section">
       <div class="card-head"><div class="card-head-title"><RouteIcon :size="17" /><h2>Recent trips</h2></div></div>
       <div class="table-wrap" v-if="trips.length">
-        <table>
+        <table class="mstack">
           <thead><tr><th>Started</th><th>Ended</th><th class="num">Distance</th><th class="num">Avg / max speed</th><th class="num">Fuel used</th><th>Status</th></tr></thead>
           <tbody>
-            <tr v-for="t in (allTrips ? trips : trips.slice(0, 8))" :key="t.id">
-              <td class="nowrap">{{ dt(t.started_at) }}</td>
-              <td class="nowrap muted">{{ t.ended_at ? dt(t.ended_at) : 'In progress' }}</td>
-              <td class="num">{{ fmt(t.distance_km) }} km</td>
-              <td class="num">{{ fmt(t.avg_speed_kmph, 0) }} / {{ fmt(t.max_speed_kmph, 0) }} km/h</td>
-              <td class="num">{{ t.fuel_consumed_litres != null ? fmt(t.fuel_consumed_litres) + ' L' : '—' }}</td>
-              <td><span class="badge" :class="t.status === 'active' ? 'active' : 'offline'">{{ t.status }}</span></td>
+            <tr v-for="t in pager.rows.value" :key="t.id">
+              <td class="nowrap cell-head"><span class="cell-main">{{ dt(t.started_at) }}</span><span class="badge show-sm" :class="t.status === 'active' ? 'active' : 'offline'">{{ t.status }}</span></td>
+              <td class="nowrap muted" data-label="Ended">{{ t.ended_at ? dt(t.ended_at) : 'In progress' }}</td>
+              <td class="num" data-label="Distance">{{ fmt(t.distance_km) }} km</td>
+              <td class="num" data-label="Avg / max">{{ fmt(t.avg_speed_kmph, 0) }} / {{ fmt(t.max_speed_kmph, 0) }} km/h</td>
+              <td class="num" data-label="Fuel used">{{ t.fuel_consumed_litres != null ? fmt(t.fuel_consumed_litres) + ' L' : '—' }}</td>
+              <td class="hide-sm"><span class="badge" :class="t.status === 'active' ? 'active' : 'offline'">{{ t.status }}</span></td>
             </tr>
           </tbody>
         </table>
       </div>
       <EmptyState v-else compact :icon="RouteIcon" title="No trips recorded yet" />
-      <div v-if="trips.length > 8" class="card-foot" style="text-align:center">
-        <button type="button" class="sm ghost" @click="allTrips = !allTrips">{{ allTrips ? 'Show fewer' : `Show all ${trips.length} trips` }}</button>
-      </div>
+      <Pager v-if="trips.length" :pager="pager" />
     </div>
   </template>
 
@@ -184,6 +176,9 @@ import PageHeader from '../components/PageHeader.vue'
 import StatTile from '../components/StatTile.vue'
 import EmptyState from '../components/EmptyState.vue'
 import RenameVehicleModal from '../components/RenameVehicleModal.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
+import { canOpen } from '../access'
 
 const canWrite = computed(() => auth.user?.may_write !== false)
 const expiryLabel = { valid: 'Valid', expiring_soon: 'Expiring soon', expired: 'Expired', unknown: 'No expiry set' }
@@ -197,8 +192,8 @@ const loading = ref(true)
 const sending = ref(false)
 const cmdMsg = ref('')
 const renaming = ref(false)
-const allTrips = ref(false)
 let timer
+const pager = usePaging(trips, 10)
 
 const dt = (iso) => new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 const latest = computed(() => v.value?.latest)

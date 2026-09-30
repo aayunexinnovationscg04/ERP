@@ -2,7 +2,6 @@
   <div class="page-head">
     <div class="ph-text">
       <h1>Trips</h1>
-      <div class="ph-sub">Your recent journeys, newest first</div>
     </div>
   </div>
 
@@ -14,10 +13,7 @@
   <div v-else-if="!trips.length" class="card empty-state">
     <span class="empty-ic"><Route :size="34" :stroke-width="1.75" /></span>
     <h2>No trips yet</h2>
-    <p>Trips are recorded automatically when your assigned truck starts moving. They'll be listed here with distance, time and speed.</p>
-    <div class="empty-actions">
-      <router-link to="/" class="btn"><Truck :size="18" :stroke-width="2.25" /> My truck</router-link>
-    </div>
+    <p>Trips are recorded when your truck moves.</p>
   </div>
 
   <template v-else>
@@ -51,11 +47,9 @@
     <div v-for="group in grouped" :key="group.label" class="day-group">
       <div class="section-title">
         <span>{{ group.label }}</span><span class="spacer"></span>
-        <span class="st-meta num">{{ group.items.length }} trip{{ group.items.length > 1 ? 's' : '' }} · {{ fmtKm(group.km) }} km</span>
+        <span v-if="group.items.length > 1" class="st-meta num">{{ group.items.length }} trips · {{ fmtKm(group.km) }} km</span>
       </div>
-      <motion.ul class="card list"
-        :initial="{ opacity: 0, y: reduced ? 0 : 6 }" :animate="{ opacity: 1, y: 0 }"
-        :transition="{ duration: reduced ? 0 : 0.22, delay: reduced ? 0 : Math.min(group.idx, 6) * 0.04, ease: EASE }">
+      <ul class="card list item-in" :style="{ animationDelay: Math.min(group.idx, 6) * 40 + 'ms' }">
         <li v-for="t in group.items" :key="t.id" class="list-row">
           <span class="row-ic" :class="TIER_TONE[tier(t.distance_km)]">
             <component :is="TIER_ICON[tier(t.distance_km)]" :size="20" :stroke-width="2.25" />
@@ -75,7 +69,7 @@
             <div class="row-num">{{ round1(t.distance_km) }}<small>km</small></div>
           </div>
         </li>
-      </motion.ul>
+      </ul>
     </div>
     </div>
   </template>
@@ -84,7 +78,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { motion } from 'motion-v'
-import { Route, Navigation, MapPin, Milestone, Truck, Compass } from 'lucide-vue-next'
+import { Route, Navigation, MapPin, Milestone, Compass } from 'lucide-vue-next'
 import { getMyTrips } from '../api'
 import { round1, timeOnly, duration, dayLabel } from '../format'
 import { usePrefersReducedMotion, pageTransition, EASE } from '../motion'

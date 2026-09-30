@@ -142,7 +142,8 @@ class Command(BaseCommand):
             device.last_seen = now - (timedelta(minutes=random.randint(1, 8)) if online else timedelta(hours=9))
             device.save()
 
-            pilot = pilots[i % len(pilots)]
+            # one truck per pilot: extra trucks stay unassigned (a pilot can't drive two)
+            pilot = pilots[i] if i < len(pilots) else None
             vehicle, _ = Vehicle.objects.get_or_create(
                 company=company, registration_number=reg,
                 defaults={"make": make, "model": model, "tank_capacity_litres": 120},
@@ -340,7 +341,7 @@ class Command(BaseCommand):
                     defaults={"make": make, "model": model, "tank_capacity_litres": 120},
                 )
                 vehicle.device = device
-                vehicle.active_pilot = pilots[vi % len(pilots)]
+                vehicle.active_pilot = pilots[vi] if vi < len(pilots) else None  # one truck per pilot
                 vehicle.status = status
                 vehicle.make, vehicle.model = make, model
                 vehicle.save()

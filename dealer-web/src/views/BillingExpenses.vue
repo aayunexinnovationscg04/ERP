@@ -1,10 +1,9 @@
 <template>
-  <PageHeader title="Expenses" :description="`Fleet running costs for ${monthLabel}, by category.`" preview />
+  <PageHeader preview />
 
   <div class="kpis">
-    <StatTile label="Total this month" :value="'₹' + inr(total)" :icon="Wallet" tone="navy" :sub="`${expenses.length} entries`" />
-    <StatTile v-for="c in byCategory.slice(0, 3)" :key="c.name" :label="c.name" :value="'₹' + inr(c.total)" :icon="c.icon" :tone="c.hue"
-      :sub="Math.round(c.total / total * 100) + '% of spend'" />
+    <StatTile label="Month total" :value="'₹' + inr(total)" :icon="Wallet" tone="navy" />
+    <StatTile v-for="c in byCategory.slice(0, 3)" :key="c.name" :label="c.short || c.name" :value="'₹' + inr(c.total)" :icon="c.icon" :tone="c.hue" />
   </div>
 
   <div class="grid-2">
@@ -12,17 +11,18 @@
       <div class="card-head"><div class="card-head-title"><ReceiptText :size="17" /><h2>Recent expenses</h2></div></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Date</th><th>Expense</th><th class="num">Amount</th></tr></thead>
+          <thead><tr><th>Expense</th><th class="hide-sm">Date</th><th class="num">Amount</th></tr></thead>
           <tbody>
-            <tr v-for="e in expenses" :key="e.id">
-              <td class="muted nowrap">{{ e.date }}</td>
+            <tr v-for="e in pager.rows.value" :key="e.id">
               <td><div class="cell-with-icon"><span class="icon-chip sm gray"><component :is="e.icon" :size="13" /></span>
-                <div><div class="cell-main" style="font-weight:600">{{ e.desc }}</div><div class="cell-sub">{{ e.category }}</div></div></div></td>
+                <div style="min-width:0"><div class="cell-main" style="font-weight:600">{{ e.desc }}</div><div class="cell-sub">{{ e.category }}<span class="show-sm"> · {{ e.date }}</span></div></div></div></td>
+              <td class="muted nowrap hide-sm">{{ e.date }}</td>
               <td class="num cell-main">₹{{ inr(e.amount) }}</td>
             </tr>
           </tbody>
         </table>
       </div>
+      <Pager :pager="pager" />
     </div>
 
     <div class="card">
@@ -45,6 +45,8 @@ import { computed } from 'vue'
 import { Wallet, Fuel, Wrench, IdCard, ShieldCheck, MoreHorizontal, ReceiptText, PieChart } from 'lucide-vue-next'
 import PageHeader from '../components/PageHeader.vue'
 import StatTile from '../components/StatTile.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 import { MOCK_VEHICLES, seededRandom, pick, rangeInt, addDays, fmtDate } from '../mock'
 
 const inr = (n) => Math.round(n).toLocaleString('en-IN')
@@ -57,8 +59,8 @@ const CATEGORIES = [
   { name: 'Fuel', icon: Fuel, hue: 'brand' },
   { name: 'Maintenance', icon: Wrench, hue: 'amber' },
   { name: 'Pilot wages', icon: IdCard, hue: 'teal' },
-  { name: 'Insurance & compliance', icon: ShieldCheck, hue: 'blue' },
-  { name: 'Miscellaneous', icon: MoreHorizontal, hue: 'gray' },
+  { name: 'Insurance & compliance', short: 'Insurance', icon: ShieldCheck, hue: 'blue' },
+  { name: 'Miscellaneous', short: 'Misc.', icon: MoreHorizontal, hue: 'gray' },
 ]
 const DESCS = {
   Fuel: ['Diesel refill', 'Fuel top-up'],
@@ -79,6 +81,7 @@ const expenses = Array.from({ length: 20 }, (_, i) => {
   }
 }).sort((a, b) => a.sortKey - b.sortKey)
 
+const pager = usePaging(computed(() => expenses), 10)
 const byCategory = computed(() => CATEGORIES.map((c) => ({
   ...c, total: expenses.filter((e) => e.category === c.name).reduce((s, e) => s + e.amount, 0),
 })).sort((a, b) => b.total - a.total))

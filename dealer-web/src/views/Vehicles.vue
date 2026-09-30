@@ -1,5 +1,5 @@
 <template>
-  <PageHeader title="Vehicles" description="Every vehicle in your fleet with its live status, fuel and last telemetry.">
+  <PageHeader>
     <router-link to="/locations" class="btn"><LocateFixed :size="16" /> View on map</router-link>
   </PageHeader>
 
@@ -7,9 +7,8 @@
   <div v-else class="kpis">
     <StatTile label="Total fleet" :value="vehicles.length" :icon="Truck" tone="navy" />
     <StatTile label="Active now" :value="activeCount" :icon="Navigation" tone="green" />
-    <StatTile label="Idle / maintenance" :value="idleCount" :icon="PauseCircle" tone="amber" />
-    <StatTile label="Avg fuel level" :value="avgFuelPct == null ? '—' : avgFuelPct" :unit="avgFuelPct == null ? '' : '%'" :icon="Fuel" tone="blue"
-      :sub="avgFuelPct == null ? 'No fuel readings yet' : 'Across vehicles with a tank size set'" />
+    <StatTile label="Offline" :value="statusCounts.offline || 0" :icon="WifiOff" tone="gray" />
+    <StatTile label="Avg fuel level" :value="avgFuelPct == null ? '—' : avgFuelPct" :unit="avgFuelPct == null ? '' : '%'" :icon="Fuel" tone="blue" />
   </div>
 
   <div class="card flush">
@@ -34,9 +33,9 @@
     <div v-if="loading" class="card-body"><div class="skel sk-row" v-for="n in 6" :key="n"></div></div>
 
     <EmptyState v-else-if="!vehicles.length" :icon="Truck" title="No vehicles yet"
-      text="Vehicles appear here once your administrator links a Fuel Guard X device to your company." />
+      text="Your administrator links devices to your company." />
     <EmptyState v-else-if="!shown.length" compact :icon="SearchX" title="No matching vehicles"
-      text="Try a different search or status filter.">
+      text="">
       <button type="button" class="sm" @click="q = ''; statusFilter = ''">Clear filters</button>
     </EmptyState>
 
@@ -51,7 +50,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="v in shown" :key="v.id" class="clickable" @click="$router.push(`/vehicles/${v.id}`)">
+            <tr v-for="v in pager.rows.value" :key="v.id" class="clickable" @click="$router.push(`/vehicles/${v.id}`)">
               <td>
                 <div class="cell-with-icon">
                   <span class="icon-chip" :class="statusChip(v.status)"><component :is="statusIcon(v.status)" :size="16" /></span>
@@ -82,7 +81,7 @@
 
       <!-- phone list -->
       <div class="list show-sm">
-        <div v-for="v in shown" :key="v.id" class="list-row clickable" @click="$router.push(`/vehicles/${v.id}`)">
+        <div v-for="v in pager.rows.value" :key="v.id" class="list-row clickable" @click="$router.push(`/vehicles/${v.id}`)">
           <span class="icon-chip" :class="statusChip(v.status)"><component :is="statusIcon(v.status)" :size="16" /></span>
           <span class="grow">
             <div class="title">{{ v.local_name }}</div>
@@ -93,6 +92,7 @@
           <button v-if="canWrite" type="button" class="ghost icon-btn" aria-label="Rename vehicle" @click.stop="renaming = v"><Pencil :size="15" /></button>
         </div>
       </div>
+      <Pager :pager="pager" />
     </template>
   </div>
 
@@ -112,6 +112,8 @@ import PageHeader from '../components/PageHeader.vue'
 import StatTile from '../components/StatTile.vue'
 import EmptyState from '../components/EmptyState.vue'
 import RenameVehicleModal from '../components/RenameVehicleModal.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 
 const canWrite = computed(() => auth.user?.may_write !== false)
 const STATUS_ICON = { active: Navigation, idle: PauseCircle, maintenance: Wrench, offline: WifiOff }
@@ -159,8 +161,9 @@ const shown = computed(() => {
   })
 })
 
+const pager = usePaging(shown, 10, [q, statusFilter, priorityIndex])
+
 const activeCount = computed(() => vehicles.value.filter((v) => v.status === 'active').length)
-const idleCount = computed(() => vehicles.value.filter((v) => v.status === 'idle' || v.status === 'maintenance').length)
 const avgFuelPct = computed(() => {
   const withData = vehicles.value.filter((v) => v.tank_capacity_litres && v.latest?.total_litres != null)
   if (!withData.length) return null
@@ -192,7 +195,7 @@ onBeforeUnmount(() => clearInterval(timer))
 
 <style scoped>
 .name-line { display: flex; align-items: center; gap: 4px; }
-.rename { opacity: 0; color: var(--muted); }
+.rename { opacity: 0; color: var(--muted); min-height: 0; width: 24px; height: 24px; }
 tr:hover .rename, .rename:focus-visible { opacity: 1; }
 @media (hover: none) { .rename { opacity: 1; } }
 </style>

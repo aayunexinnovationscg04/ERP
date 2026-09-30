@@ -1,29 +1,30 @@
 <template>
-  <PageHeader title="Attendance" :description="`Monthly attendance for every pilot — ${monthLabel}.`" preview />
+  <PageHeader preview />
 
   <div class="kpis">
     <StatTile label="Fleet attendance" :value="fmt(fleetAttendancePct, 0)" unit="%" :icon="CalendarCheck" tone="green" />
-    <StatTile label="Absences this month" :value="totalAbsent" :icon="CalendarX" tone="crit" />
+    <StatTile label="Absences" :value="totalAbsent" :icon="CalendarX" tone="crit" />
     <StatTile label="Leave days" :value="totalLeave" :icon="CalendarClock" tone="amber" />
   </div>
 
   <div class="grid-2">
     <div class="card flush">
-      <div class="card-head"><div class="card-head-title"><Users :size="17" /><h2>Monthly summary</h2></div></div>
+      <div class="card-head"><div class="card-head-title"><Users :size="17" /><h2>{{ monthLabel }}</h2></div></div>
       <div class="table-wrap">
-        <table>
+        <table class="mstack">
           <thead><tr><th>Pilot</th><th class="num">Present</th><th class="num">Absent</th><th class="num">Leave</th><th>Attendance</th></tr></thead>
           <tbody>
-            <tr v-for="p in summary" :key="p.name" class="clickable" :class="{ sel: p.name === selectedPilot }" @click="selectedPilot = p.name">
-              <td class="cell-main nowrap">{{ p.name }}</td>
-              <td class="num">{{ p.present }}</td>
-              <td class="num">{{ p.absent }}</td>
-              <td class="num">{{ p.leave }}</td>
-              <td><span class="badge" :class="p.pct >= 90 ? 'active' : p.pct >= 75 ? 'idle' : 'critical'">{{ fmt(p.pct, 0) }}%</span></td>
+            <tr v-for="p in pager.rows.value" :key="p.name" class="clickable" :class="{ sel: p.name === selectedPilot }" @click="selectedPilot = p.name">
+              <td class="cell-head cell-main nowrap">{{ p.name }}<span class="badge show-sm" :class="p.pct >= 90 ? 'active' : p.pct >= 75 ? 'idle' : 'critical'">{{ fmt(p.pct, 0) }}%</span></td>
+              <td class="num" data-label="Present">{{ p.present }}</td>
+              <td class="num" data-label="Absent">{{ p.absent }}</td>
+              <td class="num" data-label="Leave">{{ p.leave }}</td>
+              <td class="hide-sm"><span class="badge" :class="p.pct >= 90 ? 'active' : p.pct >= 75 ? 'idle' : 'critical'">{{ fmt(p.pct, 0) }}%</span></td>
             </tr>
           </tbody>
         </table>
       </div>
+      <Pager :pager="pager" />
     </div>
 
     <div class="card">
@@ -57,6 +58,8 @@ import { computed, ref } from 'vue'
 import { CalendarCheck, CalendarX, CalendarClock, CalendarDays, Users } from 'lucide-vue-next'
 import PageHeader from '../components/PageHeader.vue'
 import StatTile from '../components/StatTile.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 import { MOCK_PILOTS, seededRandom, pick } from '../mock'
 import { fmt } from '../util'
 
@@ -89,12 +92,19 @@ const totalAbsent = computed(() => summary.reduce((s, p) => s + p.absent, 0))
 const totalLeave = computed(() => summary.reduce((s, p) => s + p.leave, 0))
 const fleetAttendancePct = computed(() => summary.reduce((s, p) => s + p.pct, 0) / summary.length)
 
+const pager = usePaging(computed(() => summary), 10)
 const selectedPilot = ref(MOCK_PILOTS[0])
 const selectedCalendar = computed(() => perPilot.find((p) => p.name === selectedPilot.value)?.days || [])
 </script>
 <style scoped>
 .pa-select { width: auto; min-width: 170px; }
 tr.sel td { background: var(--brand-soft); }
+tr.sel { background: var(--brand-soft); }
+@media (max-width: 720px) {
+  table.mstack tbody tr { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pa-select { min-width: 0; flex: 1 1 160px; }
+  .pa-cal { gap: 4px; }
+}
 .pa-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .pa-cal-dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); padding-bottom: 2px; }
 .pa-cal-cell {

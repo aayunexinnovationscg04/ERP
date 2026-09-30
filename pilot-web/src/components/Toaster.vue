@@ -1,16 +1,17 @@
 <template>
   <div class="toaster" aria-live="polite">
     <transition-group name="toast">
-      <div v-for="t in toasts" :key="t.id" class="toast" :class="t.type" role="status" @click="dismiss(t.id)">
+      <div v-for="t in toasts" :key="t.id" class="toast" :class="t.type" role="status">
         <component :is="icon(t.type)" :size="20" :stroke-width="2.25" class="toast-ic" />
         <span class="toast-msg">{{ t.message }}</span>
+        <button type="button" class="toast-x" aria-label="Dismiss" @click="dismiss(t.id)"><X :size="16" /></button>
       </div>
     </transition-group>
   </div>
 </template>
 
 <script setup>
-import { CircleCheck, CircleAlert, Info } from 'lucide-vue-next'
+import { CircleCheck, CircleAlert, Info, X } from 'lucide-vue-next'
 import { toasts, dismiss } from '../toast'
 const icon = (t) => (t === 'success' ? CircleCheck : t === 'error' ? CircleAlert : Info)
 </script>
@@ -26,8 +27,8 @@ const icon = (t) => (t === 'success' ? CircleCheck : t === 'error' ? CircleAlert
   .toaster { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 12px); }
 }
 .toast {
-  pointer-events: auto; cursor: pointer;
-  display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 12px 16px;
+  pointer-events: auto;
+  display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 6px 6px 14px;
   border-radius: var(--radius); background: var(--surface); color: var(--text);
   border: 1px solid var(--border-strong); border-left-width: 4px; box-shadow: var(--shadow-lg);
   font-size: .9375rem; font-weight: 600;
@@ -39,7 +40,12 @@ const icon = (t) => (t === 'success' ? CircleCheck : t === 'error' ? CircleAlert
 .toast.success .toast-ic { color: var(--green); }
 .toast.error .toast-ic { color: var(--red); }
 .toast.info .toast-ic { color: var(--info); }
-.toast-msg { flex: 1; }
+.toast-msg { flex: 1; min-width: 0; padding: 6px 0; }
+.toast-x {
+  flex: none; width: 40px; height: 40px; padding: 0; border: 0; border-radius: var(--radius-sm);
+  display: grid; place-items: center; background: transparent; color: var(--muted);
+}
+.toast-x:hover { background: var(--surface-3); color: var(--text); }
 .toast-enter-active, .toast-leave-active { transition: opacity .22s var(--ease), transform .22s var(--ease); }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(10px); }
 .toast-move { transition: transform .22s var(--ease); }

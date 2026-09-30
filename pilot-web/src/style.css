@@ -106,7 +106,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .logo-tile img { width: 28px; height: 28px; object-fit: contain; }
 .brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
 .brand-name { font-size: 1rem; font-weight: 800; letter-spacing: -.01em; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.brand-sub { font-size: .6875rem; font-weight: 700; letter-spacing: .02em; color: var(--ink-muted); white-space: nowrap; }
+.brand-sub { font-size: .6875rem; font-weight: 600; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---- phone top bar ---- */
 .topbar {
@@ -245,8 +245,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .side-head .brand-lockup { flex: none; }
   .side-nav { padding: 6px 8px 12px; gap: 4px; }
   .side-section { display: none; }
-  .side-link { flex-direction: column; justify-content: center; gap: 4px; min-height: 60px; padding: 6px 4px; font-size: .6875rem; text-align: center; line-height: 1.2; }
-  .side-link.router-link-exact-active::before { top: 14px; bottom: 14px; }
+  .side-link { flex-direction: column; justify-content: center; gap: 3px; min-height: 54px; padding: 5px 4px; font-size: .6875rem; text-align: center; line-height: 1.2; }
+  .side-link.router-link-exact-active::before { top: 12px; bottom: 12px; }
   .side-link .count { position: absolute; top: 4px; right: 12px; margin: 0; min-width: 18px; height: 18px; padding: 0 5px; font-size: .625rem; }
   .side-foot { padding: 10px 8px; align-items: center; }
   .side-user-text, .side-btn .label { display: none; }
@@ -259,8 +259,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .app.collapsed .side-head .brand-lockup { flex: none; }
   .app.collapsed .side-nav { padding: 6px 8px 12px; gap: 4px; }
   .app.collapsed .side-section { display: none; }
-  .app.collapsed .side-link { flex-direction: column; justify-content: center; gap: 4px; min-height: 60px; padding: 6px 4px; font-size: .6875rem; text-align: center; line-height: 1.2; }
-  .app.collapsed .side-link.router-link-exact-active::before { top: 14px; bottom: 14px; }
+  .app.collapsed .side-link { flex-direction: column; justify-content: center; gap: 3px; min-height: 54px; padding: 5px 4px; font-size: .6875rem; text-align: center; line-height: 1.2; }
+  .app.collapsed .side-link.router-link-exact-active::before { top: 12px; bottom: 12px; }
   .app.collapsed .side-link .count { position: absolute; top: 4px; right: 12px; margin: 0; min-width: 18px; height: 18px; padding: 0 5px; font-size: .625rem; }
   .app.collapsed .side-foot { padding: 10px 8px; align-items: center; }
   .app.collapsed .side-user-text, .app.collapsed .side-btn .label { display: none; }
@@ -409,12 +409,8 @@ a.badge { text-decoration: none; }
 /* ============================================================================
    FILTER CHIPS + SEGMENTED CONTROL
    ========================================================================== */
-.filter-chips {
-  display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px 16px; padding: 0 16px 2px;
-  scrollbar-width: none; -webkit-overflow-scrolling: touch;
-}
-.filter-chips::-webkit-scrollbar { display: none; }
-@media (min-width: 768px) { .filter-chips { margin: 0 0 18px; padding: 0 0 2px; flex-wrap: wrap; } }
+.filter-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+@media (min-width: 768px) { .filter-chips { margin-bottom: 18px; } }
 .filter-chip {
   flex: none; display: inline-flex; align-items: center; gap: 8px;
   min-height: 44px; padding: 0 16px; border-radius: var(--radius-pill);
@@ -537,7 +533,16 @@ a.badge { text-decoration: none; }
 .view-banner > span { flex: 1; min-width: 180px; }
 .view-banner b { color: #FFFFFF; }
 .view-close {
-  flex: none; min-height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid #264B73;
+  flex: none; min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid #264B73;
   background: transparent; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer;
 }
 .view-close:hover { background: var(--navy-800); }
+
+/* page change: a light CSS fade (no JS animation, no layout measuring) */
+.page-in { animation: page-in .16s cubic-bezier(.4, 0, .2, 1) both; }
+@keyframes page-in { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .page-in { animation: none; } }
+
+/* list items fade in with a CSS stagger (set via animation-delay) — cheap, no JS */
+.item-in { animation: page-in .22s cubic-bezier(.4, 0, .2, 1) both; }
+@media (prefers-reduced-motion: reduce) { .item-in { animation: none; } }

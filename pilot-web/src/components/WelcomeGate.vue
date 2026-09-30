@@ -10,7 +10,7 @@
       :initial="{ opacity: 0, y: reduced ? 0 : 12 }" :animate="{ opacity: opening ? 0 : 1, y: opening ? (reduced ? 0 : -8) : 0 }"
       :transition="{ duration: reduced ? 0 : (opening ? .28 : .45), ease: [.4, 0, .2, 1] }">
       <span class="wgate-logo"><img :src="logo" alt="" /></span>
-      <div class="wgate-brand">Fuel Guard X · Pilot</div>
+      <div class="wgate-brand">Fuel Guard X · Pilot App</div>
       <div class="wgate-welcome">Welcome, {{ name }}</div>
       <div class="wgate-loader" aria-hidden="true"><span></span></div>
     </motion.div>
@@ -59,7 +59,7 @@ onMounted(() => {
   background: #FFFFFF; margin-bottom: 8px;
 }
 .wgate-logo img { width: 48px; height: 48px; object-fit: contain; }
-.wgate-brand { font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-muted); }
+.wgate-brand { font-size: .8125rem; font-weight: 700; letter-spacing: .02em; color: var(--ink-muted); }
 .wgate-welcome { font-size: clamp(26px, 5vw, 36px); font-weight: 800; letter-spacing: -.02em; }
 .wgate-loader { margin-top: 16px; width: 96px; height: 4px; border-radius: 999px; background: var(--navy-700); overflow: hidden; }
 .wgate-loader span {

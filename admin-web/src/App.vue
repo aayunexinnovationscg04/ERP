@@ -83,17 +83,7 @@
 
       <main class="content">
         <PageSkeleton v-if="showRouteSkeleton" />
-        <AnimatePresence v-else mode="wait">
-          <motion.div
-            :key="$route.fullPath"
-            :initial="{ opacity: 0, y: reduced ? 0 : 4 }"
-            :animate="{ opacity: 1, y: 0 }"
-            :exit="{ opacity: 0 }"
-            :transition="{ duration: reduced ? 0 : 0.14, ease: [0.4, 0, 0.2, 1] }"
-          >
-            <router-view />
-          </motion.div>
-        </AnimatePresence>
+        <div v-else :key="$route.fullPath" class="page-in"><router-view /></div>
       </main>
     </div>
 
@@ -109,7 +99,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { motion, AnimatePresence } from 'motion-v'
 import {
   Menu, X, Activity, ChevronDown, ChevronRight, LogOut,
   Building2, ChartColumn, Radar, Cpu, ScrollText, ShieldAlert, ChartLine,
@@ -151,9 +140,6 @@ const userMenu = ref(false)
 const userMenuEl = ref(null)
 const collapsed = ref(localStorage.getItem('fgx-admin-sidebar-collapsed') === '1')
 watch(collapsed, (v) => localStorage.setItem('fgx-admin-sidebar-collapsed', v ? '1' : '0'))
-const reduced = typeof window !== 'undefined' && window.matchMedia
-  ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  : false
 
 watch(() => route.path, () => {
   menuOpen.value = false; userMenu.value = false

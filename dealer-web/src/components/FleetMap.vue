@@ -10,7 +10,7 @@
 
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import L from 'leaflet'
+import L from '../leaflet'
 import { ExternalLink } from 'lucide-vue-next'
 import { TILE_URL, TILE_ATTRIBUTION, TILE_SUBDOMAINS } from '../tiles'
 

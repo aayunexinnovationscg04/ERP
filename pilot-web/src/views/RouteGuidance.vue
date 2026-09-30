@@ -2,16 +2,14 @@
   <div class="page-head">
     <div class="ph-text">
       <h1>Route Guidance</h1>
-      <div class="ph-sub">Turn-by-turn for your current trip</div>
     </div>
   </div>
 
   <TripGate :state="tripState"
-    no-truck-text="Once your fleet manager links a vehicle to your account, turn-by-turn directions for your trips appear here."
-    no-trip-text="Directions appear here while your truck is on a trip.">
+    no-trip-text="Shown while your truck is on a trip.">
     <div class="notice sample-note" role="note">
       <Info :size="16" :stroke-width="2.25" />
-      <span><strong>Sample route preview.</strong> Live turn-by-turn directions will appear here once dispatch assigns a route to your trip.</span>
+      <span><strong>Sample data</strong> · not live yet</span>
     </div>
 
     <div class="rg-grid">
@@ -34,7 +32,7 @@
             <div class="stat-value">{{ trip.eta }}</div>
           </div>
           <div class="stat tone-info">
-            <div class="stat-top"><span class="stat-ic"><Milestone :size="17" :stroke-width="2.25" /></span><span class="stat-label">Remaining</span></div>
+            <div class="stat-top"><span class="stat-ic"><Milestone :size="17" :stroke-width="2.25" /></span><span class="stat-label">To go</span></div>
             <div class="stat-value">{{ trip.distanceLeft }}<small>km</small></div>
           </div>
         </div>
@@ -49,7 +47,7 @@
           </li>
           <li class="list-row">
             <span class="row-ic ic-neutral"><MapPin :size="19" :stroke-width="2.25" /></span>
-            <div class="row-main"><div class="row-sub">Delivery location</div><div class="row-title">{{ trip.deliveryLocation }}</div></div>
+            <div class="row-main"><div class="row-sub">Delivery</div><div class="row-title">{{ trip.deliveryLocation }}</div></div>
           </li>
         </ul>
       </section>
@@ -58,19 +56,18 @@
       <section class="card steps-card" aria-label="Upcoming directions">
         <div class="card-head">
           <span class="ch-ic ic-info"><Navigation :size="18" :stroke-width="2.25" /></span>
-          <div class="ch-text"><h2>Upcoming directions</h2><div class="ch-sub">{{ directions.length }} steps to destination</div></div>
+          <div class="ch-text"><h2>Directions</h2></div>
         </div>
         <ol class="steps">
-          <motion.li v-for="(step, i) in directions" :key="i" class="step" :class="{ current: i === 0, last: i === directions.length - 1 }"
-            :initial="{ opacity: 0, y: reduced ? 0 : 6 }" :animate="{ opacity: 1, y: 0 }"
-            :transition="{ duration: reduced ? 0 : 0.22, delay: reduced ? 0 : i * 0.04, ease: EASE }">
+          <li v-for="(step, i) in directions" :key="i" class="step item-in" :class="{ current: i === 0, last: i === directions.length - 1 }"
+            :style="{ animationDelay: Math.min(i, 8) * 40 + 'ms' }">
             <span class="step-ic"><component :is="step.icon" :size="18" :stroke-width="2.5" /></span>
             <div class="row-main">
               <div class="row-title">{{ step.instruction }}</div>
               <div class="row-sub">{{ step.road }}</div>
             </div>
             <div class="step-dist num">{{ step.distance }}</div>
-          </motion.li>
+          </li>
         </ol>
       </section>
     </div>

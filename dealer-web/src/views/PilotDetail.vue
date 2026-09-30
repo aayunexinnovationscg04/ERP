@@ -1,8 +1,7 @@
 <template>
   <PageHeader :title="d ? d.name : 'Pilot'" :back="{ to: '/pilots', label: 'Pilots' }">
     <template #description>
-      <span v-if="d">{{ d.assigned_vehicle ? 'Driving ' + d.assigned_vehicle.local_name + ' · ' + d.assigned_vehicle.registration_number : 'No vehicle assigned' }}</span>
-      <span v-else>&nbsp;</span>
+      <span v-if="d">{{ d.assigned_vehicle ? d.assigned_vehicle.local_name + ' · ' + d.assigned_vehicle.registration_number : 'No vehicle assigned' }}<template v-if="d.phone"> · {{ d.phone }}</template></span>
     </template>
     <a v-if="d?.phone" :href="`tel:${d.phone}`" class="btn"><Phone :size="16" /> Call</a>
   </PageHeader>
@@ -18,12 +17,10 @@
 
   <template v-else>
     <div class="kpis">
-      <StatTile label="Attendance (recorded days)" :value="attPct == null ? '—' : attPct" :unit="attPct == null ? '' : '%'" :icon="CalendarCheck" tone="green"
-        :sub="`${attCounts.present} present of ${d.attendance?.length || 0}`" />
+      <StatTile label="Attendance" :value="attPct == null ? '—' : attPct" :unit="attPct == null ? '' : '%'" :icon="CalendarCheck" tone="green" />
       <StatTile label="Absences" :value="attCounts.absent" :icon="CalendarX" :tone="attCounts.absent ? 'crit' : 'gray'" />
-      <StatTile label="Overspeed violations" :value="overspeed.length" :icon="Gauge" :tone="overspeed.length ? 'amber' : 'gray'" sub="On current vehicle" />
-      <StatTile label="Monthly salary" :value="d.monthly_salary ? '₹' + Number(d.monthly_salary).toLocaleString('en-IN') : '—'" :icon="Wallet" tone="navy"
-        :sub="d.monthly_salary ? '' : 'Not set by admin'" />
+      <StatTile label="Overspeed" :value="overspeed.length" :icon="Gauge" :tone="overspeed.length ? 'amber' : 'gray'" />
+      <StatTile label="Monthly salary" :value="d.monthly_salary ? '₹' + Number(d.monthly_salary).toLocaleString('en-IN') : '—'" :icon="Wallet" tone="navy" />
     </div>
 
     <div class="grid-2">
@@ -33,7 +30,7 @@
           <table>
             <thead><tr><th>Date</th><th>Status</th><th class="hide-sm">Notes</th></tr></thead>
             <tbody>
-              <tr v-for="a in d.attendance" :key="a.id">
+              <tr v-for="a in attPager.rows.value" :key="a.id">
                 <td class="nowrap">{{ fmtDate(a.date) }}</td>
                 <td><span class="badge" :class="attendanceBadge[a.status]">{{ a.status_label }}</span></td>
                 <td class="hide-sm muted">{{ a.notes || '—' }}</td>
@@ -41,6 +38,7 @@
             </tbody>
           </table>
         </div>
+        <Pager v-if="d.attendance?.length" :pager="attPager" />
         <EmptyState v-else compact :icon="CalendarCheck" title="No attendance recorded yet" />
       </div>
 
@@ -62,7 +60,7 @@
         <div class="card flush">
           <div class="card-head"><div class="card-head-title"><Gauge :size="17" /><h2>Overspeed violations</h2></div></div>
           <div v-if="overspeed.length" class="list">
-            <div v-for="a in overspeed" :key="a.id" class="list-row">
+            <div v-for="a in osPager.rows.value" :key="a.id" class="list-row">
               <span class="grow">
                 <div class="title" v-if="a.meta?.speed_kmph != null">{{ a.meta.speed_kmph }} km/h <span class="muted" style="font-weight:500" v-if="a.meta.limit != null">· limit {{ a.meta.limit }}</span></div>
                 <div class="title" v-else>{{ a.title }}</div>
@@ -71,9 +69,10 @@
               <span class="badge" :class="a.status === 'open' ? 'critical' : 'offline'">{{ a.status }}</span>
             </div>
           </div>
+          <Pager v-if="overspeed.length" :pager="osPager" />
           <EmptyState v-else compact :icon="ShieldCheck"
             :title="d.assigned_vehicle ? 'No overspeed violations' : 'No vehicle assigned'"
-            :text="d.assigned_vehicle ? 'Nothing recorded on their current vehicle.' : 'Nothing to check yet.'" />
+            />
         </div>
       </div>
     </div>
@@ -87,6 +86,8 @@ import { getPilot, getAlerts } from '../api'
 import PageHeader from '../components/PageHeader.vue'
 import StatTile from '../components/StatTile.vue'
 import EmptyState from '../components/EmptyState.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 
 const props = defineProps({ id: [String, Number] })
 const d = ref(null)
@@ -103,6 +104,8 @@ const attPct = computed(() => {
   const n = d.value?.attendance?.length
   return n ? Math.round((attCounts.value.present / n) * 100) : null
 })
+const attPager = usePaging(computed(() => d.value?.attendance || []), 10)
+const osPager = usePaging(overspeed, 10)
 function fmtDate(s) { return new Date(s + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' }) }
 
 async function load() {

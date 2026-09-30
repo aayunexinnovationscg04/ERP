@@ -1,7 +1,5 @@
 <template>
   <div class="page-skel" aria-hidden="true">
-    <div class="skel" style="height:26px;width:260px;max-width:60%;margin:0 0 10px"></div>
-    <div class="skel" style="height:14px;width:420px;max-width:80%;margin:0 0 24px"></div>
     <div class="kpis">
       <div class="skel sk-chip" v-for="n in 4" :key="n"></div>
     </div>

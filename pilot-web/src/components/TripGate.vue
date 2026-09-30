@@ -9,7 +9,6 @@
   <div v-else-if="state.failed.value" class="card empty-state">
     <span class="empty-ic"><WifiOff :size="34" :stroke-width="1.75" /></span>
     <h2>Couldn't load your trip</h2>
-    <p>Check your connection and try again.</p>
     <div class="empty-actions">
       <button type="button" class="btn btn-primary" @click="state.reload()"><RefreshCw :size="18" :stroke-width="2.25" /> Try again</button>
     </div>
@@ -42,7 +41,7 @@ import { Truck, Route, RefreshCw, CirclePause, WifiOff } from 'lucide-vue-next'
 
 defineProps({
   state: { type: Object, required: true },
-  noTruckText: { type: String, default: 'Once your fleet manager links a vehicle to your account, this page works during your trips.' },
-  noTripText: { type: String, default: 'This page fills in when your truck starts a trip.' },
+  noTruckText: { type: String, default: 'Ask your fleet manager to link one.' },
+  noTripText: { type: String, default: 'Shown while your truck is on a trip.' },
 })
 </script>

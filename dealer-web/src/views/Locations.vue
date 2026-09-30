@@ -1,21 +1,18 @@
 <template>
-  <PageHeader title="Live Map" description="Where every vehicle is right now. Positions refresh every 15 seconds." />
-
   <div v-if="loading" class="lm-layout">
     <div class="skel sk-map lm-map-skel"></div>
     <div class="card card-body"><div class="skel sk-row" v-for="n in 6" :key="n"></div></div>
   </div>
 
   <div v-else-if="!vehicles.length" class="card">
-    <EmptyState :icon="LocateFixed" title="No vehicles to show"
-      text="Vehicles appear on the map once a Fuel Guard X device is linked to your company and reports a GPS fix." />
+    <EmptyState :icon="LocateFixed" title="No vehicles to show" />
   </div>
 
   <div v-else class="lm-layout">
     <div class="card flush lm-map-card">
       <div class="card-head">
         <div class="card-head-title"><LocateFixed :size="17" /><div><h2>{{ focused ? focused.local_name : 'All vehicles' }}</h2>
-          <div class="card-sub">{{ focused ? focused.registration_number + ' · updated ' + ago(focused.latest?.received_at) : markers.length + ' of ' + vehicles.length + ' with a GPS fix' }}</div></div></div>
+          <div v-if="focused" class="card-sub">{{ focused.registration_number + ' · ' + ago(focused.latest?.received_at) }}</div></div></div>
         <button v-if="focusId != null" type="button" class="sm" @click="focusId = null"><Maximize2 :size="14" /> Show all</button>
         <div v-else class="map-legend">
           <span><i class="swatch" style="background:#059669"></i>Active</span>
@@ -40,7 +37,7 @@
         </label>
       </div>
       <div class="list lm-list">
-        <div v-for="v in shown" :key="v.id" class="list-row clickable" :class="{ sel: v.id === focusId }"
+        <div v-for="v in pager.rows.value" :key="v.id" class="list-row clickable" :class="{ sel: v.id === focusId }"
              role="button" tabindex="0" @click="select(v)" @keydown.enter="select(v)">
           <span class="dot" :class="freshness(v)"></span>
           <span class="grow">
@@ -52,6 +49,7 @@
         </div>
         <EmptyState v-if="!shown.length" compact :icon="SearchX" title="No match" />
       </div>
+      <Pager :pager="pager" />
     </div>
   </div>
 
@@ -65,7 +63,8 @@ import { getVehicles } from '../api'
 import { auth } from '../auth'
 import { freshness, ago, fmt } from '../util'
 import FleetMap from '../components/FleetMap.vue'
-import PageHeader from '../components/PageHeader.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 import EmptyState from '../components/EmptyState.vue'
 import RenameVehicleModal from '../components/RenameVehicleModal.vue'
 
@@ -85,6 +84,8 @@ const shown = computed(() => {
   const t = q.value.trim().toLowerCase()
   return t ? vehicles.value.filter((v) => [v.local_name, v.registration_number].some((x) => x?.toLowerCase().includes(t))) : vehicles.value
 })
+
+const pager = usePaging(shown, 10, [q])
 
 function select(v) {
   focusId.value = focusId.value === v.id ? null : v.id
@@ -108,9 +109,9 @@ onBeforeUnmount(() => clearInterval(timer))
 
 <style scoped>
 .lm-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
-.lm-map-card :deep(.lm-map) { height: calc(100vh - 250px); min-height: 440px; }
-.lm-map-skel { height: calc(100vh - 250px); min-height: 440px; }
-.lm-list { max-height: calc(100vh - 318px); min-height: 300px; overflow-y: auto; }
+.lm-map-card :deep(.lm-map) { height: calc(100vh - 186px); min-height: 400px; }
+.lm-map-skel { height: calc(100vh - 186px); min-height: 400px; }
+.lm-list { max-height: calc(100vh - 306px); min-height: 280px; overflow-y: auto; }
 .list-row.sel { background: var(--brand-soft); box-shadow: inset 3px 0 0 var(--brand); }
 .coord-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; padding: 12px 18px; border-top: 1px solid var(--border); }
 .coord-row > div { display: flex; flex-direction: column; gap: 1px; }

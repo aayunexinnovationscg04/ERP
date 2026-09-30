@@ -2,16 +2,14 @@
   <div class="page-head">
     <div class="ph-text">
       <h1>Traffic &amp; Delays</h1>
-      <div class="ph-sub">Conditions along your current route</div>
     </div>
   </div>
 
   <TripGate :state="tripState"
-    no-truck-text="Once your fleet manager links a vehicle to your account, traffic and delay notices for your route appear here."
-    no-trip-text="Traffic and delay notices appear here while your truck is on a trip.">
+    no-trip-text="Shown while your truck is on a trip.">
     <div class="notice sample-note" role="note">
       <Info :size="16" :stroke-width="2.25" />
-      <span><strong>Sample traffic preview.</strong> Live traffic for your route will appear here once a traffic feed is connected.</span>
+      <span><strong>Sample data</strong> · not live yet</span>
     </div>
 
     <div class="tr-grid">
@@ -33,7 +31,7 @@
 
         <div class="stat-grid" style="margin-top:16px">
           <div class="stat tone-brand">
-            <div class="stat-top"><span class="stat-ic"><Clock :size="17" :stroke-width="2.25" /></span><span class="stat-label">Adjusted ETA</span></div>
+            <div class="stat-top"><span class="stat-ic"><Clock :size="17" :stroke-width="2.25" /></span><span class="stat-label">ETA</span></div>
             <div class="stat-value">{{ summary.adjustedEta }}</div>
           </div>
           <div class="stat tone-amber">
@@ -43,16 +41,15 @@
         </div>
         <div class="dest">
           <MapPin :size="18" :stroke-width="2.25" />
-          <div><div class="stat-label">Delivery location</div><div class="dest-v">{{ summary.deliveryLocation }}</div></div>
+          <div><div class="stat-label">Delivery</div><div class="dest-v">{{ summary.deliveryLocation }}</div></div>
         </div>
       </motion.section>
 
       <section aria-label="Traffic and delay notices">
-        <div class="section-title tr-list-title"><span>Notices on your route</span></div>
+        <div class="section-title tr-list-title"><span>Notices</span></div>
         <div class="stack">
-          <motion.article v-for="(n, i) in notices" :key="n.id" class="card notice-card" :class="'sev-' + n.severity"
-            :initial="{ opacity: 0, y: reduced ? 0 : 8 }" :animate="{ opacity: 1, y: 0 }"
-            :transition="{ duration: reduced ? 0 : 0.22, delay: reduced ? 0 : i * 0.04, ease: EASE }">
+          <article v-for="(n, i) in notices" :key="n.id" class="card notice-card item-in" :class="'sev-' + n.severity"
+            :style="{ animationDelay: Math.min(i, 8) * 40 + 'ms' }">
             <span class="row-ic" :class="TONE[n.severity]"><component :is="n.icon" :size="20" :stroke-width="2.25" /></span>
             <div class="row-main">
               <div class="row-title">{{ n.title }}</div>
@@ -60,7 +57,7 @@
               <div class="row-sub loc"><MapPin :size="13" :stroke-width="2.25" /> {{ n.location }}</div>
             </div>
             <span class="badge" :class="BADGE[n.severity]">+{{ n.delayMin }} min</span>
-          </motion.article>
+          </article>
         </div>
       </section>
     </div>

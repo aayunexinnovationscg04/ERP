@@ -1,5 +1,5 @@
 <template>
-  <PageHeader title="Salary" :description="`Pilot pay for ${monthLabel}: base, bonuses, deductions and net payout.`" preview />
+  <PageHeader preview />
 
   <div class="kpis">
     <StatTile label="Total payout" :value="'₹' + inr(totalPayout)" :icon="Wallet" tone="navy" />
@@ -10,23 +10,20 @@
   <div class="card flush">
     <div class="card-head"><div class="card-head-title"><Users :size="17" /><h2>{{ monthLabel }}</h2></div></div>
     <div class="table-wrap">
-      <table>
+      <table class="mstack">
         <thead><tr><th>Pilot</th><th class="num">Base pay</th><th class="num">Bonus</th><th class="num">Deductions</th><th class="num">Net pay</th></tr></thead>
         <tbody>
-          <tr v-for="s in salaries" :key="s.name">
-            <td class="cell-main nowrap">{{ s.name }}</td>
-            <td class="num">₹{{ inr(s.base) }}</td>
-            <td class="num" style="color:var(--green)">+₹{{ inr(s.bonus) }}</td>
-            <td class="num" style="color:var(--crit)">−₹{{ inr(s.deductions) }}</td>
-            <td class="num cell-main">₹{{ inr(s.net) }}</td>
+          <tr v-for="s in pager.rows.value" :key="s.name">
+            <td class="cell-head cell-main nowrap">{{ s.name }}<b class="num show-sm">₹{{ inr(s.net) }}</b></td>
+            <td class="num" data-label="Base pay">₹{{ inr(s.base) }}</td>
+            <td class="num" data-label="Bonus" style="color:var(--green)">+₹{{ inr(s.bonus) }}</td>
+            <td class="num" data-label="Deductions" style="color:var(--crit)">−₹{{ inr(s.deductions) }}</td>
+            <td class="num cell-main hide-sm">₹{{ inr(s.net) }}</td>
           </tr>
         </tbody>
-        <tfoot>
-          <tr><td class="cell-main">Total</td><td class="num">₹{{ inr(salaries.reduce((a, s) => a + s.base, 0)) }}</td>
-            <td class="num">+₹{{ inr(totalBonus) }}</td><td class="num">−₹{{ inr(totalDeductions) }}</td><td class="num cell-main">₹{{ inr(totalPayout) }}</td></tr>
-        </tfoot>
       </table>
     </div>
+    <Pager :pager="pager" />
   </div>
 </template>
 
@@ -35,6 +32,8 @@ import { computed } from 'vue'
 import { Wallet, TrendingUp, TrendingDown, Users } from 'lucide-vue-next'
 import PageHeader from '../components/PageHeader.vue'
 import StatTile from '../components/StatTile.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 import { MOCK_PILOTS, seededRandom, rangeInt } from '../mock'
 
 const inr = (n) => Math.round(n).toLocaleString('en-IN')
@@ -48,10 +47,13 @@ const salaries = MOCK_PILOTS.map((name) => {
   return { name, base, bonus, deductions, net: base + bonus - deductions }
 })
 
+const pager = usePaging(computed(() => salaries), 10)
 const totalPayout = computed(() => salaries.reduce((s, r) => s + r.net, 0))
 const totalBonus = computed(() => salaries.reduce((s, r) => s + r.bonus, 0))
 const totalDeductions = computed(() => salaries.reduce((s, r) => s + r.deductions, 0))
 </script>
 <style scoped>
-tfoot td { background: var(--surface-2); border-top: 1px solid var(--border-strong); border-bottom: none; font-weight: 700; }
+@media (max-width: 720px) {
+  table.mstack tbody tr { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 </style>

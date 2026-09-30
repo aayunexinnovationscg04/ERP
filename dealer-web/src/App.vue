@@ -7,82 +7,72 @@
     <div class="scrim" :class="{ show: menuOpen }" @click="menuOpen = false" aria-hidden="true"></div>
 
     <aside class="sidebar" :class="{ open: menuOpen }" aria-label="Main navigation">
-      <div class="side-head">
-        <router-link to="/fleet-overview" class="brand" title="Fuel Guard X">
-          <span class="logo-chip"><img :src="logo" alt="" /></span>
-          <span class="brand-text"><span class="brand-title">Fuel Guard X</span><span class="brand-sub">Dealer Portal</span></span>
+      <div class="sb-brand">
+        <router-link :to="homePath" class="sb-home" title="Fuel Guard X">
+          <span class="sb-logo"><img :src="logo" alt="AAYUNEX INNOVATIONS OPC Pvt Ltd. logo" /></span>
+          <span class="sb-name"><strong>Fuel Guard X</strong><small>Dealer Portal</small></span>
         </router-link>
-        <button class="sb-icon-btn collapse-btn" @click="collapsed = !collapsed"
+        <button type="button" class="sb-toggle" @click="collapsed = !collapsed"
                 :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <component :is="collapsed ? PanelLeftOpen : PanelLeftClose" :size="18" />
+          <component :is="collapsed ? PanelLeftOpen : PanelLeftClose" :size="17" />
         </button>
-        <button class="sb-icon-btn drawer-close" @click="menuOpen = false" aria-label="Close menu" title="Close menu">
+        <button type="button" class="sb-close" @click="menuOpen = false" aria-label="Close menu" title="Close menu">
           <X :size="20" />
         </button>
       </div>
 
-      <nav class="nav" @click="onNavClick">
-        <div class="nav-group" v-for="g in visibleGroups" :key="g.id">
-          <button type="button" class="nav-group-head" :class="{ open: isGroupOpen(g), 'has-active': groupHasActiveRoute(g) }"
-                  :aria-expanded="isGroupOpen(g)" @click.stop="toggleGroup(g.id)">
-            <span class="gh-ic"><component :is="g.icon" :size="16" /></span>
-            <span class="label">{{ g.label }}</span>
-            <ChevronRight :size="15" class="chev" />
-          </button>
-          <div class="nav-group-items" :class="{ 'is-collapsed': !isGroupOpen(g) }">
-            <router-link v-for="item in g.items" :key="item.to" :to="item.to" :title="item.label"
-              class="nav-item" :class="{ 'router-link-active': inSection(item.to) }">
-              <span class="ic"><component :is="item.icon" :size="17" /></span>
-              <span class="label">{{ item.label }}</span>
-              <span v-if="item.to === '/alerts' && openAlerts" class="nav-count">{{ openAlerts > 99 ? '99+' : openAlerts }}</span>
-            </router-link>
-          </div>
-        </div>
+      <nav class="sb-nav" @click="onNavClick">
+        <section v-for="g in visibleGroups" :key="g.id" class="sb-sec">
+          <h2 class="sb-sec-title">{{ g.label }}</h2>
+          <router-link v-for="item in g.items" :key="item.to" :to="item.to"
+            class="sb-link" :class="{ 'router-link-active': inSection(item.to) }"
+            :title="collapsed ? item.label : undefined">
+            <component :is="item.icon" :size="16" />
+            <span class="label">{{ item.label }}</span>
+            <span v-if="item.to === '/alerts' && openAlerts" class="nav-count">{{ openAlerts > 99 ? '99+' : openAlerts }}</span>
+          </router-link>
+        </section>
       </nav>
 
-      <div class="side-foot">
-        <div class="side-user" :title="userName">
+      <div class="sb-foot">
+        <div class="sb-user" :title="collapsed ? userName : undefined">
           <span class="avatar">{{ initials }}</span>
-          <span class="side-user-text">
-            <b>{{ userName }}</b>
+          <span class="sb-user-text">
+            <strong>{{ userName }}</strong>
             <small>{{ roleLabel }}{{ canWrite ? '' : ' · view only' }}</small>
           </span>
         </div>
-        <div class="side-actions">
-          <button class="side-btn logout" @click="logout" title="Log out">
-            <LogOut :size="16" /><span class="label">Log out</span>
-          </button>
-        </div>
+        <button type="button" class="sb-icon-btn sb-logout" @click="logout" title="Log out" aria-label="Log out"><LogOut :size="17" /></button>
       </div>
     </aside>
 
-    <div class="shell-main">
-      <header class="appbar">
-        <button class="hamburger" aria-label="Open menu" :aria-expanded="menuOpen" @click="menuOpen = true">
+    <div class="main-col">
+      <header class="topbar">
+        <button type="button" class="tb-btn tb-menu" aria-label="Open menu" :aria-expanded="menuOpen" @click="menuOpen = true">
           <Menu :size="22" />
         </button>
-        <router-link to="/fleet-overview" class="appbar-brand">
-          <span class="logo-chip"><img :src="logo" alt="" /></span>
-          <b>Fuel Guard X</b>
-        </router-link>
-        <div class="crumbs" v-if="crumb">
-          <span class="crumb-group">{{ crumb.group }}</span>
-          <ChevronRight :size="14" class="sep" />
-          <b>{{ crumb.item }}</b>
-        </div>
-        <div class="appbar-right">
+        <router-link v-if="crumb?.parentTo" :to="crumb.parentTo" class="tb-btn tb-back" :aria-label="`Back to ${crumb.group}`"><ArrowLeft :size="20" /></router-link>
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <template v-if="crumb">
+            <router-link v-if="crumb.parentTo" :to="crumb.parentTo" class="c-group c-link">{{ crumb.group }}</router-link>
+            <span v-else class="c-group">{{ crumb.group }}</span>
+            <ChevronRight class="c-sep" :size="14" />
+            <span class="c-page">{{ crumb.page }}</span>
+          </template>
+          <span v-else class="c-page">Fuel Guard X</span>
+        </nav>
+        <div class="tb-spacer"></div>
+        <div id="page-actions" class="tb-actions"></div>
+        <div class="tb-right">
           <span v-if="!canWrite" class="ro-pill" title="Your account can view data but not change it.">
             <Eye :size="14" /><span>View only</span>
           </span>
-          <span v-if="companyName" class="company-pill" :title="companyName">
-            <Building2 :size="15" /><span>{{ companyName }}</span>
-          </span>
-          <router-link v-if="canOpen('/alerts')" to="/alerts" class="appbar-alerts icon-link" :title="openAlerts ? `${openAlerts} open alert(s)` : 'Alerts'"
+          <router-link v-if="canOpen('/alerts')" to="/alerts" class="tb-btn tb-alerts" :title="openAlerts ? `${openAlerts} open alert(s)` : 'Alerts'"
                        :aria-label="openAlerts ? `${openAlerts} open alerts` : 'Alerts'">
             <Bell :size="18" />
             <span v-if="openAlerts" class="dotcount">{{ openAlerts > 99 ? '99+' : openAlerts }}</span>
           </router-link>
-          <button class="icon-btn" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+          <button type="button" class="tb-btn" @click="toggleTheme" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
                   :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
             <Sun v-if="theme === 'dark'" :size="18" />
             <Moon v-else :size="18" />
@@ -103,13 +93,7 @@
           </div>
           <PageSkeleton v-if="showRouteSkeleton" />
           <router-view v-else v-slot="{ Component, route: r }">
-            <AnimatePresence mode="wait">
-              <motion.div :key="r.fullPath"
-                :initial="{ opacity: 0 }" :animate="{ opacity: 1 }" :exit="{ opacity: 0 }"
-                :transition="{ duration: .14, ease: [.4, 0, .2, 1] }">
-                <component :is="Component" />
-              </motion.div>
-            </AnimatePresence>
+            <div :key="r.fullPath" class="page-in"><component :is="Component" /></div>
           </router-view>
         </div>
       </main>
@@ -119,10 +103,10 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Menu, X, LocateFixed, Truck, Bell, MapPin, Fuel, IdCard, PanelLeftClose, PanelLeftOpen, LogOut, Sun, Moon, ChevronRight, Radar, History, BarChart3, TrendingUp, Users, CalendarCheck, Gauge, Wallet, Route, CalendarClock, Clock, ShieldAlert, ClipboardList, Receipt, Sparkles, BrainCircuit, Compass, FileText, LayoutDashboard, Building2, Eye, TriangleAlert } from 'lucide-vue-next'
-import { motion, AnimatePresence, MotionConfig } from 'motion-v'
+import { ArrowLeft, Menu, X, LocateFixed, Truck, Bell, MapPin, Fuel, IdCard, PanelLeftClose, PanelLeftOpen, LogOut, Sun, Moon, ChevronRight, Radar, History, BarChart3, TrendingUp, Users, CalendarCheck, Gauge, Wallet, Route, CalendarClock, Clock, ShieldAlert, ClipboardList, Receipt, Sparkles, BrainCircuit, Compass, FileText, LayoutDashboard, Eye, TriangleAlert } from 'lucide-vue-next'
+import { MotionConfig } from 'motion-v'
 import { auth, justLoggedIn, logout as endSession } from './auth'
 import { getAlerts } from './api'
 import { useTheme } from './theme'
@@ -130,7 +114,8 @@ import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
 import PageSkeleton from './components/PageSkeleton.vue'
 import logo from '@shared/design/brand/aayunex-logo.png'
-import { canOpen } from './access'
+import { canOpen, firstAllowedPath } from './access'
+import { pageMeta } from './pagemeta'
 
 const route = useRoute()
 const router = useRouter()
@@ -173,7 +158,12 @@ const roleLabel = computed(() => {
 const menuOpen = ref(false)
 const collapsed = ref(localStorage.getItem('fgx-sidebar-collapsed') === '1')
 const { theme, toggleTheme } = useTheme()
-watch(() => route.path, () => { menuOpen.value = false })
+watch(() => route.path, () => { menuOpen.value = false; window.scrollTo({ top: 0, left: 0 }); revealActiveLink() })
+// The nav scrolls on short screens: keep the current page's link in view.
+function revealActiveLink() {
+  nextTick(() => document.querySelector('.sb-nav .sb-link.router-link-active')?.scrollIntoView({ block: 'nearest' }))
+}
+onMounted(revealActiveLink)
 watch(menuOpen, (open) => { document.documentElement.classList.toggle('drawer-open', open) })
 function onKey(e) { if (e.key === 'Escape' && menuOpen.value) menuOpen.value = false }
 onMounted(() => window.addEventListener('keydown', onKey))
@@ -266,35 +256,24 @@ const NAV_GROUPS = [
   },
 ]
 
+// Breadcrumb names the page (pages carry no big title of their own). Detail
+// pages (/vehicles/:id) link back to their list and show the entity name.
 const crumb = computed(() => {
   for (const g of NAV_GROUPS) {
     const item = g.items.find((i) => inSection(i.to))
-    if (item) return { group: g.label, item: item.label + (route.path !== item.to ? ' · Details' : '') }
+    if (!item) continue
+    if (route.path === item.to) return { group: g.label, page: item.label }
+    return { group: item.label, parentTo: item.to, page: pageMeta.title || 'Details' }
   }
+  if (route.path === '/no-access') return { group: 'Account', page: 'No access' }
   return null
 })
+const homePath = computed(() => (auth.user ? firstAllowedPath() : '/'))
 
 // Only sections this account may open (Role Management modules).
 const visibleGroups = computed(() => NAV_GROUPS
   .map((g) => ({ ...g, items: g.items.filter((i) => canOpen(i.to)) }))
   .filter((g) => g.items.length))
-
-const NAV_GROUPS_STORAGE_KEY = 'fgx_dealer_nav_groups'
-function groupHasActiveRoute(g) { return g.items.some((item) => inSection(item.to)) }
-
-// Accordion: one group open at a time so the sidebar stays short. Navigating
-// into a section opens its group; clicking a header toggles it.
-const initialGroup = NAV_GROUPS.find(groupHasActiveRoute)?.id
-  ?? localStorage.getItem(NAV_GROUPS_STORAGE_KEY)
-  ?? NAV_GROUPS[0].id
-const openGroupId = ref(initialGroup)
-watch(openGroupId, (v) => localStorage.setItem(NAV_GROUPS_STORAGE_KEY, v || ''))
-watch(() => route.path, () => {
-  const g = NAV_GROUPS.find(groupHasActiveRoute)
-  if (g) openGroupId.value = g.id
-})
-function toggleGroup(id) { openGroupId.value = openGroupId.value === id ? null : id }
-function isGroupOpen(g) { return openGroupId.value === g.id }
 
 // view-as tab: closing it ends the read-only session
 function closeView() { endSession() }

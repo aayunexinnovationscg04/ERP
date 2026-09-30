@@ -9,8 +9,8 @@
       <div class="brand-lockup">
         <span class="logo-tile"><img :src="logo" alt="" /></span>
         <span class="brand-text">
-          <span class="brand-sub">AAYUNEX INNOVATIONS OPC Pvt Ltd.</span>
           <span class="brand-name">Fuel Guard X</span>
+          <span class="brand-sub">AAYUNEX INNOVATIONS OPC Pvt Ltd.</span>
         </span>
       </div>
       <span class="spacer"></span>
@@ -31,8 +31,8 @@
         <div class="brand-lockup">
           <span class="logo-tile"><img :src="logo" alt="" /></span>
           <span class="brand-text">
-            <span class="brand-sub">Pilot App</span>
             <span class="brand-name">Fuel Guard X</span>
+            <span class="brand-sub">Pilot App</span>
           </span>
         </div>
         <button class="icon-btn collapse-btn" type="button" @click="collapsed = !collapsed"
@@ -79,17 +79,9 @@
           <button type="button" class="view-close" @click="closeView">Close</button>
         </div>
         <PageSkeleton v-if="showRouteSkeleton" />
-        <AnimatePresence v-else mode="wait">
-          <motion.div :key="$route.fullPath"
-            :initial="{ opacity: 0, y: reduced ? 0 : 6 }"
-            :animate="{ opacity: 1, y: 0 }"
-            :exit="{ opacity: 0 }"
-            :transition="pageTransition(reduced)">
-            <router-view v-slot="{ Component }">
-              <component :is="Component" />
-            </router-view>
-          </motion.div>
-        </AnimatePresence>
+        <div v-else :key="$route.fullPath" class="page-in">
+          <router-view v-slot="{ Component }"><component :is="Component" /></router-view>
+        </div>
       </div>
     </main>
 
@@ -110,14 +102,12 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { motion, AnimatePresence } from 'motion-v'
 import { Truck, Route, ChevronsLeft, ChevronsRight, LogOut, Sun, Moon, User, ShieldAlert, Compass, Navigation, Eye } from 'lucide-vue-next'
 import Toaster from './components/Toaster.vue'
 import WelcomeGate from './components/WelcomeGate.vue'
 import PageSkeleton from './components/PageSkeleton.vue'
 import { auth, justLoggedIn, logout as endSession } from './auth'
 import { getSummary } from './api'
-import { usePrefersReducedMotion, pageTransition } from './motion'
 import { useTheme } from './theme'
 import logo from '@shared/design/brand/aayunex-logo.png'
 import { canOpen } from './access'
@@ -132,7 +122,6 @@ const welcomeName = computed(() => {
 const initials = computed(() => (auth.user?.username || 'P').charAt(0).toUpperCase())
 const collapsed = ref(localStorage.getItem('fgx-pilot-sidebar-collapsed') === '1')
 watch(collapsed, (v) => localStorage.setItem('fgx-pilot-sidebar-collapsed', v ? '1' : '0'))
-const reduced = usePrefersReducedMotion()
 const { theme, toggleTheme } = useTheme()
 
 const navGroups = [

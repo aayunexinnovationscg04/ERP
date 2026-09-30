@@ -2,7 +2,6 @@
   <div class="page-head">
     <div class="ph-text">
       <h1>Profile</h1>
-      <div class="ph-sub">Your details, records and app settings</div>
     </div>
   </div>
 
@@ -14,7 +13,6 @@
         <div class="id-text">
           <div class="id-name">{{ displayName }}</div>
           <div class="id-sub">@{{ auth.user?.username }}<template v-if="auth.user?.company?.name"> · {{ auth.user.company.name }}</template></div>
-          <span class="badge info" style="margin-top:8px">Pilot</span>
         </div>
       </div>
       <div v-if="detailsLoading" class="card-pad" style="padding-top:0">
@@ -51,7 +49,7 @@
       </div>
       <div class="notice" role="note" style="margin:12px 0 14px">
         <Info :size="16" :stroke-width="2.25" />
-        <span><strong>Sample data.</strong> Attendance, performance, pay and tasks will sync from your fleet's HR records once connected.</span>
+        <span><strong>Sample data</strong> · HR records not connected yet</span>
       </div>
 
       <AnimatePresence mode="wait">
@@ -88,7 +86,7 @@
               <span><i class="lg st-present"></i>Present</span>
               <span><i class="lg st-leave"></i>Leave</span>
               <span><i class="lg st-absent"></i>Absent</span>
-              <span><i class="lg st-off"></i>Weekly off</span>
+              <span><i class="lg st-off"></i>Off</span>
             </div>
             </div>
           </div>
@@ -167,7 +165,7 @@
     <section class="card pf-settings" aria-label="App settings">
       <div class="card-head">
         <span class="ch-ic ic-neutral"><Settings :size="18" :stroke-width="2.25" /></span>
-        <div class="ch-text"><h2>App settings</h2></div>
+        <div class="ch-text"><h2>Settings</h2></div>
       </div>
       <div class="card-pad set-body">
         <div>
@@ -176,7 +174,6 @@
             <button type="button" role="radio" class="seg-btn" :class="{ active: theme === 'light' }" :aria-checked="theme === 'light'" @click="setTheme('light')"><Sun :size="17" :stroke-width="2.25" /><span>Light</span></button>
             <button type="button" role="radio" class="seg-btn" :class="{ active: theme === 'dark' }" :aria-checked="theme === 'dark'" @click="setTheme('dark')"><Moon :size="17" :stroke-width="2.25" /><span>Dark</span></button>
           </div>
-          <div class="hint">Dark mode is easier on the eyes when driving at night.</div>
         </div>
         <button type="button" class="btn btn-danger btn-block" @click="logout"><LogOut :size="18" :stroke-width="2.25" /> Log out</button>
       </div>
@@ -193,7 +190,7 @@ import {
   CircleCheck, CircleDashed, CircleAlert, Truck, Phone, IdCard, Mail, ChevronRight, Settings, Sun, Moon, LogOut, Info,
 } from 'lucide-vue-next'
 import { auth, logout as endSession } from '../auth'
-import { getMyVehicle } from '../api'
+import { getMyVehicle, getSummary } from '../api'
 import { useTheme } from '../theme'
 import { usePrefersReducedMotion, pageTransition } from '../motion'
 
@@ -214,7 +211,8 @@ const displayName = computed(() => {
 })
 const initials = computed(() => displayName.value.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase())
 onMounted(async () => {
-  try { vehicle.value = await getMyVehicle() } catch (e) { vehicle.value = null /* none assigned */ }
+  // Ask the summary first: /pilot/vehicle answers 404 when no truck is assigned.
+  try { vehicle.value = (await getSummary()).assigned ? await getMyVehicle() : null } catch (e) { vehicle.value = null }
   finally { detailsLoading.value = false }
 })
 
@@ -300,7 +298,7 @@ const TASK = {
 .pf-records { grid-area: rec; min-width: 0; }
 .pf-settings { grid-area: set; }
 @media (min-width: 1100px) {
-  .pf-grid { grid-template-columns: 340px minmax(0, 1fr); grid-template-areas: "id rec" "set rec"; gap: 18px; align-items: start; }
+  .pf-grid { grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: auto 1fr; grid-template-areas: "id rec" "set rec"; gap: 18px; align-items: start; }
 }
 
 .id-top { display: flex; align-items: center; gap: 16px; padding: 18px; }

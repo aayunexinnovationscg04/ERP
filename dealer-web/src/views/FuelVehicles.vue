@@ -1,20 +1,20 @@
 <template>
-  <PageHeader title="Fuel Overview" description="Tank level of every vehicle. Open one to see refills, theft alerts and usage trends.">
+  <PageHeader>
     <router-link to="/alerts" class="btn"><ShieldAlert :size="16" /> Fuel alerts</router-link>
   </PageHeader>
 
   <div v-if="loading" class="kpis"><div class="skel sk-chip" v-for="n in 4" :key="n"></div></div>
   <div v-else class="kpis">
-    <StatTile label="Fuel in tanks" :value="withReading.length ? fmt(totalLitres, 0) : '—'" :unit="withReading.length ? 'L' : ''" :icon="Fuel" tone="brand" :sub="`${withReading.length} of ${vehicles.length} reporting`" />
+    <StatTile label="Fuel in tanks" :value="withReading.length ? fmt(totalLitres, 0) : '—'" :unit="withReading.length ? 'L' : ''" :icon="Fuel" tone="brand" />
     <StatTile label="Average level" :value="avgPct == null ? '—' : avgPct" :unit="avgPct == null ? '' : '%'" :icon="Gauge" tone="blue" />
-    <StatTile label="Low fuel (≤ 15%)" :value="lowCount" :icon="TriangleAlert" :tone="lowCount ? 'crit' : 'gray'" />
+    <StatTile label="Low fuel" :value="lowCount" :icon="TriangleAlert" :tone="lowCount ? 'crit' : 'gray'" />
     <StatTile label="No reading yet" :value="vehicles.length - withReading.length" :icon="CircleDashed" tone="gray" />
   </div>
 
   <div v-if="loading" class="fuel-grid"><div class="skel sk-box" v-for="n in 6" :key="n"></div></div>
 
   <div v-else-if="!vehicles.length" class="card">
-    <EmptyState :icon="Fuel" title="No vehicles yet" text="Fuel levels appear once a vehicle's Fuel Guard X sensor starts reporting." />
+    <EmptyState :icon="Fuel" title="No vehicles yet" text="Shown once a fuel sensor reports." />
   </div>
 
   <template v-else>
@@ -29,7 +29,7 @@
       </div>
     </div>
     <div class="fuel-grid">
-      <router-link v-for="v in shown" :key="v.id" :to="`/fuel/${v.id}`" class="card fuel-box">
+      <router-link v-for="v in pager.rows.value" :key="v.id" :to="`/fuel/${v.id}`" class="card fuel-box">
         <div class="fb-top">
           <div style="min-width:0">
             <div class="fb-name">{{ v.local_name }}</div>
@@ -39,17 +39,18 @@
         </div>
         <div class="fb-level">
           <template v-if="v.latest?.total_litres != null"><b class="num">{{ fmt(v.latest.total_litres) }}</b><span>L</span></template>
-          <span v-else class="fb-none">No fuel reading yet</span>
+          <span v-else class="fb-none">— L</span>
           <span class="fb-pct" v-if="hasPct(v)">{{ pct(v) }}%</span>
         </div>
         <div class="meter"><span :class="levelClass(v)" :style="{ width: pct(v) + '%' }"></span></div>
         <div class="fb-foot">
-          <span>{{ v.tank_capacity_litres ? v.tank_capacity_litres + ' L tank' : 'Tank size not set' }}</span>
+          <span>{{ v.tank_capacity_litres ? v.tank_capacity_litres + ' L tank' : '—' }}</span>
           <span class="ico" style="gap:6px"><span class="dot" :class="freshness(v)"></span>{{ ago(v.latest?.received_at) }}</span>
         </div>
       </router-link>
     </div>
-    <EmptyState v-if="!shown.length" compact :icon="SearchX" title="No matching vehicles" />
+    <div v-if="!shown.length" class="card"><EmptyState compact :icon="SearchX" title="No matching vehicles" /></div>
+    <div v-else class="card fv-pager"><Pager :pager="pager" /></div>
   </template>
 </template>
 
@@ -61,6 +62,8 @@ import { freshness, fmt, ago } from '../util'
 import PageHeader from '../components/PageHeader.vue'
 import StatTile from '../components/StatTile.vue'
 import EmptyState from '../components/EmptyState.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 
 const vehicles = ref([])
 const loading = ref(true)
@@ -100,6 +103,8 @@ const shown = computed(() => {
   return [...list].sort((a, b) => (hasPct(b) - hasPct(a)) || (pct(a) - pct(b)))
 })
 
+const pager = usePaging(shown, 10, [q, sort])
+
 async function load() {
   try { vehicles.value = await getVehicles() }
   catch (e) { /* keep last good data */ }
@@ -122,5 +127,21 @@ onBeforeUnmount(() => clearInterval(timer))
 .fb-none { font-size: 14px !important; color: var(--muted); font-weight: 600; line-height: 36px; }
 .fb-level .fb-pct { margin-left: auto; font-size: 13px; color: var(--text); font-weight: 700; }
 .fb-foot { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
-@media (max-width: 720px) { .fuel-grid { grid-template-columns: 1fr; } }
+.fv-pager { margin-top: 12px; }
+.fv-pager :deep(.pager) { border-top: 0; }
+.toolbar { margin-bottom: 12px; }
+@media (max-width: 720px) {
+  .fuel-grid { grid-template-columns: 1fr; gap: 8px; }
+  .fuel-box { padding: 11px 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; }
+  .fb-top { grid-column: 1 / -1; }
+  .fb-level { grid-row: 2; grid-column: 1; }
+  .fb-level b { font-size: 18px; }
+  .fb-none { line-height: 1.3; font-size: 13px !important; }
+  .fb-level .fb-pct { margin-left: 8px; }
+  .fb-foot { grid-row: 2; grid-column: 2; }
+  .fb-foot > span:first-child { display: none; }
+  .fuel-box .meter { grid-row: 3; grid-column: 1 / -1; }
+  .toolbar .seg { flex: 1 1 auto; }
+  .toolbar .seg button { flex: 1; }
+}
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <PageHeader title="Route Optimization" description="Suggested route changes per truck with the time and fuel they could save each week." preview />
+  <PageHeader preview />
 
   <div class="kpis">
     <StatTile label="Time saved / week" :value="fmt(totalTimeSaved, 0)" unit="min" :icon="Clock" tone="green" />
@@ -9,7 +9,7 @@
 
   <div class="card flush">
     <div class="list">
-      <div class="list-row ro-row" v-for="s in suggestions" :key="s.id">
+      <div class="list-row ro-row" v-for="s in pager.rows.value" :key="s.id">
         <span class="icon-chip blue"><Route :size="17" /></span>
         <div class="grow">
           <div class="ro-head"><b>{{ s.vehicleName }}</b><span class="muted">{{ s.from }} → {{ s.to }}</span></div>
@@ -22,14 +22,17 @@
         </div>
       </div>
     </div>
+    <Pager :pager="pager" />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Clock, Fuel, Compass, Route } from 'lucide-vue-next'
 import PageHeader from '../components/PageHeader.vue'
 import StatTile from '../components/StatTile.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 import { MOCK_VEHICLES, seededRandom, pick, rangeInt, range } from '../mock'
 import { fmt } from '../util'
 
@@ -59,14 +62,16 @@ const suggestions = MOCK_VEHICLES.map((v, i) => {
   }
 })
 
+const pager = usePaging(ref(suggestions), 10)
 const totalTimeSaved = computed(() => suggestions.reduce((s, r) => s + r.timeSaved, 0))
 const totalFuelSaved = computed(() => suggestions.reduce((s, r) => s + r.fuelSaved, 0))
 </script>
 <style scoped>
-.ro-row { align-items: flex-start; padding: 16px 18px; }
+.ro-row { align-items: flex-start; padding: 12px 16px; }
 .ro-head { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; font-size: 14px; }
 .ro-head b { color: var(--ink-strong); }
 .ro-head .muted { font-size: 13px; }
-.ro-desc { font-size: 13px; margin: 4px 0 10px; color: var(--text); }
+.ro-desc { font-size: 13px; margin: 2px 0 8px; color: var(--text); }
+@media (max-width: 720px) { .ro-row { padding: 11px 12px; gap: 10px; } }
 .ro-savings { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 </style>

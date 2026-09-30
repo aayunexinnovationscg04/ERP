@@ -1,11 +1,4 @@
 <template>
-  <PageHeader title="Alerts" description="Fuel theft, tamper, geofence and driving events from your fleet. Acknowledge an alert once it has been handled.">
-    <div class="seg" role="group" aria-label="Alert status">
-      <button :class="{ on: filter === 'open' }" @click="setFilter('open')">Open</button>
-      <button :class="{ on: filter === '' }" @click="setFilter('')">All</button>
-    </div>
-  </PageHeader>
-  <p v-if="!canWrite" class="notice amber" style="margin:-4px 0 16px"><Lock :size="16" /> View only — you can see alerts but not acknowledge them.</p>
 
   <div v-if="loading && !alerts.length" class="kpis"><div class="skel sk-chip" v-for="n in 3" :key="n"></div></div>
   <div v-else class="kpis">
@@ -16,6 +9,11 @@
 
   <div class="card flush">
     <div class="card-head">
+      <div class="toolbar al-toolbar">
+      <div class="seg" role="group" aria-label="Alert status">
+        <button :class="{ on: filter === 'open' }" @click="setFilter('open')">Open</button>
+        <button :class="{ on: filter === '' }" @click="setFilter('')">All</button>
+      </div>
       <div class="chips" role="group" aria-label="Alert type">
         <button type="button" class="chip" :class="{ on: typeFilter === '' }" @click="typeFilter = ''">
           All types <span class="chip-count">{{ alerts.length }}</span>
@@ -26,13 +24,14 @@
           <span class="chip-count">{{ typeCounts[c.type] || 0 }}</span>
         </button>
       </div>
+      </div>
     </div>
 
     <div v-if="loading && !alerts.length" class="card-body"><div class="skel sk-row" v-for="n in 5" :key="n"></div></div>
 
     <EmptyState v-else-if="!filteredAlerts.length" :icon="ShieldCheck"
       :title="filter === 'open' ? 'No open alerts' : 'No alerts'"
-      :text="typeFilter ? 'Nothing in this category.' : (filter === 'open' ? 'Everything has been handled. New events will appear here.' : 'Alerts from your vehicles will be listed here.')" />
+      :text="typeFilter ? '' : (filter === 'open' ? 'All handled.' : '')" />
 
     <template v-else>
       <div class="table-wrap hide-sm" :class="{ busy: loading }">
@@ -41,7 +40,7 @@
             <tr><th>Alert</th><th>Severity</th><th>Vehicle</th><th>When</th><th class="num" style="width:150px">Status</th></tr>
           </thead>
           <tbody>
-            <tr v-for="a in filteredAlerts" :key="a.id">
+            <tr v-for="a in pager.rows.value" :key="a.id">
               <td>
                 <div class="cell-with-icon">
                   <span class="icon-chip" :class="chipClass[a.severity]"><component :is="typeIcon(a.type)" :size="16" /></span>
@@ -64,29 +63,32 @@
       </div>
 
       <div class="list show-sm">
-        <div v-for="a in filteredAlerts" :key="a.id" class="list-row al-item">
+        <div v-for="a in pager.rows.value" :key="a.id" class="list-row al-item">
           <span class="icon-chip" :class="chipClass[a.severity]"><component :is="typeIcon(a.type)" :size="16" /></span>
           <div class="grow">
             <div class="al-top"><span class="title">{{ a.title }}</span><span class="badge" :class="a.severity">{{ a.severity }}</span></div>
             <div class="al-body">{{ a.message }}</div>
-            <div class="sub">{{ a.vehicle_reg || a.device_id || '—' }} · {{ ago(a.created_at) }}</div>
-            <div class="al-actions">
+            <div class="al-foot">
+              <div class="sub">{{ a.vehicle_reg || a.device_id || '—' }} · {{ ago(a.created_at) }}</div>
               <button v-if="a.status === 'open' && canWrite" class="sm" :disabled="acking === a.id" @click="ack(a)"><Check :size="14" /> Acknowledge</button>
               <span v-else class="badge plain" :class="a.status === 'open' ? 'critical' : 'offline'">{{ a.status }}</span>
             </div>
           </div>
         </div>
       </div>
+      <Pager :pager="pager" />
     </template>
   </div>
 </template>
 
 <script setup>
 import { onMounted, ref, computed } from 'vue'
-import { Lock, TriangleAlert, Info, Gauge, MapPin, Fuel, ShieldAlert, ShieldCheck, Siren, WifiOff, Wrench, PauseCircle, Check } from 'lucide-vue-next'
+import { TriangleAlert, Info, Gauge, MapPin, Fuel, ShieldAlert, ShieldCheck, Siren, WifiOff, Wrench, PauseCircle, Check } from 'lucide-vue-next'
 import PageHeader from '../components/PageHeader.vue'
 import StatTile from '../components/StatTile.vue'
 import EmptyState from '../components/EmptyState.vue'
+import Pager from '../components/Pager.vue'
+import { usePaging } from '../paging'
 import { getAlerts, ackAlert } from '../api'
 import { auth } from '../auth'
 import { ago } from '../util'
@@ -130,6 +132,7 @@ const TYPE_CATEGORIES = [
 const typeFilter = ref('')
 const filteredAlerts = computed(() =>
   typeFilter.value ? alerts.value.filter((a) => a.type === typeFilter.value) : alerts.value)
+const pager = usePaging(filteredAlerts, 10, [typeFilter, filter])
 const typeCounts = computed(() => {
   const counts = {}
   for (const a of alerts.value) counts[a.type] = (counts[a.type] || 0) + 1
@@ -160,12 +163,15 @@ async function ack(a) {
 onMounted(load)
 </script>
 <style scoped>
-.card-head .chips { flex: 1; }
+.al-toolbar { margin: 0; flex: 1; min-width: 0; }
+.al-toolbar .chips { flex: 1; min-width: 0; }
 .al-msg { max-width: 520px; white-space: normal; }
 .busy { opacity: .6; transition: opacity var(--dur) var(--ease); }
 .al-item { align-items: flex-start; }
 .al-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .al-top .title { white-space: normal; }
 .al-body { font-size: 13px; color: var(--text); margin: 2px 0 4px; }
-.al-actions { margin-top: 10px; }
+.al-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+.al-foot .sub { min-width: 0; white-space: normal; }
+.al-foot > button, .al-foot > .badge { flex: none; }
 </style>

@@ -2,7 +2,6 @@
   <div class="page-head">
     <div class="ph-text">
       <h1>My Truck</h1>
-      <div class="ph-sub">Live status of your assigned vehicle</div>
     </div>
     <div v-if="!loading && assigned" class="ph-actions">
       <button class="btn btn-sm" type="button" @click="refresh" :disabled="refreshing" aria-label="Refresh now">
@@ -21,12 +20,11 @@
   <div v-else-if="!assigned" class="card empty-state">
     <span class="empty-ic"><Truck :size="34" :stroke-width="1.75" /></span>
     <h2>No truck assigned yet</h2>
-    <p>Your fleet manager hasn't linked a vehicle to your account. As soon as they do, its live location, trips and alerts show up here.</p>
+    <p>Ask your fleet manager to link one.</p>
     <div class="empty-actions">
       <button class="btn btn-primary" type="button" @click="checkAgain" :disabled="refreshing">
         <RefreshCw :size="18" :stroke-width="2.25" :class="{ spin: refreshing }" /> Check again
       </button>
-      <router-link to="/profile" class="btn"><User :size="18" :stroke-width="2.25" /> My profile</router-link>
     </div>
   </div>
 
@@ -84,8 +82,6 @@
       <div class="hero-foot">
         <span class="live-dot" :class="{ stale: isStale }" aria-hidden="true"></span>
         <span>Updated {{ latest ? timeAgo(latest.received_at, nowTick) : '—' }}</span>
-        <span class="spacer"></span>
-        <span class="muted">Auto-refresh 20 s</span>
       </div>
     </motion.section>
 
@@ -98,7 +94,6 @@
           <span class="ab-ic"><ShieldAlert :size="22" :stroke-width="2.25" /></span>
           <span class="ab-text">
             <strong>{{ summary.open_alerts }} open alert{{ summary.open_alerts > 1 ? 's' : '' }}</strong>
-            <span>Tap to see what needs attention</span>
           </span>
           <span class="ab-go">Review <ChevronRight :size="18" :stroke-width="2.5" /></span>
         </router-link>
@@ -109,7 +104,7 @@
     <section class="card map-card map-area" style="grid-area:map" aria-label="Live location">
       <div class="card-head">
         <span class="ch-ic ic-info"><MapPin :size="18" :stroke-width="2.25" /></span>
-        <div class="ch-text"><h2>Live location</h2><div class="ch-sub">Today's route and current position</div></div>
+        <div class="ch-text"><h2>Live location</h2></div>
       </div>
       <FleetMap :markers="markers" :track="track" empty-text="Waiting for a GPS fix" />
     </section>
@@ -118,7 +113,7 @@
     <section v-if="spark" class="card" style="grid-area:speed" aria-label="Speed trend">
       <div class="card-head">
         <span class="ch-ic ic-brand"><Gauge :size="18" :stroke-width="2.25" /></span>
-        <div class="ch-text"><h2>Speed trend</h2><div class="ch-sub">Last {{ spark.n }} readings</div></div>
+        <div class="ch-text"><h2>Speed trend</h2></div>
         <div class="peak"><span class="muted">Peak</span> <strong class="num">{{ spark.max }}</strong> <span class="muted">km/h</span></div>
       </div>
       <div class="card-pad">
@@ -135,7 +130,7 @@
     <section v-if="docs.length" class="card" style="grid-area:docs" aria-label="Vehicle documents">
       <div class="card-head">
         <span class="ch-ic ic-neutral"><FileText :size="18" :stroke-width="2.25" /></span>
-        <div class="ch-text"><h2>Vehicle documents</h2><div class="ch-sub">Carry valid papers on every trip</div></div>
+        <div class="ch-text"><h2>Documents</h2></div>
         <span v-if="docIssues" class="badge" :class="docsExpired ? 'expired' : 'expiring_soon'">{{ docIssues }} to renew</span>
         <span v-else class="badge valid">All valid</span>
       </div>
@@ -144,7 +139,7 @@
           <span class="row-ic" :class="docTone(d.expiry_status)"><component :is="docIcon(d.expiry_status)" :size="19" :stroke-width="2.25" /></span>
           <div class="row-main">
             <div class="row-title">{{ d.doc_type_label }}</div>
-            <div class="row-sub">{{ d.number || '—' }} · {{ d.expiry_date ? (d.expiry_status === 'expired' ? 'Expired ' : 'Valid till ') + shortDate(d.expiry_date) : 'No expiry date' }}</div>
+            <div v-if="docSub(d)" class="row-sub">{{ docSub(d) }}</div>
           </div>
           <span class="badge" :class="d.expiry_status">{{ docStatusLabel(d.expiry_status) }}</span>
         </li>
@@ -157,7 +152,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { motion, AnimatePresence } from 'motion-v'
 import {
-  Truck, Gauge, Milestone, Lock, LockOpen, Satellite, ShieldAlert, RefreshCw, User, MapPin,
+  Truck, Gauge, Milestone, Lock, LockOpen, Satellite, ShieldAlert, RefreshCw, MapPin,
   ChevronRight, RadioTower, FileText, FileCheck, FileClock, FileX,
 } from 'lucide-vue-next'
 import FleetMap from '../components/FleetMap.vue'
@@ -210,6 +205,10 @@ const docIssues = computed(() => docs.value.filter((d) => d.expiry_status === 'e
 const docsExpired = computed(() => docs.value.some((d) => d.expiry_status === 'expired'))
 function docTone(s) { return s === 'expired' ? 'ic-red' : s === 'expiring_soon' ? 'ic-amber' : 'ic-green' }
 function docIcon(s) { return s === 'expired' ? FileX : s === 'expiring_soon' ? FileClock : FileCheck }
+function docSub(d) {
+  const exp = d.expiry_date ? (d.expiry_status === 'expired' ? 'Expired ' : 'Valid till ') + shortDate(d.expiry_date) : ''
+  return [d.number, exp].filter(Boolean).join(' · ')
+}
 function docStatusLabel(s) { return s === 'expired' ? 'Expired' : s === 'expiring_soon' ? 'Expiring' : s === 'valid' ? 'Valid' : '—' }
 
 // ---- speed sparkline (inline SVG from recent telemetry) ----
@@ -255,8 +254,8 @@ async function checkAgain() {
   const ok = await load()
   refreshing.value = false
   if (!ok) toast.error('Could not reach the server. Try again in a moment.')
-  else if (!summary.value.assigned) toast.info('Still no truck assigned. Your fleet manager can link one.')
-  else toast.success('Truck assigned. Loading its status.')
+  else if (!summary.value.assigned) toast.info('Still no truck assigned.')
+  else toast.success('Truck assigned.')
 }
 
 onMounted(() => {

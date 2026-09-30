@@ -1,34 +1,35 @@
+<!-- Pages carry no big title/description any more: the top-bar breadcrumb
+     names the page and this component only
+       * teleports the page's actions (default slot) into the top bar,
+       * marks sample-data modules (`preview`) with a small tag there,
+       * on detail pages (`back`) names the record in the breadcrumb and shows
+         a one-line strip with its status badge and key facts. -->
 <template>
-  <header class="page-head">
-    <div class="page-head-text">
-      <router-link v-if="back" :to="back.to" class="back-link">
-        <ArrowLeft :size="15" /> {{ back.label }}
-      </router-link>
-      <div class="page-head-title">
-        <h1>{{ title }}</h1>
-        <slot name="badge" />
-        <span v-if="preview" class="preview-tag" title="This module has no live data source yet — figures shown are sample data.">
-          <FlaskConical :size="12" /> Preview · sample data
-        </span>
-      </div>
-      <p v-if="description || $slots.description" class="page-head-desc">
-        <slot name="description">{{ description }}</slot>
-      </p>
-    </div>
-    <div v-if="$slots.default" class="page-head-actions"><slot /></div>
-  </header>
+  <Teleport v-if="$slots.default || preview" defer to="#page-actions">
+    <span v-if="preview" class="preview-tag" title="This module has no live data source yet — figures shown are sample data.">
+      <FlaskConical :size="13" /><span class="pt-text">Sample data</span>
+    </span>
+    <slot />
+  </Teleport>
+  <div v-if="back && ($slots.badge || $slots.description || description)" class="detail-strip">
+    <slot name="badge" />
+    <span class="ds-meta"><slot name="description">{{ description }}</slot></span>
+  </div>
 </template>
 
 <script setup>
-import { ArrowLeft, FlaskConical } from 'lucide-vue-next'
+import { onBeforeUnmount, watch } from 'vue'
+import { FlaskConical } from 'lucide-vue-next'
+import { pageMeta } from '../pagemeta'
 
-// Consistent page header: title + one-line description + primary actions.
-// `back` = { to, label } renders a breadcrumb-style back link above the title.
-// `preview` marks modules still running on sample data (see src/mock.js).
-defineProps({
-  title: { type: String, required: true },
+// title/description are still accepted so every page keeps working; only
+// detail pages (with `back`) surface them.
+const props = defineProps({
+  title: { type: String, default: '' },
   description: { type: String, default: '' },
   back: { type: Object, default: null },
   preview: { type: Boolean, default: false },
 })
+watch(() => props.back && props.title, (t) => { pageMeta.title = t || '' }, { immediate: true })
+onBeforeUnmount(() => { if (props.back) pageMeta.title = '' })
 </script>
